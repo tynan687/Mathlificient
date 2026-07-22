@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Focus Timer</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: "Segoe UI", system-ui, sans-serif; margin: 0; padding: 20px;
+      background: Canvas; color: CanvasText; text-align: center; }
+    .clock { font-size: 64px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 10px 0; }
+    .phase { font-size: 15px; opacity: 0.7; letter-spacing: 1px; text-transform: uppercase; }
+    input { padding: 7px; border-radius: 7px; font-size: 14px;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText; box-sizing: border-box; }
+    #goal { width: 100%; margin: 12px 0; }
+    button { padding: 9px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; margin: 3px;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText; }
+    button.primary { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+    .cfg { display: flex; gap: 8px; justify-content: center; align-items: center;
+      margin-top: 14px; font-size: 13px; opacity: 0.85; }
+    .cfg input { width: 52px; text-align: center; }
+    .muted { opacity: 0.6; font-size: 12px; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <div class="phase" id="phase">Focus</div>
+  <div class="clock" id="clock">25:00</div>
+  <input id="goal" placeholder="What are you focusing on this block?">
+  <div>
+    <button class="primary" id="startBtn">Start</button>
+    <button id="pauseBtn" disabled>Pause</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+  <div class="cfg">
+    Focus <input id="focusMin" type="number" value="25" min="1" max="120"> min ·
+    Break <input id="breakMin" type="number" value="5" min="1" max="60"> min
+  </div>
+  <div class="muted">Remaining time shows on the tutor bubble.<br>
+    A gentle nudge appears when a block ends — a cue to move on if you're stuck.</div>
+
+  <script src="../theme.js"></script>
+  <script>
+    let remaining = 25 * 60;
+    let onBreak = false;
+    let ticking = null;
+
+    const clock = document.getElementById('clock');
+    const phase = document.getElementById('phase');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+
+    function beep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.value = 660;
+        gain.gain.value = 0.15;
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+        setTimeout(() => ctx.close(), 400);
+      } catch (e) { /* ignore */ }
+    }
+
+    function fmt(s) {
+      const m = Math.floor(s / 60);
+      const ss = String(s % 60).padStart(2, '0');
+      return `${m}:${ss}`;
+    }
+    function render() {
+      clock.textContent = fmt(remaining);
+      phase.textContent = onBreak ? 'Break' : 'Focus';
+      window.tutor.send('tool:timer', { text: fmt(remaining) });
+    }
+    function tick() {
+      remaining--;
+      if (remaining < 0) {
+        onBreak = !onBreak;
+        remaining = (onBreak ? Number(document.getElementById('breakMin').value)
+          : Number(document.getElementById('focusMin').value)) * 60;
+        beep();
+      }
+      render();
+    }
+    function start() {
+      if (ticking) return;
+      ticking = setInterval(tick, 1000);
+      startBtn.disabled = true; pauseBtn.disabled = false;
+    }
+    function pause() {
+      clearInterval(ticking); ticking = null;
+      startBtn.disabled = false; pauseBtn.disabled = true;
+    }
+    function reset() {
+      pause();
+      onBreak = false;
+      remaining = Number(document.getElementById('focusMin').value) * 60;
+      render();
+    }
+
+    startBtn.addEventListener('click', start);
+    pauseBtn.addEventListener('click', pause);
+    document.getElementById('resetBtn').addEventListener('click', reset);
+    document.getElementById('focusMin').addEventListener('change', () => { if (!ticking && !onBreak) reset(); });
+    window.addEventListener('beforeunload', () => window.tutor.send('tool:timer', { text: null }));
+    render();
+  </script>
+</body>
+</html>

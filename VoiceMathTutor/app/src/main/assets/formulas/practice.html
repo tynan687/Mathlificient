@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice</title>
+  <link rel="stylesheet" href="katex/katex.min.css">
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 14px;
+      background: Canvas; color: CanvasText; font-size: 15px; }
+    .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    select { padding: 10px; border-radius: 8px; font-size: 15px; flex: 1; min-width: 130px;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText; }
+    button { padding: 11px 15px; border-radius: 9px; font-size: 15px; cursor: pointer;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText; }
+    button.primary { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+    button:disabled { opacity: 0.45; }
+    .card { border: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
+      border-radius: 12px; padding: 14px 16px; margin: 10px 0; }
+    .src { font-size: 12px; opacity: 0.6; margin-bottom: 6px; }
+    /* Questions/steps scroll horizontally if a line is long - never clipped. */
+    .q { font-size: 15px; overflow-x: auto; padding: 6px 0; -webkit-overflow-scrolling: touch; }
+    .step { padding: 6px 0; overflow-x: auto; font-size: 14px;
+      -webkit-overflow-scrolling: touch;
+      border-top: 1px dashed color-mix(in srgb, CanvasText 15%, transparent); }
+    .answer { font-weight: 600; padding-top: 8px; overflow-x: auto; }
+    .hidden { display: none !important; }
+    .hint { opacity: 0.65; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <select id="topic"></select>
+    <button class="primary" id="newQ">New question</button>
+  </div>
+  <div class="card">
+    <div class="src" id="src"></div>
+    <div class="q" id="question"><span class="hint">Press "New question", work it on
+      paper, then reveal the steps one at a time.</span></div>
+    <div id="steps"></div>
+    <div class="answer hidden" id="answer"></div>
+  </div>
+  <div class="bar">
+    <button id="nextStep" disabled>Show next step</button>
+    <button id="showAnswer" disabled>Show answer</button>
+    <button id="copyQ" disabled>Copy LaTeX</button>
+  </div>
+  <script src="katex/katex.min.js"></script>
+  <script src="practice-data.js"></script>
+  <script src="practice.js"></script>
+</body>
+</html>

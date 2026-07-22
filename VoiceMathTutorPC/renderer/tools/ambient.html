@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Ambient Sound</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: "Segoe UI", system-ui, sans-serif; margin: 0; padding: 20px;
+      background: Canvas; color: CanvasText; font-size: 14px; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    .hint { opacity: 0.65; font-size: 12.5px; margin-bottom: 14px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    button.sound { padding: 18px 10px; border-radius: 12px; font-size: 15px; cursor: pointer;
+      border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+      background: Canvas; color: CanvasText; }
+    button.sound.on { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+    .vol { margin-top: 16px; display: flex; align-items: center; gap: 10px; }
+    input[type=range] { flex: 1; }
+  </style>
+</head>
+<body>
+  <h1>Ambient sound</h1>
+  <div class="hint">Synthesised locally — works fully offline, costs nothing.
+    Keep this window open (minimised is fine).</div>
+  <div class="grid">
+    <button class="sound" data-type="rain">🌧 Rain</button>
+    <button class="sound" data-type="brown">🌊 Deep (brown)</button>
+    <button class="sound" data-type="pink">🍃 Soft (pink)</button>
+    <button class="sound" data-type="fan">🌀 Fan hum</button>
+  </div>
+  <div class="vol">
+    <span>🔉</span>
+    <input type="range" id="vol" min="0" max="100" value="35">
+    <span>🔊</span>
+  </div>
+  <script src="../theme.js"></script>
+  <script>
+    let ctx = null;
+    let master = null;
+    let nodes = [];
+    let active = null;
+
+    function makeNoiseBuffer(type) {
+      const len = ctx.sampleRate * 4;
+      const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0, last = 0;
+      for (let i = 0; i < len; i++) {
+        const white = Math.random() * 2 - 1;
+        if (type === 'white') {
+          data[i] = white * 0.4;
+        } else if (type === 'pink') {
+          b0 = 0.99765 * b0 + white * 0.0990460;
+          b1 = 0.96300 * b1 + white * 0.2965164;
+          b2 = 0.57000 * b2 + white * 1.0526913;
+          data[i] = (b0 + b1 + b2 + white * 0.1848) * 0.12;
+        } else { // brown
+          last = (last + 0.02 * white) / 1.02;
+          data[i] = last * 3.0;
+        }
+      }
+      return buffer;
+    }
+
+    function stop() {
+      nodes.forEach((n) => { try { n.stop ? n.stop() : n.disconnect(); } catch (e) {} });
+      nodes = [];
+      active = null;
+      document.querySelectorAll('.sound').forEach((b) => b.classList.remove('on'));
+    }
+
+    function play(type) {
+      if (!ctx) {
+        ctx = new AudioContext();
+        master = ctx.createGain();
+        master.gain.value = document.getElementById('vol').value / 100;
+        master.connect(ctx.destination);
+      }
+      ctx.resume();
+      if (active === type) { stop(); return; }
+      stop();
+      active = type;
+
+      const src = ctx.createBufferSource();
+      src.loop = true;
+      if (type === 'rain') {
+        src.buffer = makeNoiseBuffer('pink');
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 900;
+        src.connect(lp).connect(master);
+        // gentle intensity drift so it breathes like real rain
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 250;
+        const lfo = ctx.createOscillator();
+        lfo.frequency.value = 0.07;
+        lfo.connect(lfoGain).connect(lp.frequency);
+        lfo.start();
+        nodes.push(lfo, lfoGain, lp);
+      } else if (type === 'fan') {
+        src.buffer = makeNoiseBuffer('brown');
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 320;
+        src.connect(lp).connect(master);
+        const hum = ctx.createOscillator();
+        hum.frequency.value = 118;
+        const humGain = ctx.createGain();
+        humGain.gain.value = 0.015;
+        hum.connect(humGain).connect(master);
+        hum.start();
+        nodes.push(lp, hum, humGain);
+      } else {
+        src.buffer = makeNoiseBuffer(type);
+        src.connect(master);
+      }
+      src.start();
+      nodes.push(src);
+      document.querySelector(`[data-type="${type}"]`).classList.add('on');
+    }
+
+    document.querySelectorAll('.sound').forEach((b) =>
+      b.addEventListener('click', () => play(b.dataset.type)));
+    document.getElementById('vol').addEventListener('input', (e) => {
+      if (master) master.gain.value = e.target.value / 100;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Build outputs
+**/build/
+**/dist/
+.gradle/
+.cxx/
+
+# Dependencies
+**/node_modules/
+
+# IDE / local config
+.idea/
+*.iml
+**/local.properties
+
+# Signing keys & secrets — never commit
+*.jks
+*.keystore
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db

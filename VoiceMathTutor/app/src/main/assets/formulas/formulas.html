@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Formula Sheet</title>
+  <link rel="stylesheet" href="katex/katex.min.css">
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 14px;
+      background: Canvas; color: CanvasText; font-size: 16px;
+      -webkit-tap-highlight-color: transparent; }
+    #search { width: 100%; box-sizing: border-box; padding: 12px; font-size: 16px;
+      border-radius: 10px; margin-bottom: 12px; position: sticky; top: 10px; z-index: 2;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText; }
+    h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.6;
+      margin: 20px 0 6px; }
+    .f { border: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
+      border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
+    .f .name { font-weight: 600; margin-bottom: 6px; display: flex;
+      justify-content: space-between; align-items: baseline; gap: 8px; }
+    .f .name .badge { font-size: 11px; font-weight: 400; opacity: 0.6; white-space: nowrap; }
+    .f .tex { overflow-x: auto; padding: 4px 0; font-size: 17px; }
+    .solver { display: none; margin-top: 10px; padding-top: 10px;
+      border-top: 1px dashed color-mix(in srgb, CanvasText 20%, transparent); }
+    .f.open .solver { display: block; }
+    .solver .inputs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .solver label { font-size: 12px; opacity: 0.8; display: block; }
+    .solver input { width: 100px; padding: 10px 8px; border-radius: 8px; font-size: 16px;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText; }
+    .results { margin: 8px 0; font-size: 16px; }
+    .results div { padding: 3px 0; }
+    button { padding: 10px 14px; border-radius: 9px; font-size: 14px; cursor: pointer;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText; margin: 4px 6px 0 0; }
+    button.primary { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+    .copied { color: #2FB65D; font-size: 13px; margin-left: 4px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <input id="search" placeholder="Search formulas… (quadratic, cosine rule, integral)">
+  <div id="list"></div>
+  <script src="katex/katex.min.js"></script>
+  <script src="formulas-data.js"></script>
+  <script src="formulas.js"></script>
+</body>
+</html>

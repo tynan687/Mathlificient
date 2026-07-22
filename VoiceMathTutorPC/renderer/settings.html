@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Voice Math Tutor</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      margin: 0; padding: 20px; font-size: 14px;
+      background: Canvas; color: CanvasText;
+      max-width: 520px;
+    }
+    h1 { font-size: 22px; margin: 0 0 12px; }
+    h2 { font-size: 15px; margin: 18px 0 6px; }
+    .card {
+      border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+      border-radius: 10px; padding: 14px; margin: 10px 0;
+    }
+    .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+    .row label { flex: 1; }
+    .muted { opacity: 0.7; font-size: 12.5px; }
+    .error { color: #E5484D; font-size: 12.5px; white-space: pre-wrap; }
+    button {
+      padding: 7px 14px; border-radius: 8px; cursor: pointer;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText;
+    }
+    button.primary { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+    button:disabled { opacity: 0.45; cursor: default; }
+    input[type=text], input[type=password], select {
+      padding: 6px 8px; border-radius: 7px; min-width: 150px;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText;
+    }
+    input[type=text] { width: 100%; box-sizing: border-box; }
+    dialog {
+      border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+      border-radius: 10px; padding: 16px; max-width: 420px; width: 90%;
+      background: Canvas; color: CanvasText;
+    }
+    dialog::backdrop { background: rgba(0,0,0,0.35); }
+    .note { display: flex; align-items: center; gap: 8px; padding: 6px 0;
+      border-bottom: 1px solid color-mix(in srgb, CanvasText 12%, transparent); }
+    .note div { flex: 1; }
+    .logline { padding: 3px 0; font-size: 12.5px; }
+  </style>
+</head>
+<body>
+  <h1>Voice Math Tutor</h1>
+
+  <div class="card">
+    <div id="status" style="font-weight:600">○ Not running</div>
+    <div id="cost" class="muted"></div>
+    <div id="spend" class="muted"></div>
+    <div id="flags" class="muted"></div>
+    <div id="error" class="error"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="start" class="primary">Start tutor</button>
+      <button id="stopBtn" disabled>Stop</button>
+      <button id="muteBtn" disabled>Mute</button>
+      <button id="watchBtn" disabled>Watch</button>
+    </div>
+  </div>
+
+  <h2>OpenAI API key</h2>
+  <div id="keyHint" class="muted"></div>
+  <div class="row">
+    <input type="password" id="apiKey" placeholder="sk-…">
+    <button id="saveKey">Save key</button>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label><b>Personalisation</b><br>
+        <span class="muted">Remembers durable facts about you between sessions.
+        Capped at ~600 tokens in the cached prompt — adds under A$0.01/hour.</span>
+      </label>
+      <input type="checkbox" id="personalisationEnabled">
+    </div>
+    <div class="row"><label>Current topic</label></div>
+    <input type="text" id="currentTopic">
+    <div class="row" style="margin-top:8px">
+      <button id="viewMemory">View memory</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label><b>Capture</b><br>
+        <span class="muted">What the tutor sees. Pick your browser window with Word open
+        to focus it on your equations (or a math-game window). Matched by window title,
+        so the choice survives restarts. "Entire screen" shows it everything.</span>
+      </label>
+    </div>
+    <div class="row">
+      <select id="captureTarget" style="flex:1; min-width:0"></select>
+      <button id="refreshCapture">Refresh</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label>Textbook window<br>
+        <span class="muted">Open your book in Kindle Cloud Reader (read.amazon.com) or
+        the Kindle app — sign in yourself — and pick that window. The tutor can then
+        read whichever page you have open. It never touches your Amazon account and
+        keeps no copy of the book.</span>
+      </label>
+    </div>
+    <div class="row">
+      <select id="textbookWindow" style="flex:1; min-width:0"></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label><b>Textbook library (PDFs you own)</b><br>
+        <span class="muted">Upload PDF books you legally own. The tutor can look up where
+        a topic is covered and cite page numbers. Your book text stays on this PC —
+        only page references reach the voice model, so it's cheap. Searching uses a
+        small helper model for ranking.</span>
+      </label>
+    </div>
+    <div class="row">
+      <button id="addPdf">Add PDF…</button>
+      <span id="pdfCount" class="muted"></span>
+    </div>
+    <div id="pdfList"></div>
+    <div class="row" style="margin-top:6px">
+      <label>Helper model (PDF search)</label>
+      <input type="text" id="retrievalModel" style="min-width:150px">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label><b>Bubble</b><br><span class="muted">Customise the floating helper.
+        Right-click the bubble any time for the quick-action menu.</span></label>
+    </div>
+    <div class="row">
+      <label>Colour</label>
+      <span id="swatches" style="display:flex; gap:6px"></span>
+      <input type="color" id="bubbleColor">
+    </div>
+    <div class="row"><label>Glyph</label><span id="glyphs" style="display:flex; gap:4px"></span></div>
+    <div class="row"><label>Size <span id="sizeLabel"></span></label>
+      <input type="range" id="bubbleSize" min="72" max="140" step="4"></div>
+    <div class="row"><label>Opacity</label>
+      <input type="range" id="bubbleOpacity" min="0.5" max="1" step="0.05"></div>
+  </div>
+
+  <div class="row"><label>Theme</label><select id="theme"></select></div>
+
+  <h2>Tutor settings <span class="muted">(apply on next Start)</span></h2>
+  <div class="row"><label>Model</label><select id="model"></select></div>
+  <div class="row"><label>Reasoning effort</label><select id="reasoningEffort"></select></div>
+  <div class="row"><label>VAD eagerness</label><select id="vadEagerness"></select></div>
+  <div class="row"><label>Voice</label><select id="voice"></select></div>
+  <div class="row"><label>Bubble tap<br><span class="muted">hint = spoken hint · snapshot = silently show your screen</span></label><select id="tapAction"></select></div>
+  <div class="row">
+    <label>Push-to-talk (mic locked)<br><span class="muted">Default: the mic only opens
+      while you hold the bubble. Turn OFF to unlock the hands-free open mic
+      (voice detection hears everything you say near the PC).</span></label>
+    <input type="checkbox" id="pushToTalk">
+  </div>
+  <div class="card">
+    <div class="row">
+      <label><b>Watch mode</b><br>
+        <span class="muted">Checks your screen as you write (only when it changes) and
+        speaks up before a mistake compounds. Silent text verdicts — you only hear it
+        on a clear error. Roughly A$1–3/hour while on.</span>
+      </label>
+      <input type="checkbox" id="watchMode">
+    </div>
+    <div class="row"><label>Check interval (seconds)</label><select id="watchIntervalSec"></select></div>
+  </div>
+  <div class="card">
+    <div class="row">
+      <label><b>Assessment mode</b><br>
+        <span class="muted">Early intervention for your own written work: stops you
+        promptly when a lengthy derivation goes wrong and says what to fix (sign flips,
+        bad factoring, illegal cancellations), references your textbook if you keep
+        struggling, and writes a study report from your mistakes when you press Stop.
+        Uses the watch-mode check interval. Use in line with your course's AI policy.</span>
+      </label>
+      <input type="checkbox" id="assessmentMode">
+    </div>
+    <div class="row"><label>Your textbook (include the edition)</label></div>
+    <input type="text" id="textbook"
+      placeholder="e.g., Stewart, Precalculus: Mathematics for Calculus, 7th ed.">
+  </div>
+  <div class="row">
+    <label>Budget guard (soft cap): <span id="capLabel"></span></label>
+    <input type="range" id="softCapAud" min="6" max="15" step="1">
+  </div>
+
+  <h2>Study log</h2>
+  <div class="card" id="studyLog"><span class="muted">Your sessions will appear here.</span></div>
+
+  <p class="muted">How to use: press Start, then work in your PDF, notes, or browser.
+  Speak any time, or tap the floating π bubble. It stays silent while you work.</p>
+
+  <dialog id="memoryDialog">
+    <h2 style="margin-top:0">Tutor memory <span id="memoryMeta" class="muted"></span></h2>
+    <div id="memoryList"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="clearMemory">Clear all</button>
+      <span style="flex:1"></span>
+      <button id="closeMemory" class="primary">Close</button>
+    </div>
+  </dialog>
+
+  <script src="theme.js"></script>
+  <script src="shared.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

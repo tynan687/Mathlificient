@@ -1,0 +1,18 @@
+{
+  "name": "voice-math-tutor-pc",
+  "productName": "VoiceMathTutor",
+  "version": "0.1.0",
+  "description": "Screen-aware voice Socratic math tutor for Windows",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "pdfjs-dist": "4.7.76",
+    "katex": "^0.16.11"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "@electron/packager": "^18.3.0"
+  }
+}

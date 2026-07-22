@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Worked Examples</title>
+  <link rel="stylesheet" href="../node_modules/katex/dist/katex.min.css">
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: "Segoe UI", system-ui, sans-serif; margin: 0; padding: 16px;
+      background: Canvas; color: CanvasText; font-size: 14px; }
+    .bar { display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px; }
+    .bar h1 { font-size: 16px; margin: 0; }
+    .example { border: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
+      border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+    .example .title { font-weight: 600; margin-bottom: 6px; }
+    .example .when { font-size: 11px; opacity: 0.55; font-weight: 400; margin-left: 8px; }
+    .step { padding: 4px 0; overflow-x: auto; }
+    .note { opacity: 0.75; font-size: 13px; margin-top: 6px; }
+    .btns { margin-top: 8px; }
+    button { padding: 5px 11px; border-radius: 7px; cursor: pointer; font-size: 12.5px;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText; margin-right: 6px; }
+    .copied { color: #2FB65D; font-size: 12px; margin-left: 4px; }
+    .empty { opacity: 0.6; padding: 30px 0; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <h1>Worked examples</h1>
+    <button id="clearAll">Clear all</button>
+  </div>
+  <div id="feed"></div>
+  <script src="theme.js"></script>
+  <script src="../node_modules/katex/dist/katex.min.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>
