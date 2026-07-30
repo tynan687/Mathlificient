@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon foreground: a serif π — the app's mark, matching the bubble on
+     both platforms. The downward hooks at the ends of the bar and the splayed,
+     tapering legs are what make it read as a letterform rather than a table.
+     Geometry stays inside the adaptive-icon safe circle: the furthest point (a
+     top bar corner) sits ~33.8dp from centre before scaling, under the 36dp
+     limit. The offset dark copy underneath is a soft drop shadow. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- A launcher only shows the central 72dp of this 108dp canvas, so the mark
+         is scaled down to sit at roughly two thirds of the visible tile. Drawn
+         full-size and scaled here to keep the path data readable. -->
+    <group
+        android:pivotX="54" android:pivotY="54"
+        android:scaleX="0.86" android:scaleY="0.86">
+
+        <group android:translateY="1.6">
+            <path
+                android:fillColor="#2E000000"
+                android:pathData="M26,35 H82 V45 H77.5 V42 H30.5 V45 H26 Z" />
+            <path
+                android:fillColor="#2E000000"
+                android:pathData="M36,42 L45,42 C44.5,54 43,65 40.5,74 L31,74 C33.5,65 35.5,54 36,42 Z" />
+            <path
+                android:fillColor="#2E000000"
+                android:pathData="M63,42 L72,42 C72.5,54 74,65 77,74 L67.5,74 C65,65 63.5,54 63,42 Z" />
+        </group>
+
+        <path
+            android:fillColor="#FFFDFBF6"
+            android:pathData="M26,35 H82 V45 H77.5 V42 H30.5 V45 H26 Z" />
+        <path
+            android:fillColor="#FFFDFBF6"
+            android:pathData="M36,42 L45,42 C44.5,54 43,65 40.5,74 L31,74 C33.5,65 35.5,54 36,42 Z" />
+        <path
+            android:fillColor="#FFFDFBF6"
+            android:pathData="M63,42 L72,42 C72.5,54 74,65 77,74 L67.5,74 C65,65 63.5,54 63,42 Z" />
+    </group>
+</vector>

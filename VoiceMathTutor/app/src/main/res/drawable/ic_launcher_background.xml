@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon background: deep indigo→blue gradient with faint graph-paper
+     ruling and a soft top-left highlight. Fills the whole 108dp square so no
+     edge shows through when a launcher applies parallax or a tighter mask. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="6" android:startY="0"
+                android:endX="102" android:endY="108">
+                <item android:offset="0" android:color="#FF16213F" />
+                <item android:offset="0.5" android:color="#FF2B4E9E" />
+                <item android:offset="1" android:color="#FF4F7DF7" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Soft highlight, so the tile reads as lit rather than flat. -->
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="30" android:centerY="24"
+                android:gradientRadius="86">
+                <item android:offset="0" android:color="#2EFFFFFF" />
+                <item android:offset="1" android:color="#00FFFFFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Graph-paper ruling. -->
+    <path
+        android:strokeColor="#1FFFFFFF"
+        android:strokeWidth="0.7"
+        android:pathData="M13.5,0V108 M27,0V108 M40.5,0V108 M54,0V108 M67.5,0V108 M81,0V108 M94.5,0V108
+                          M0,13.5H108 M0,27H108 M0,40.5H108 M0,54H108 M0,67.5H108 M0,81H108 M0,94.5H108" />
+</vector>
