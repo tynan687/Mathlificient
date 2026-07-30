@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Worksheet</title>
+  <link rel="stylesheet" href="../../node_modules/katex/dist/katex.min.css">
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 24px 32px;
+      background: #fff; color: #111; font-size: 15px; }
+    .no-print { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; }
+    button { padding: 9px 16px; border-radius: 9px; font-size: 14px; cursor: pointer;
+      border: 1px solid #999; background: #fff; }
+    button.primary { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .sub { font-size: 13px; opacity: 0.65; margin-bottom: 18px; }
+    .qitem { margin: 0 0 26px; page-break-inside: avoid; }
+    .qnum { font-weight: 700; margin-right: 6px; }
+    .qtext { display: inline-block; }
+    .workspace { border: 1px solid #bbb; border-radius: 8px; height: 110px; margin-top: 8px; }
+    .answerkey { page-break-before: always; }
+    .arow { padding: 4px 0; }
+    .hint { opacity: 0.6; font-size: 13px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0.4in; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <button class="primary" id="printBtn">🖨 Print / Save as PDF</button>
+    <span class="hint">Uses your system print dialog — choose "Microsoft Print to PDF" to save a file.</span>
+  </div>
+  <h1>Practice Worksheet</h1>
+  <div class="sub" id="sub"></div>
+  <div id="questions"></div>
+  <div class="answerkey">
+    <h1>Answer Key</h1>
+    <div id="answers"></div>
+  </div>
+  <script src="../../node_modules/katex/dist/katex.min.js"></script>
+  <script src="worksheet.js"></script>
+</body>
+</html>

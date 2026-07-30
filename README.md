@@ -12,9 +12,15 @@ platforms from one shared design:
   quadratics, trig, calculus, vectors, matrices, stats, partial fractions, and
   more) with step-by-step worked solutions and an auto-drawn diagram per question
   (parabolas with roots marked, triangles to scale, sine curves, asymptotes, Argand
-  diagrams, bar charts...). On Android, an S Pen ink canvas sits underneath to work
-  it out by hand — palm rejection, a hold-the-button eraser, a toolbar eraser, and
-  pinch-to-zoom for extra working space.
+  diagrams, bar charts...). A drawing canvas sits underneath to work it out by
+  hand on both platforms: **Android** with the S Pen (palm rejection, a
+  hold-the-button eraser, a toolbar eraser, pinch-to-zoom); **PC** with a mouse
+  or a plugged-in graphics tablet/pen (pressure, eraser end/barrel button, and
+  scroll-wheel zoom all work automatically via the browser's Pointer Events —
+  no drivers needed). PC also gets **Quiz mode** (a scored run of 5/10/20
+  questions with a missed-question review) and a **printable worksheet**
+  export (questions + working space + an answer key, via your system print
+  dialog — "Microsoft Print to PDF" to save a file).
 - **Formula sheet** — 182 formulas across 15 topic groups, 82 of them interactive
   solvers (type your values, get the answer + LaTeX you can copy into Word or
   Samsung Notes).
@@ -33,9 +39,11 @@ Full feature lists and screenshots-in-words live in each app's own docs:
 [`VoiceMathTutor/DISTRIBUTION.md`](VoiceMathTutor/DISTRIBUTION.md) and
 [`VoiceMathTutorPC/README.md`](VoiceMathTutorPC/README.md).
 
-> **No prebuilt installer is published here yet** — this repo is source code, and
-> each platform below is built locally from it. That's normal for a personal/small-
-> group project distributed by sideloading rather than an app store.
+> **This repo holds source code, not binaries** — a signed Android APK and a
+> Windows build are produced with a single command each (below) and are meant
+> to be handed around directly (Drive link, USB) rather than committed to git
+> or published to an app store. That's normal for a personal/small-group
+> project distributed by sideloading.
 
 ---
 
@@ -46,17 +54,26 @@ version), a device running **Android 14 or newer**, and — only if you want liv
 tutoring — an [OpenAI API key](https://platform.openai.com/api-keys) with billing set
 up. Practice Studio, the formula sheet, the timer, and ambient sound need no key at all.
 
-1. **Clone the repo** and open the `VoiceMathTutor/` folder as a project in Android
-   Studio (File → Open → select that folder). Let it finish syncing Gradle — this
-   downloads everything needed automatically.
-2. **Build the APK**: Build menu → **Generate Signed App Bundle / APK** → APK →
-   create a new keystore the first time (save the `.jks` file and its passwords
-   somewhere safe — you'll need the *same* keystore to sign every future update, or
-   Android will refuse to overwrite the app). Build the **release** variant.
-   *(For a quick test build without signing, `Build → Build Bundle(s)/APK(s) → Build APK(s)`
-   with the debug variant works too, and can be installed the same way.)*
-3. The finished APK lands in `VoiceMathTutor/app/release/` (or `app/debug/`).
-   Copy it to the tablet/phone (USB, Drive, email — any method) and open it there.
+1. **Clone the repo.** A JDK is all you need for the CLI path below; Android
+   Studio is only required if you'd rather use its GUI.
+2. **One-time**: generate a signing keystore (this is your permanent app identity —
+   back up the `.jks` and its password somewhere durable, losing it means every
+   future update becomes a new, unrelated app to anyone who already installed):
+   ```
+   keytool -genkeypair -v -keystore mathlificient-release.jks -alias mathlificient -keyalg RSA -keysize 2048 -validity 10000
+   ```
+   Then create `VoiceMathTutor/keystore.properties` (gitignored, never committed):
+   ```
+   storeFile=C:\\path\\to\\mathlificient-release.jks
+   storePassword=...
+   keyAlias=mathlificient
+   keyPassword=...
+   ```
+3. **Build**: `cd VoiceMathTutor` then `gradlew.bat assembleRelease` — produces a
+   signed `app/build/outputs/apk/release/app-release.apk` directly, ready to
+   copy to the tablet/phone (USB, Drive, email — any method) and install.
+   *(Alternative: Android Studio's Build → Generate Signed App Bundle/APK wizard
+   works too, and picks up the same keystore.)*
 4. **On the device**, tap the APK file → Android will prompt to allow installs from
    that source (Files app, browser, etc.) → **Install**.
 5. **Open the app**:
@@ -87,18 +104,28 @@ tutoring; the offline tools (formula sheet, converter, timer) need nothing.
    ```bash
    npm install
    ```
-3. **Package it into a real app:**
+3. **Build a proper installer** (`Setup.exe` with a Start Menu shortcut and
+   uninstaller):
    ```bash
-   npx @electron/packager . VoiceMathTutor --platform=win32 --arch=x64 --out=dist --overwrite
+   npm run dist
    ```
-   This creates `VoiceMathTutorPC/dist/VoiceMathTutor-win32-x64/`, a folder containing
-   `VoiceMathTutor.exe` and everything it needs — no installer, just a folder you can
-   run from anywhere or move to `%LOCALAPPDATA%\Programs\VoiceMathTutor\` and pin to
-   the Start Menu / taskbar like a normal app.
+   Output: `dist/VoiceMathTutor Setup <version>.exe`. If this fails with
+   `Cannot create symbolic link : A required privilege is not held by the client`,
+   turn on **Settings → Privacy & security → For developers → Developer Mode**
+   and re-run — Windows blocks a code-signing helper's download by default,
+   even though nothing here is actually being signed.
 
-   *(For quick testing without packaging, skip step 3 and just run `npx electron .`
-   from inside `VoiceMathTutorPC/` instead.)*
-4. **Run `VoiceMathTutor.exe`.** First launch: paste your OpenAI API key → **Save
+   *(No installer needed / hit the privilege issue and can't flip Developer Mode?
+   Use the portable fallback instead — same output either way:*
+   ```bash
+   npx @electron/packager . VoiceMathTutor --platform=win32 --arch=x64 --out=dist --overwrite --icon=icon.ico
+   ```
+   *creates `dist/VoiceMathTutor-win32-x64/VoiceMathTutor.exe` — copy the whole
+   folder to `%LOCALAPPDATA%\Programs\VoiceMathTutor\` and shortcut it yourself.)*
+
+   *(For quick dev testing without packaging either way, just run `npx electron .`
+   from inside `VoiceMathTutorPC/`.)*
+4. **Run the installer (or `VoiceMathTutor.exe`).** First launch: paste your OpenAI API key → **Save
    key** (it's encrypted on-device via Windows DPAPI) → **Start tutor**, allow the
    microphone if Windows asks. A small floating π bubble appears — drag it anywhere,
    tap it for the quick menu, hold it to talk.

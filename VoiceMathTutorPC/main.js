@@ -37,6 +37,7 @@ const DEFAULT_SETTINGS = {
   bubbleOpacity: 1.0,
   bubbleGlyph: 'π',
   theme: 'system', // system | light | dark | sepia
+  practicePaperColor: '#FFFFFF', // Practice Studio ink canvas paper colour
 };
 
 function readJson(name, fallback) {
@@ -145,6 +146,20 @@ function openMenu(x, y) {
 }
 
 let chatWin = null;
+let worksheetWin = null;
+function openWorksheet() {
+  if (worksheetWin && !worksheetWin.isDestroyed()) {
+    worksheetWin.show();
+    return;
+  }
+  worksheetWin = new BrowserWindow({
+    width: 720, height: 840, title: 'Worksheet',
+    webPreferences: { preload: path.join(__dirname, 'preload.js') },
+  });
+  worksheetWin.removeMenu();
+  worksheetWin.loadFile('renderer/tools/worksheet.html');
+  worksheetWin.on('closed', () => { worksheetWin = null; });
+}
 function openChat() {
   if (chatWin && !chatWin.isDestroyed()) {
     chatWin.show();
@@ -163,8 +178,14 @@ const TOOL_SIZES = {
   converter: [420, 560],
   timer: [420, 560],
   formulas: [560, 720],
-  practice: [520, 640],
+  practice: [760, 960],
   ambient: [380, 360],
+};
+
+// Practice grew a drawing canvas + two toolbar rows + quiz controls — don't let
+// it get shrunk into an unusable sliver.
+const TOOL_MIN_SIZES = {
+  practice: [560, 680],
 };
 
 function openTool(name) {
@@ -174,8 +195,9 @@ function openTool(name) {
     return toolWins[name];
   }
   const [w, h] = TOOL_SIZES[name] || [420, 560];
+  const [minW, minH] = TOOL_MIN_SIZES[name] || [0, 0];
   const win = new BrowserWindow({
-    width: w, height: h, title: name,
+    width: w, height: h, minWidth: minW, minHeight: minH, title: name,
     alwaysOnTop: true, skipTaskbar: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
   });
@@ -193,6 +215,17 @@ ipcMain.on('practice:push', (_e, payload) => {
     win.webContents.once('did-finish-load', () => win.webContents.send('practice:new', payload));
   } else {
     win.webContents.send('practice:new', payload);
+  }
+});
+
+// A generated worksheet (N questions + answer key) to print or save as PDF.
+ipcMain.on('worksheet:open', (_e, payload) => {
+  openWorksheet();
+  const target = worksheetWin;
+  if (target.webContents.isLoading()) {
+    target.webContents.once('did-finish-load', () => target.webContents.send('worksheet:data', payload));
+  } else {
+    target.webContents.send('worksheet:data', payload);
   }
 });
 

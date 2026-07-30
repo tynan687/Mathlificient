@@ -3,12 +3,32 @@
 A practical guide for handing the app to other students (sideload APK — not the
 Play Store; see the caveat at the bottom).
 
-## Build the release APK (one-time per version)
+## Build the release APK
 
-1. Open `VoiceMathTutor/` in Android Studio.
-2. Build → **Generate Signed App Bundle / APK** → APK → create (or reuse) your
-   keystore (.jks — keep it safe; you must sign every future update with it).
-3. Build **release**. Share the APK from `app/release/` (Drive link, USB, etc.).
+**One-time setup**: generate a keystore (this is your permanent signing identity —
+every future update must be signed with the *same* one, or Android refuses to
+install it over the last version; back the `.jks` file and its passwords up
+somewhere durable outside this machine):
+```
+keytool -genkeypair -v -keystore mathlificient-release.jks -alias mathlificient ^
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+Then create `VoiceMathTutor/keystore.properties` (gitignored — never committed):
+```
+storeFile=C:\\path\\to\\mathlificient-release.jks
+storePassword=...
+keyAlias=mathlificient
+keyPassword=...
+```
+
+**Every build after that** is one command — no Android Studio GUI needed:
+```
+gradlew.bat assembleRelease
+```
+This produces a signed `app/build/outputs/apk/release/app-release.apk` directly,
+ready to share (Drive link, USB, etc.). *(Alternative: Android Studio's
+Build → Generate Signed App Bundle/APK wizard still works too, and will pick up
+the same keystore if you point it there.)*
 
 ## What each student needs
 

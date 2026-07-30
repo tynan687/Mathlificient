@@ -9,3 +9,4 @@ captures/
 .cxx/
 *.jks
 *.keystore
+keystore.properties

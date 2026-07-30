@@ -9,6 +9,16 @@ const PR = {
   r: (x, dp = 4) => parseFloat(Number(x).toFixed(dp)),
   s: (n) => (n < 0 ? `- ${Math.abs(n)}` : `+ ${n}`), // signed term
   par: (n) => (n < 0 ? `(${n})` : `${n}`),
+  // A signed variable term for a polynomial chain: "0x" vanishes, "1x" loses the 1.
+  // Leading space included so `x^2${PR.xt(b)} ${PR.s(c)}` spaces correctly.
+  xt(n, v = 'x') {
+    if (n === 0) return '';
+    return ` ${n < 0 ? '-' : '+'} ${Math.abs(n) === 1 ? '' : Math.abs(n)}${v}`;
+  },
+  // An unsigned leading coefficient: "1x" -> "x", "-1x" -> "-x".
+  lead: (n, v = 'x') => (n === 1 ? v : n === -1 ? `-${v}` : `${n}${v}`),
+  // A signed constant that vanishes when zero (so no "+ 0" tails).
+  ct: (n) => (n === 0 ? '' : ` ${n < 0 ? `- ${Math.abs(n)}` : `+ ${n}`}`),
 };
 
 const PRACTICE = [
@@ -40,10 +50,10 @@ const PRACTICE = [
       const b = PR.nz(-8, 8);
       const d = (a - c) * x0 + b;
       return {
-        question: `\\text{Solve } ${a}x ${PR.s(b)} = ${c}x ${PR.s(d)}`,
+        question: `\\text{Solve } ${PR.lead(a)} ${PR.s(b)} = ${PR.lead(c)}${PR.ct(d)}`,
         steps: [
-          `${a}x - ${c}x = ${d} ${PR.s(-b)}`,
-          `${a - c}x = ${d - b}`,
+          `${PR.lead(a)} - ${PR.lead(c)} = ${d} ${PR.s(-b)}`,
+          `${PR.lead(a - c)} = ${d - b}`,
           `x = \\frac{${d - b}}{${a - c}} = ${x0}`,
         ],
         answer: `x = ${x0}`,
@@ -58,12 +68,15 @@ const PRACTICE = [
   {
     id: 'quad-factorise', topic: 'Quadratics', keywords: ['quadratic', 'factorise', 'factoring', 'roots'],
     generate() {
-      const p = PR.nz(-7, 7);
-      let q = PR.nz(-7, 7); if (q === p) q = p + PR.choice([1, 2]);
+      // Both roots non-zero and distinct, so no "(x + 0)" factor appears.
+      let p, q;
+      do {
+        p = PR.nz(-7, 7);
+        q = PR.nz(-7, 7); if (q === p) q = p + PR.choice([1, 2]);
+      } while (q === 0 || q === p);
       const B = p + q; const C = p * q;
-      const bTxt = B === 0 ? '' : ` ${PR.s(B)}x`.replace('+ 1x', '+ x').replace('- 1x', '- x');
       return {
-        question: `\\text{Solve by factorising: } x^2${bTxt} ${PR.s(C)} = 0`,
+        question: `\\text{Solve by factorising: } x^2${PR.xt(B)}${PR.ct(C)} = 0`,
         steps: [
           `\\text{Find two numbers with product } ${C} \\text{ and sum } ${B}: \\ ${p} \\text{ and } ${q}`,
           `(x ${PR.s(p)})(x ${PR.s(q)}) = 0`,
@@ -86,7 +99,7 @@ const PRACTICE = [
       const r1 = PR.r((-b + Math.sqrt(disc)) / (2 * a));
       const r2 = PR.r((-b - Math.sqrt(disc)) / (2 * a));
       return {
-        question: `\\text{Solve using the quadratic formula: } ${a === 1 ? '' : a}x^2 ${PR.s(b)}x ${PR.s(c)} = 0`,
+        question: `\\text{Solve using the quadratic formula: } ${a === 1 ? '' : a}x^2${PR.xt(b)}${PR.ct(c)} = 0`,
         steps: [
           `a = ${a}, \\ b = ${b}, \\ c = ${c}`,
           `\\Delta = b^2 - 4ac = ${PR.par(b)}^2 - 4${PR.par(a)}${PR.par(c)} = ${disc}`,
@@ -107,12 +120,12 @@ const PRACTICE = [
       return {
         question: `\\text{Expand } (${a === 1 ? '' : a}x ${PR.s(b)})(${c === 1 ? '' : c}x ${PR.s(d)})`,
         steps: [
-          `${a}x \\cdot ${c}x = ${A}x^2`,
-          `${a}x \\cdot ${PR.par(d)} + ${PR.par(b)} \\cdot ${c}x = ${B}x`,
+          `${PR.lead(a)} \\cdot ${PR.lead(c)} = ${PR.lead(A, 'x^2')}`,
+          `${PR.lead(a)} \\cdot ${PR.par(d)} + ${PR.par(b)} \\cdot ${PR.lead(c)} = ${B === 0 ? '0' : PR.lead(B)}`,
           `${PR.par(b)} \\cdot ${PR.par(d)} = ${C}`,
-          `${A}x^2 ${PR.s(B)}x ${PR.s(C)}`,
+          `${PR.lead(A, 'x^2')}${PR.xt(B)}${PR.ct(C)}`,
         ],
-        answer: `${A}x^2 ${PR.s(B)}x ${PR.s(C)}`,
+        answer: `${PR.lead(A, 'x^2')}${PR.xt(B)}${PR.ct(C)}`,
       };
     },
   },
@@ -124,13 +137,13 @@ const PRACTICE = [
       const c = PR.int(-8, 8);
       const k = c - h * h;
       return {
-        question: `\\text{Complete the square: } x^2 ${PR.s(b)}x ${PR.s(c)}`,
+        question: `\\text{Complete the square: } x^2${PR.xt(b)}${PR.ct(c)}`,
         steps: [
           `\\text{Half of } ${b} \\text{ is } ${h}`,
-          `x^2 ${PR.s(b)}x = (x ${PR.s(h)})^2 - ${h * h}`,
-          `(x ${PR.s(h)})^2 - ${h * h} ${PR.s(c)} = (x ${PR.s(h)})^2 ${PR.s(k)}`,
+          `x^2${PR.xt(b)} = (x ${PR.s(h)})^2 - ${h * h}`,
+          `(x ${PR.s(h)})^2 - ${h * h}${PR.ct(c)} = (x ${PR.s(h)})^2${PR.ct(k)}`,
         ],
-        answer: `(x ${PR.s(h)})^2 ${PR.s(k)}`,
+        answer: `(x ${PR.s(h)})^2${PR.ct(k)}`,
         viz: { type: 'poly', coeffs: [c, b, 1], vertex: [-h, k] },
       };
     },
@@ -142,9 +155,9 @@ const PRACTICE = [
       let q = PR.nz(-7, 7); if (q === p) q += 1;
       const B = p + q; const C = p * q;
       return {
-        question: `\\text{Simplify } \\frac{x^2 ${PR.s(B)}x ${PR.s(C)}}{x ${PR.s(p)}}`,
+        question: `\\text{Simplify } \\frac{x^2${PR.xt(B)}${PR.ct(C)}}{x ${PR.s(p)}}`,
         steps: [
-          `\\text{Factorise the numerator: } x^2 ${PR.s(B)}x ${PR.s(C)} = (x ${PR.s(p)})(x ${PR.s(q)})`,
+          `\\text{Factorise the numerator: } x^2${PR.xt(B)}${PR.ct(C)} = (x ${PR.s(p)})(x ${PR.s(q)})`,
           `\\frac{(x ${PR.s(p)})(x ${PR.s(q)})}{x ${PR.s(p)}}`,
           `\\text{Cancel } (x ${PR.s(p)}): \\quad x ${PR.s(q)}, \\ x \\ne ${-p}`,
         ],
@@ -324,13 +337,13 @@ const PRACTICE = [
       const a = PR.nz(-5, 6); const n = PR.int(3, 5);
       const b = PR.nz(-6, 6); const c = PR.nz(-9, 9);
       return {
-        question: `\\text{Differentiate } f(x) = ${a}x^{${n}} ${PR.s(b)}x^2 ${PR.s(c)}x`,
+        question: `\\text{Differentiate } f(x) = ${PR.lead(a, `x^{${n}}`)}${PR.xt(b, 'x^2')}${PR.xt(c)}`,
         steps: [
-          `\\frac{d}{dx}${PR.par(a)}x^{${n}} = ${a * n}x^{${n - 1}}`,
-          `\\frac{d}{dx}${PR.par(b)}x^2 = ${2 * b}x, \\quad \\frac{d}{dx}${PR.par(c)}x = ${c}`,
-          `f'(x) = ${a * n}x^{${n - 1}} ${PR.s(2 * b)}x ${PR.s(c)}`,
+          `\\frac{d}{dx}${PR.par(a)}x^{${n}} = ${PR.lead(a * n, `x^{${n - 1}}`)}`,
+          `\\frac{d}{dx}${PR.par(b)}x^2 = ${PR.lead(2 * b)}, \\quad \\frac{d}{dx}${PR.lead(c)} = ${c}`,
+          `f'(x) = ${PR.lead(a * n, `x^{${n - 1}}`)}${PR.xt(2 * b)}${PR.ct(c)}`,
         ],
-        answer: `f'(x) = ${a * n}x^{${n - 1}} ${PR.s(2 * b)}x ${PR.s(c)}`,
+        answer: `f'(x) = ${PR.lead(a * n, `x^{${n - 1}}`)}${PR.xt(2 * b)}${PR.ct(c)}`,
         viz: {
           type: 'poly',
           coeffs: (() => {
@@ -379,11 +392,11 @@ const PRACTICE = [
       return {
         question: `\\text{Find } \\int \\left(${k}x^{${n}} ${PR.s(b)}\\right) dx`,
         steps: [
-          `\\int ${k}x^{${n}}\\,dx = \\frac{${k}}{${n + 1}}x^{${n + 1}} = ${k / (n + 1)}x^{${n + 1}}`,
-          `\\int ${PR.par(b)}\\,dx = ${b}x`,
-          `${k / (n + 1)}x^{${n + 1}} ${PR.s(b)}x + C`,
+          `\\int ${k}x^{${n}}\\,dx = \\frac{${k}}{${n + 1}}x^{${n + 1}} = ${PR.lead(k / (n + 1), `x^{${n + 1}}`)}`,
+          `\\int ${PR.par(b)}\\,dx = ${PR.lead(b)}`,
+          `${PR.lead(k / (n + 1), `x^{${n + 1}}`)}${PR.xt(b)} + C`,
         ],
-        answer: `${k / (n + 1)}x^{${n + 1}} ${PR.s(b)}x + C`,
+        answer: `${PR.lead(k / (n + 1), `x^{${n + 1}}`)}${PR.xt(b)} + C`,
       };
     },
   },
@@ -534,15 +547,24 @@ const PRACTICE = [
     keywords: ['rational', 'simplify', 'algebraic fraction', 'cancel'],
     generate() {
       // (x+p)(x+q) / (x+p)(x+r) — cancel the shared factor.
-      const p = PR.nz(-6, 6);
-      let q = PR.nz(-6, 6); if (q === p) q = p + 1;
-      let r = PR.nz(-6, 6); if (r === p || r === q) r = p + q + 1 || 2;
-      const nB = p + q, nC = p * q, dB = p + r, dC = p * r;
+      // Redraw until the factors are distinct and non-zero and neither
+      // quadratic's x-coefficient is 0 (avoids "(x + 0)" and "+ 0x").
+      let p, q, r, nB, dB;
+      do {
+        p = PR.nz(-6, 6);
+        q = PR.nz(-6, 6); if (q === p) q = p + 1;
+        r = PR.nz(-6, 6); if (r === p || r === q) r = p + q + 1;
+        nB = p + q; dB = p + r;
+      } while (q === 0 || r === 0 || q === p || r === p || r === q ||
+               nB === 0 || dB === 0);
+      const nC = p * q, dC = p * r;
+      const nBx = ` ${PR.s(nB)}x`.replace('+ 1x', '+ x').replace('- 1x', '- x');
+      const dBx = ` ${PR.s(dB)}x`.replace('+ 1x', '+ x').replace('- 1x', '- x');
       return {
-        question: `\\text{Simplify } \\frac{x^2 ${PR.s(nB)}x ${PR.s(nC)}}{x^2 ${PR.s(dB)}x ${PR.s(dC)}}`,
+        question: `\\text{Simplify } \\frac{x^2${nBx} ${PR.s(nC)}}{x^2${dBx} ${PR.s(dC)}}`,
         steps: [
-          `\\text{Factorise the numerator: } x^2 ${PR.s(nB)}x ${PR.s(nC)} = (x ${PR.s(p)})(x ${PR.s(q)})`,
-          `\\text{Factorise the denominator: } x^2 ${PR.s(dB)}x ${PR.s(dC)} = (x ${PR.s(p)})(x ${PR.s(r)})`,
+          `\\text{Factorise the numerator: } x^2${nBx} ${PR.s(nC)} = (x ${PR.s(p)})(x ${PR.s(q)})`,
+          `\\text{Factorise the denominator: } x^2${dBx} ${PR.s(dC)} = (x ${PR.s(p)})(x ${PR.s(r)})`,
           `\\frac{(x ${PR.s(p)})(x ${PR.s(q)})}{(x ${PR.s(p)})(x ${PR.s(r)})} \\quad \\text{cancel } (x ${PR.s(p)})`,
           `= \\frac{x ${PR.s(q)}}{x ${PR.s(r)}}, \\quad x \\ne ${-p},\\; ${-r}`,
         ],
@@ -556,17 +578,24 @@ const PRACTICE = [
     keywords: ['rational', 'multiply', 'divide', 'algebraic fraction'],
     generate() {
       // (x+a)(x+b)/(x+c) · (x+c)(x+d)/(x+a) = (x+b)(x+d)
-      const a = PR.nz(-6, 6);
-      let b = PR.nz(-6, 6); if (b === a) b = a + 1;
-      let c = PR.nz(-6, 6); if (c === a || c === b) c = a + b + 1 || 3;
-      let d = PR.nz(-6, 6); if (d === c || d === a) d = c + 1;
+      // Redraw until all four factors are distinct and non-zero (the nudges below
+      // can land on 0, giving "(x + 0)") and the product has an x term.
+      let a, b, c, d;
+      do {
+        a = PR.nz(-6, 6);
+        b = PR.nz(-6, 6); if (b === a) b = a + 1;
+        c = PR.nz(-6, 6); if (c === a || c === b) c = a + b + 1;
+        d = PR.nz(-6, 6); if (d === c || d === a) d = c + 1;
+      } while (b === 0 || c === 0 || d === 0 || b + d === 0 ||
+               c === a || c === b || d === c || d === a);
+      const sumBx = ` ${PR.s(b + d)}x`.replace('+ 1x', '+ x').replace('- 1x', '- x');
       return {
         question: `\\text{Simplify } \\frac{(x ${PR.s(a)})(x ${PR.s(b)})}{x ${PR.s(c)}} \\times \\frac{(x ${PR.s(c)})(x ${PR.s(d)})}{x ${PR.s(a)}}`,
         steps: [
           `\\text{Multiply numerators and denominators:}`,
           `\\frac{(x ${PR.s(a)})(x ${PR.s(b)})(x ${PR.s(c)})(x ${PR.s(d)})}{(x ${PR.s(c)})(x ${PR.s(a)})}`,
           `\\text{Cancel } (x ${PR.s(a)}) \\text{ and } (x ${PR.s(c)})`,
-          `= (x ${PR.s(b)})(x ${PR.s(d)}) = x^2 ${PR.s(b + d)}x ${PR.s(b * d)}`,
+          `= (x ${PR.s(b)})(x ${PR.s(d)}) = x^2${sumBx} ${PR.s(b * d)}`,
         ],
         answer: `(x ${PR.s(b)})(x ${PR.s(d)})`,
       };
@@ -576,16 +605,24 @@ const PRACTICE = [
     id: 'rational-add', topic: 'Rational expressions',
     keywords: ['rational', 'add', 'subtract', 'lcd', 'common denominator'],
     generate() {
-      const a = PR.int(1, 6), b = PR.int(1, 6);
-      const p = PR.nz(-6, 6);
-      let q = PR.nz(-6, 6); if (q === p) q = p + 2;
-      const nx = a + b, nc = a * q + b * p;
+      // Redraw until the denominators are distinct and non-zero and the
+      // combined numerator has a non-zero constant term.
+      let a, b, p, q, nc;
+      do {
+        a = PR.int(1, 6); b = PR.int(1, 6);
+        p = PR.nz(-6, 6);
+        q = PR.nz(-6, 6); if (q === p) q = p + 2;
+        nc = a * q + b * p;
+      } while (q === 0 || q === p || nc === 0);
+      const nx = a + b;                      // a, b >= 1, so never 0 or 1
+      const ax = a === 1 ? 'x' : `${a}x`;    // "1x" reads badly
+      const bx = b === 1 ? 'x' : `${b}x`;
       return {
         question: `\\text{Express as a single fraction: } \\frac{${a}}{x ${PR.s(p)}} + \\frac{${b}}{x ${PR.s(q)}}`,
         steps: [
           `\\text{LCD} = (x ${PR.s(p)})(x ${PR.s(q)})`,
           `= \\frac{${a}(x ${PR.s(q)}) + ${b}(x ${PR.s(p)})}{(x ${PR.s(p)})(x ${PR.s(q)})}`,
-          `\\text{Expand the numerator: } ${a}x ${PR.s(a * q)} + ${b}x ${PR.s(b * p)} = ${nx}x ${PR.s(nc)}`,
+          `\\text{Expand the numerator: } ${ax} ${PR.s(a * q)} + ${bx} ${PR.s(b * p)} = ${nx}x ${PR.s(nc)}`,
           `= \\frac{${nx}x ${PR.s(nc)}}{(x ${PR.s(p)})(x ${PR.s(q)})}`,
         ],
         answer: `\\frac{${nx}x ${PR.s(nc)}}{(x ${PR.s(p)})(x ${PR.s(q)})}`,
@@ -617,8 +654,9 @@ const PRACTICE = [
     id: 'partial-distinct', topic: 'Decomposing expressions',
     keywords: ['partial fraction', 'decompos', 'distinct linear', 'rational'],
     generate() {
-      // Built from the answer so A and B are always whole numbers.
-      // Redraw when the numerator would show a 0x or +0 term.
+      // Built from the answer so A and B are always whole numbers. Redraw when
+      // the numerator would show a 0x or +0 term, or a root lands on 0 (the
+      // b = a + 2 nudge can) and prints an "(x + 0)" factor.
       let A, B, a, b, p, q;
       do {
         A = PR.nz(-5, 6); B = PR.nz(-5, 6);
@@ -626,7 +664,7 @@ const PRACTICE = [
         b = PR.nz(-5, 5); if (b === a) b = a + 2;
         p = A + B;                // numerator: A(x-b) + B(x-a)
         q = -(A * b + B * a);
-      } while (p === 0 || q === 0);
+      } while (p === 0 || q === 0 || b === 0 || b === a);
       const px = p === 1 ? 'x' : p === -1 ? '-x' : `${p}x`;
       return {
         question: `\\text{Express in partial fractions: } \\frac{${px} ${PR.s(q)}}{(x ${PR.s(-a)})(x ${PR.s(-b)})}`,
@@ -694,9 +732,9 @@ const PRACTICE = [
           `\\text{Let } x = ${a}: \\; A(${a * a} + ${c}) = ${A * (a * a + c)} \\Rightarrow A = ${A}`,
           `\\text{Compare } x^2: \\; A + B = ${p} \\Rightarrow B = ${B}`,
           `\\text{Compare constants: } ${c}A - ${a}C = ${r} \\Rightarrow C = ${C}`,
-          `= \\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}x ${PR.s(C)}}{x^2 + ${c}}`,
+          `= \\frac{${A}}{x ${PR.s(-a)}} + \\frac{${PR.lead(B)} ${PR.s(C)}}{x^2 + ${c}}`,
         ],
-        answer: `\\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}x ${PR.s(C)}}{x^2 + ${c}}`,
+        answer: `\\frac{${A}}{x ${PR.s(-a)}} + \\frac{${PR.lead(B)} ${PR.s(C)}}{x^2 + ${c}}`,
       };
     },
   },

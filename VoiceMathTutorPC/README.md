@@ -47,6 +47,22 @@ PC differences vs the tablet app:
   snapshot, new practice problem, web search, search my textbooks, toggle
   watch/mute, and the offline tools below.
 - **Offline mini-tools** (zero tokens, work without a session):
+  - *Practice Studio* — full parity with the tablet app, offline and free. A
+    generated question (33 templates across 17 topics, auto-drawn diagrams —
+    real parabolas with roots marked, triangles to scale, asymptotes, Argand
+    diagrams and more) sits above a drawing canvas: **draw with the mouse, or
+    plug in a graphics tablet/pen** (Wacom, Huion, Surface Pen — the browser's
+    native Pointer Events API picks up pressure and the pen's eraser end/barrel
+    button automatically, no drivers to install). An eraser tool sits next to
+    the ink colours; mouse wheel (or trackpad pinch) zooms the canvas out for
+    more room to work, with a one-click reset back to 1:1. Paper colour
+    (White/Grey/Sepia/Dark/custom) themes the whole window and is remembered.
+    **Quiz mode**: pick a question count (5/10/20), work through them one at a
+    time, self-mark each "Got it"/"Missed it" after seeing the answer, get a
+    score and a review of what you missed at the end. **🖨 Worksheet**:
+    generates the same kind of question set as a printable page — numbered
+    questions with blank working space, then an answer key — via your system
+    print dialog (choose "Microsoft Print to PDF" to save a file instead).
   - *Unit & constant converter* — length/mass/force/energy/pressure/power/angle/
     time/temperature conversions + a click-to-copy physical-constants table.
   - *Focus timer* — Pomodoro-style, with a session goal; remaining time shows on
@@ -104,15 +120,32 @@ Source of truth: this folder. Build tools (portable, no installs):
 - Node: `%LOCALAPPDATA%\ntool\node-v22.23.1-win-x64`
 - Build dir (node_modules lives here, outside OneDrive): `%LOCALAPPDATA%\vmt-build`
 
+**Proper installer** (`Setup.exe` — Start Menu shortcut, uninstaller, "just works" for
+someone who isn't you):
 ```powershell
 $nd = "$env:LOCALAPPDATA\ntool\node-v22.23.1-win-x64"
 $env:PATH = "$nd;$env:PATH"
-# copy source over build dir, then:
+# copy source over build dir, npm install, then:
 cd $env:LOCALAPPDATA\vmt-build
-npx @electron/packager . VoiceMathTutor --platform=win32 --arch=x64 --out=dist --overwrite
+npm run dist
 ```
+Output: `dist/VoiceMathTutor Setup <version>.exe`. **Caveat**: electron-builder
+downloads a small macOS code-signing helper on first run even for a Windows-only
+build, and extracting it needs the "create symbolic links" privilege — if you hit
+`Cannot create symbolic link : A required privilege is not held by the client`,
+turn on **Settings → Privacy & security → For developers → Developer Mode**
+(no admin needed once that's on) and re-run.
 
-Or for quick dev iteration without packaging: `npx electron .` in the build dir.
+**Portable fallback** (no installer, no extra Windows privilege needed — this is
+what ships today if the above isn't available):
+```powershell
+cd $env:LOCALAPPDATA\vmt-build
+npx @electron/packager . VoiceMathTutor --platform=win32 --arch=x64 --out=dist --overwrite --icon=icon.ico
+```
+Produces `dist/VoiceMathTutor-win32-x64/VoiceMathTutor.exe` — copy the whole folder
+to `%LOCALAPPDATA%\Programs\VoiceMathTutor\` and shortcut it yourself.
+
+Or for quick dev iteration without packaging either way: `npx electron .` in the build dir.
 
 ## File map
 

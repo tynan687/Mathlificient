@@ -35,12 +35,45 @@
     .vizwrap canvas { width: 100%; height: 280px; display: block; }
     .hidden { display: none !important; }
     .hint { opacity: 0.65; font-size: 13px; }
+
+    .toolbar-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+    .tlabel { font-size: 13px; opacity: 0.7; margin-right: 2px; }
+    .swatches { display: flex; gap: 6px; }
+    .swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+      border: 1px solid color-mix(in srgb, CanvasText 30%, transparent);
+      display: flex; align-items: center; justify-content: center; font-size: 13px; }
+    .swatch.selected { border: 3px solid CanvasText; }
+    .eraser-swatch { font-size: 14px; }
+    .spacer { flex: 1; }
+    #inkCanvasWrap { border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+      border-radius: 12px; overflow: hidden; margin-top: 4px; height: 360px; }
+    #inkCanvasWrap canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+    #paperCustom { width: 34px; height: 26px; padding: 0; border-radius: 6px; cursor: pointer;
+      border: 1px solid color-mix(in srgb, CanvasText 30%, transparent); background: transparent; }
+
+    .quizbar { display: flex; align-items: center; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+    #quizProgress { font-size: 13px; opacity: 0.8; }
+    .grading { display: flex; gap: 8px; margin: 8px 0; }
+    #gotIt { border-color: #2E7D32; color: #2E7D32; }
+    #missedIt { border-color: #C62828; color: #C62828; }
+    .missed-item { border-top: 1px dashed color-mix(in srgb, CanvasText 15%, transparent);
+      padding: 8px 0; }
   </style>
 </head>
 <body>
   <div class="bar">
     <select id="topic"></select>
     <button class="primary" id="newQ">New question</button>
+  </div>
+  <div class="quizbar">
+    <select id="quizCount">
+      <option value="5">Quiz: 5 questions</option>
+      <option value="10">Quiz: 10 questions</option>
+      <option value="20">Quiz: 20 questions</option>
+    </select>
+    <button id="startQuiz">▶ Start quiz</button>
+    <button id="printWorksheet">🖨 Worksheet</button>
+    <span id="quizProgress" class="hidden"></span>
   </div>
   <div class="card">
     <div class="src" id="src"></div>
@@ -57,9 +90,36 @@
     <button id="showAnswer" disabled>Show answer</button>
     <button id="copyQ" disabled>Copy LaTeX</button>
   </div>
+  <div class="grading hidden" id="grading">
+    <button id="gotIt">✓ Got it</button>
+    <button id="missedIt">✗ Missed it</button>
+  </div>
+  <div class="card hidden" id="quizSummary"></div>
+
+  <div class="toolbar-row">
+    <span class="tlabel">Ink →</span>
+    <div class="swatches" id="inkSwatches"></div>
+    <div class="swatch eraser-swatch" id="eraserSwatch">⌫</div>
+    <div class="spacer"></div>
+    <button id="inkZoomOut" title="Zoom out">−</button>
+    <button id="inkZoomIn" title="Zoom in">+</button>
+    <button id="inkZoomReset" class="hidden" title="Reset view">⤾ 1:1</button>
+    <button id="inkSave" title="Save drawing as PNG">💾 Save</button>
+    <button id="inkUndo">Undo</button>
+    <button id="inkClear">Clear</button>
+  </div>
+  <div class="toolbar-row">
+    <span class="tlabel">Paper →</span>
+    <div class="swatches" id="paperSwatches"></div>
+    <input type="color" id="paperCustom" value="#ffffff" title="Custom paper colour">
+  </div>
+  <div id="inkCanvasWrap"><canvas id="inkCanvas"></canvas></div>
+
   <script src="../../node_modules/katex/dist/katex.min.js" id="katexJs"></script>
   <script src="../practice-data.js" id="practiceData"></script>
   <script src="../practice-viz.js"></script>
   <script src="practice.js"></script>
+  <script src="../practice-ink.js"></script>
+  <script src="../practice-quiz.js"></script>
 </body>
 </html>
