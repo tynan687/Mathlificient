@@ -120,8 +120,9 @@ private fun Studio(
     var canvas by remember { mutableStateOf<InkCanvasView?>(null) }
     var web by remember { mutableStateOf<WebView?>(null) }
     var bg by remember { mutableStateOf(Color(initialBg)) }
-    var selected by remember { mutableStateOf(0) }
+    var selected by remember { mutableStateOf(0) } // inks.size = eraser tool
     var showRgb by remember { mutableStateOf(false) }
+    var viewTransformed by remember { mutableStateOf(false) }
     val inks = if (isDarkPaper(bg)) LIGHT_INKS else DARK_INKS
     val content = contentOn(bg)                              // toolbar text/icons
     val toolbarBg = lerp(bg, content, 0.07f)                 // subtle separation
@@ -144,6 +145,7 @@ private fun Studio(
         onBgChange(c.toArgb())
         selected = 0
         canvas?.inkColor = (if (isDarkPaper(c)) LIGHT_INKS else DARK_INKS)[0].toArgb()
+        canvas?.eraserMode = false
         paintWeb(web, c) // theme the question area to match the paper
     }
 
@@ -203,10 +205,37 @@ private fun Studio(
                         .clickable {
                             selected = i
                             canvas?.inkColor = c.toArgb()
+                            canvas?.eraserMode = false
                         }
                 )
             }
+            // Eraser tool: strokes touched are rubbed out (S Pen button does this too).
+            val eraserSel = selected == inks.size
+            Box(
+                Modifier
+                    .size(30.dp)
+                    .background(bg, CircleShape)
+                    .border(
+                        width = if (eraserSel) 3.dp else 1.dp,
+                        color = if (eraserSel) content else content.copy(alpha = 0.3f),
+                        shape = CircleShape,
+                    )
+                    .clickable {
+                        selected = inks.size
+                        canvas?.eraserMode = true
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("⌫", color = content, style = MaterialTheme.typography.labelMedium)
+            }
             Box(Modifier.weight(1f))
+            if (viewTransformed) {
+                OutlinedButton(
+                    onClick = { canvas?.resetView() },
+                    border = BorderStroke(1.dp, content.copy(alpha = 0.5f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = content),
+                ) { Text("⤾ 1:1") }
+            }
             OutlinedButton(
                 onClick = { canvas?.undo() },
                 border = BorderStroke(1.dp, content.copy(alpha = 0.5f)),
@@ -260,6 +289,7 @@ private fun Studio(
             factory = { ctx ->
                 InkCanvasView(ctx).apply {
                     inkColor = (if (isDarkPaper(bg)) LIGHT_INKS else DARK_INKS)[0].toArgb()
+                    onViewChanged = { viewTransformed = it }
                     canvas = this
                 }
             },

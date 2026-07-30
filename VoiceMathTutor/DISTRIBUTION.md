@@ -61,9 +61,19 @@ match the paper. The choice is remembered.
 
 **Palm rejection**: rest your hand on the screen while you write — once the app has
 seen the S Pen it ignores finger and palm touches entirely (the same rule Samsung
-Notes uses), and each stroke follows only the pointer that started it. The S Pen's
-side button acts as an eraser. On a phone with no stylus, finger drawing still
-works normally. Rotating the tablet keeps your working and the current question.
+Notes uses), and each stroke follows only the pointer that started it. On a phone
+with no stylus, finger drawing still works normally. Rotating the tablet keeps
+your working and the current question.
+
+**Erasing**: hold the S Pen's side button and rub over lines to erase them
+(whole strokes, like Samsung Notes), or tap the **⌫ eraser** next to the ink
+colours to erase with whatever you're drawing with. Undo and Clear still work
+as before.
+
+**More room to work**: pinch with two fingers to zoom the paper out (or in) and
+drag with two fingers to move around — the sheet is much bigger than the screen,
+so zoom out whenever you run out of space. A **"⤾ 1:1"** button appears while
+you're zoomed to snap straight back.
 
 During a live tutor session, asking for practice makes the tutor write a question
 tailored to your conversation — it appears in a small popup so it doesn't pull you
