@@ -46,9 +46,24 @@ offline at no cost. Pick a topic or let it match what you've been working on; re
 the steps one at a time after trying it. Copy any question as LaTeX (into Word's
 equation editor) or as an image (into Samsung Notes).
 
+Most questions come with a **visual** — the actual parabola with its roots marked,
+the triangle drawn to scale, the sine curve with the solutions dotted, asymptotes
+for partial fractions, bar charts for sequences and binomial probabilities, the
+Argand diagram, and more, all drawn from the exact numbers in your question. Tap
+**"📈 Visual available"** to drop the diagram down, tap again to tuck it away — it
+lives inside the scrolling question pane so it never covers your drawing board or
+the formulas.
+
 The **paper (background) colour** is your choice: White, Grey, Sepia, Dark, or a
 custom colour from the RGB picker — the ink automatically switches to a light or
-dark colour so your writing always contrasts. The choice is remembered.
+dark colour so your writing always contrasts, and any open diagram recolours to
+match the paper. The choice is remembered.
+
+**Palm rejection**: rest your hand on the screen while you write — once the app has
+seen the S Pen it ignores finger and palm touches entirely (the same rule Samsung
+Notes uses), and each stroke follows only the pointer that started it. The S Pen's
+side button acts as an eraser. On a phone with no stylus, finger drawing still
+works normally. Rotating the tablet keeps your working and the current question.
 
 During a live tutor session, asking for practice makes the tutor write a question
 tailored to your conversation — it appears in a small popup so it doesn't pull you

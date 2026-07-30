@@ -27,6 +27,15 @@
       -webkit-overflow-scrolling: touch;
       border-top: 1px dashed color-mix(in srgb, CanvasText 15%, transparent); }
     .answer { font-weight: 600; padding-top: 8px; overflow-x: auto; }
+    .formulas { border: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
+      border-radius: 12px; padding: 10px 14px; margin: 10px 0;
+      background: color-mix(in srgb, CanvasText 4%, transparent); }
+    .flabel { font-size: 12px; opacity: 0.7; margin-bottom: 4px; font-weight: 600; }
+    .frow { padding: 4px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .vizbar { width: 100%; text-align: left; margin: 10px 0 0; }
+    .vizwrap { border: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
+      border-radius: 12px; padding: 8px; margin: 8px 0; }
+    .vizwrap canvas { width: 100%; height: 280px; display: block; }
     .hidden { display: none !important; }
     .hint { opacity: 0.65; font-size: 13px; }
   </style>
@@ -43,6 +52,9 @@
     <div id="steps"></div>
     <div class="answer hidden" id="answer"></div>
   </div>
+  <div class="formulas hidden" id="formulas"></div>
+  <button class="vizbar hidden" id="vizBar">📈 Visual available — tap to show</button>
+  <div class="vizwrap hidden" id="vizWrap"><canvas id="viz"></canvas></div>
   <div class="bar">
     <button id="nextStep" disabled>Show next step</button>
     <button id="showAnswer" disabled>Show answer</button>
@@ -50,6 +62,7 @@
   </div>
   <script src="katex/katex.min.js"></script>
   <script src="practice-data.js"></script>
+  <script src="practice-viz.js"></script>
   <script src="practice.js"></script>
 </body>
 </html>

@@ -27,6 +27,7 @@ const PRACTICE = [
           `x = ${x0}`,
         ],
         answer: `x = ${x0}`,
+        viz: { type: 'poly', coeffs: [b, a], extra: [{ coeffs: [c] }], mark: [x0, c] },
       };
     },
   },
@@ -46,6 +47,11 @@ const PRACTICE = [
           `x = \\frac{${d - b}}{${a - c}} = ${x0}`,
         ],
         answer: `x = ${x0}`,
+        viz: {
+          type: 'poly', coeffs: [b, a],
+          extra: [{ coeffs: [d, c] }],
+          mark: [x0, a * x0 + b],
+        },
       };
     },
   },
@@ -65,6 +71,7 @@ const PRACTICE = [
           `x = ${-p} \\ \\text{or} \\ x = ${-q}`,
         ],
         answer: `x = ${-p}, \\ x = ${-q}`,
+        viz: { type: 'poly', coeffs: [C, B, 1], roots: [-p, -q] },
       };
     },
   },
@@ -87,6 +94,7 @@ const PRACTICE = [
           `x \\approx ${r1} \\ \\text{or} \\ x \\approx ${r2}`,
         ],
         answer: `x = \\frac{${-b} \\pm \\sqrt{${disc}}}{${2 * a}} \\approx ${r1}, \\ ${r2}`,
+        viz: { type: 'poly', coeffs: [c, b, a], roots: [r1, r2] },
       };
     },
   },
@@ -123,6 +131,7 @@ const PRACTICE = [
           `(x ${PR.s(h)})^2 - ${h * h} ${PR.s(c)} = (x ${PR.s(h)})^2 ${PR.s(k)}`,
         ],
         answer: `(x ${PR.s(h)})^2 ${PR.s(k)}`,
+        viz: { type: 'poly', coeffs: [c, b, 1], vertex: [-h, k] },
       };
     },
   },
@@ -208,6 +217,7 @@ const PRACTICE = [
           `\\arg z \\approx ${arg}^\\circ`,
         ],
         answer: `|z| = ${m}, \\ \\arg z \\approx ${arg}^\\circ`,
+        viz: { type: 'argand', points: [[A, B]], circle: m },
       };
     },
   },
@@ -247,6 +257,7 @@ const PRACTICE = [
           `\\approx ${re} ${PR.s(im)}i`,
         ],
         answer: `${rn}(\\cos ${nth}^\\circ + i\\sin ${nth}^\\circ) \\approx ${re} ${PR.s(im)}i`,
+        viz: { type: 'argand', points: [[re, im]], circle: rn },
       };
     },
   },
@@ -254,9 +265,9 @@ const PRACTICE = [
     id: 'trig-solve', topic: 'Trigonometry', keywords: ['trig', 'solve', 'sin', 'equation'],
     generate() {
       const opts = [
-        { k: '\\tfrac{1}{2}', ref: 30 },
-        { k: '\\tfrac{\\sqrt{2}}{2}', ref: 45 },
-        { k: '\\tfrac{\\sqrt{3}}{2}', ref: 60 },
+        { k: '\\tfrac{1}{2}', kv: 0.5, ref: 30 },
+        { k: '\\tfrac{\\sqrt{2}}{2}', kv: 0.7071, ref: 45 },
+        { k: '\\tfrac{\\sqrt{3}}{2}', kv: 0.866, ref: 60 },
       ];
       const o = PR.choice(opts);
       return {
@@ -267,6 +278,7 @@ const PRACTICE = [
           `x = ${o.ref}^\\circ \\ \\text{or} \\ x = 180^\\circ - ${o.ref}^\\circ = ${180 - o.ref}^\\circ`,
         ],
         answer: `x = ${o.ref}^\\circ, \\ ${180 - o.ref}^\\circ`,
+        viz: { type: 'sine', k: o.kv, sols: [o.ref, 180 - o.ref] },
       };
     },
   },
@@ -285,6 +297,7 @@ const PRACTICE = [
           `c = \\sqrt{${PR.r(c2, 3)}} \\approx ${c}`,
         ],
         answer: `c \\approx ${c}`,
+        viz: { type: 'triangle', a, b, C },
       };
     },
   },
@@ -301,6 +314,7 @@ const PRACTICE = [
           `\\sin ${A + B}^\\circ = ${A + B === 90 ? '1' : '\\tfrac{\\sqrt{3}}{2}'}`,
         ],
         answer: `${A + B === 90 ? '1' : '\\tfrac{\\sqrt{3}}{2}'}`,
+        viz: { type: 'unitcircle', angles: [A, B, A + B] },
       };
     },
   },
@@ -317,6 +331,15 @@ const PRACTICE = [
           `f'(x) = ${a * n}x^{${n - 1}} ${PR.s(2 * b)}x ${PR.s(c)}`,
         ],
         answer: `f'(x) = ${a * n}x^{${n - 1}} ${PR.s(2 * b)}x ${PR.s(c)}`,
+        viz: {
+          type: 'poly',
+          coeffs: (() => {
+            const cf = Array(n + 1).fill(0);
+            cf[n] += a; cf[2] += b; cf[1] += c;
+            return cf;
+          })(),
+          tangentAt: 1,
+        },
       };
     },
   },
@@ -332,6 +355,20 @@ const PRACTICE = [
           `\\frac{dy}{dx} = ${n} \\times ${a} \\, (${a}x ${PR.s(b)})^{${n - 1}} = ${n * a}(${a}x ${PR.s(b)})^{${n - 1}}`,
         ],
         answer: `\\frac{dy}{dx} = ${n * a}(${a}x ${PR.s(b)})^{${n - 1}}`,
+        viz: {
+          type: 'poly',
+          coeffs: (() => {
+            // Binomial expansion of (ax+b)^n, ascending powers of x.
+            const cf = Array(n + 1).fill(0);
+            let comb = 1;
+            for (let k = 0; k <= n; k++) {
+              if (k > 0) comb = (comb * (n - k + 1)) / k;
+              cf[k] = comb * Math.pow(a, k) * Math.pow(b, n - k);
+            }
+            return cf;
+          })(),
+          tangentAt: PR.r((1 - b) / a, 3), // inner = 1 → y = 1, slope = n·a
+        },
       };
     },
   },
@@ -363,6 +400,7 @@ const PRACTICE = [
           `= ${F(q)} - ${F(p)} = ${F(q) - F(p)}`,
         ],
         answer: `${F(q) - F(p)}`,
+        viz: { type: 'area', coeffs: [b, 2], a: p, b: q },
       };
     },
   },
@@ -380,6 +418,7 @@ const PRACTICE = [
           `S_{${n}} = ${Sn}`,
         ],
         answer: `a_{${n}} = ${an}, \\quad S_{${n}} = ${Sn}`,
+        viz: { type: 'bars', values: Array.from({ length: 8 }, (_, i) => a + i * d) },
       };
     },
   },
@@ -396,6 +435,7 @@ const PRACTICE = [
           `S_{${n}} = ${a} \\times \\frac{${Math.pow(r, n) - 1}}{${r - 1}} = ${Sn}`,
         ],
         answer: `S_{${n}} = ${Sn}`,
+        viz: { type: 'bars', values: Array.from({ length: 6 }, (_, i) => a * Math.pow(r, i)) },
       };
     },
   },
@@ -415,6 +455,7 @@ const PRACTICE = [
           `\\cos\\theta = \\frac{${dot}}{${PR.r(ma * mb, 3)}} \\Rightarrow \\theta \\approx ${ang}^\\circ`,
         ],
         answer: `\\vec a \\cdot \\vec b = ${dot}, \\quad \\theta \\approx ${ang}^\\circ`,
+        viz: { type: 'vectors', a: [a[0], a[1]], b: [b[0], b[1]] },
       };
     },
   },
@@ -452,6 +493,7 @@ const PRACTICE = [
           `s = \\sqrt{\\frac{${PR.r(ss, 3)}}{4}} \\approx ${sd}`,
         ],
         answer: `\\bar x = ${PR.r(mean, 3)}, \\quad s \\approx ${sd}`,
+        viz: { type: 'dots', values: xs, mean: PR.r(mean, 3) },
       };
     },
   },
@@ -472,10 +514,243 @@ const PRACTICE = [
           `P(X = ${k}) \\approx ${prob}`,
         ],
         answer: `P(X = ${k}) \\approx ${prob}`,
+        viz: {
+          type: 'bars',
+          values: Array.from({ length: n + 1 }, (_, i) => {
+            let ci = 1;
+            for (let j = 0; j < i; j++) ci = (ci * (n - j)) / (j + 1);
+            return PR.r(ci * Math.pow(p, i) * Math.pow(1 - p, n - i), 4);
+          }),
+          highlight: k,
+          startIndex: 0,
+        },
+      };
+    },
+  },
+
+  // ---- Rational expressions ------------------------------------------------------
+  {
+    id: 'rational-simplify', topic: 'Rational expressions',
+    keywords: ['rational', 'simplify', 'algebraic fraction', 'cancel'],
+    generate() {
+      // (x+p)(x+q) / (x+p)(x+r) — cancel the shared factor.
+      const p = PR.nz(-6, 6);
+      let q = PR.nz(-6, 6); if (q === p) q = p + 1;
+      let r = PR.nz(-6, 6); if (r === p || r === q) r = p + q + 1 || 2;
+      const nB = p + q, nC = p * q, dB = p + r, dC = p * r;
+      return {
+        question: `\\text{Simplify } \\frac{x^2 ${PR.s(nB)}x ${PR.s(nC)}}{x^2 ${PR.s(dB)}x ${PR.s(dC)}}`,
+        steps: [
+          `\\text{Factorise the numerator: } x^2 ${PR.s(nB)}x ${PR.s(nC)} = (x ${PR.s(p)})(x ${PR.s(q)})`,
+          `\\text{Factorise the denominator: } x^2 ${PR.s(dB)}x ${PR.s(dC)} = (x ${PR.s(p)})(x ${PR.s(r)})`,
+          `\\frac{(x ${PR.s(p)})(x ${PR.s(q)})}{(x ${PR.s(p)})(x ${PR.s(r)})} \\quad \\text{cancel } (x ${PR.s(p)})`,
+          `= \\frac{x ${PR.s(q)}}{x ${PR.s(r)}}, \\quad x \\ne ${-p},\\; ${-r}`,
+        ],
+        answer: `\\frac{x ${PR.s(q)}}{x ${PR.s(r)}}, \\quad x \\ne ${-p},\\; ${-r}`,
+        viz: { type: 'rational', num: [nC, nB, 1], den: [dC, dB, 1], asym: [-r], holes: [-p] },
+      };
+    },
+  },
+  {
+    id: 'rational-multiply', topic: 'Rational expressions',
+    keywords: ['rational', 'multiply', 'divide', 'algebraic fraction'],
+    generate() {
+      // (x+a)(x+b)/(x+c) · (x+c)(x+d)/(x+a) = (x+b)(x+d)
+      const a = PR.nz(-6, 6);
+      let b = PR.nz(-6, 6); if (b === a) b = a + 1;
+      let c = PR.nz(-6, 6); if (c === a || c === b) c = a + b + 1 || 3;
+      let d = PR.nz(-6, 6); if (d === c || d === a) d = c + 1;
+      return {
+        question: `\\text{Simplify } \\frac{(x ${PR.s(a)})(x ${PR.s(b)})}{x ${PR.s(c)}} \\times \\frac{(x ${PR.s(c)})(x ${PR.s(d)})}{x ${PR.s(a)}}`,
+        steps: [
+          `\\text{Multiply numerators and denominators:}`,
+          `\\frac{(x ${PR.s(a)})(x ${PR.s(b)})(x ${PR.s(c)})(x ${PR.s(d)})}{(x ${PR.s(c)})(x ${PR.s(a)})}`,
+          `\\text{Cancel } (x ${PR.s(a)}) \\text{ and } (x ${PR.s(c)})`,
+          `= (x ${PR.s(b)})(x ${PR.s(d)}) = x^2 ${PR.s(b + d)}x ${PR.s(b * d)}`,
+        ],
+        answer: `(x ${PR.s(b)})(x ${PR.s(d)})`,
+      };
+    },
+  },
+  {
+    id: 'rational-add', topic: 'Rational expressions',
+    keywords: ['rational', 'add', 'subtract', 'lcd', 'common denominator'],
+    generate() {
+      const a = PR.int(1, 6), b = PR.int(1, 6);
+      const p = PR.nz(-6, 6);
+      let q = PR.nz(-6, 6); if (q === p) q = p + 2;
+      const nx = a + b, nc = a * q + b * p;
+      return {
+        question: `\\text{Express as a single fraction: } \\frac{${a}}{x ${PR.s(p)}} + \\frac{${b}}{x ${PR.s(q)}}`,
+        steps: [
+          `\\text{LCD} = (x ${PR.s(p)})(x ${PR.s(q)})`,
+          `= \\frac{${a}(x ${PR.s(q)}) + ${b}(x ${PR.s(p)})}{(x ${PR.s(p)})(x ${PR.s(q)})}`,
+          `\\text{Expand the numerator: } ${a}x ${PR.s(a * q)} + ${b}x ${PR.s(b * p)} = ${nx}x ${PR.s(nc)}`,
+          `= \\frac{${nx}x ${PR.s(nc)}}{(x ${PR.s(p)})(x ${PR.s(q)})}`,
+        ],
+        answer: `\\frac{${nx}x ${PR.s(nc)}}{(x ${PR.s(p)})(x ${PR.s(q)})}`,
+      };
+    },
+  },
+  {
+    id: 'rational-complex', topic: 'Complex rational expressions',
+    keywords: ['complex rational', 'compound fraction', 'complex fraction', 'rational'],
+    generate() {
+      // (1/x + 1/p) / (1/x - 1/q) = q(p + x) / (p(q - x))
+      const p = PR.int(2, 9);
+      let q = PR.int(2, 9); if (q === p) q = p + 1;
+      return {
+        question: `\\text{Simplify } \\dfrac{\\frac{1}{x} + \\frac{1}{${p}}}{\\frac{1}{x} - \\frac{1}{${q}}}`,
+        steps: [
+          `\\text{Multiply top and bottom by the overall LCD } ${p}${q}x`,
+          `\\text{Numerator: } ${p}${q}x\\left(\\frac{1}{x} + \\frac{1}{${p}}\\right) = ${p * q} + ${q}x`,
+          `\\text{Denominator: } ${p}${q}x\\left(\\frac{1}{x} - \\frac{1}{${q}}\\right) = ${p * q} - ${p}x`,
+          `= \\frac{${q}(${p} + x)}{${p}(${q} - x)}, \\quad x \\ne 0,\\; ${q}`,
+        ],
+        answer: `\\frac{${q}(${p} + x)}{${p}(${q} - x)}`,
+      };
+    },
+  },
+
+  // ---- Decomposing expressions (partial fractions) --------------------------------
+  {
+    id: 'partial-distinct', topic: 'Decomposing expressions',
+    keywords: ['partial fraction', 'decompos', 'distinct linear', 'rational'],
+    generate() {
+      // Built from the answer so A and B are always whole numbers.
+      // Redraw when the numerator would show a 0x or +0 term.
+      let A, B, a, b, p, q;
+      do {
+        A = PR.nz(-5, 6); B = PR.nz(-5, 6);
+        a = PR.nz(-5, 5);
+        b = PR.nz(-5, 5); if (b === a) b = a + 2;
+        p = A + B;                // numerator: A(x-b) + B(x-a)
+        q = -(A * b + B * a);
+      } while (p === 0 || q === 0);
+      const px = p === 1 ? 'x' : p === -1 ? '-x' : `${p}x`;
+      return {
+        question: `\\text{Express in partial fractions: } \\frac{${px} ${PR.s(q)}}{(x ${PR.s(-a)})(x ${PR.s(-b)})}`,
+        steps: [
+          `\\text{Write } \\frac{${px} ${PR.s(q)}}{(x ${PR.s(-a)})(x ${PR.s(-b)})} = \\frac{A}{x ${PR.s(-a)}} + \\frac{B}{x ${PR.s(-b)}}`,
+          `\\text{Multiply through: } ${px} ${PR.s(q)} = A(x ${PR.s(-b)}) + B(x ${PR.s(-a)})`,
+          `\\text{Cover-up, } x = ${a}: \\; ${p}(${a}) ${PR.s(q)} = A(${a} - ${b}) \\Rightarrow A = ${A}`,
+          `\\text{Cover-up, } x = ${b}: \\; ${p}(${b}) ${PR.s(q)} = B(${b} - ${a}) \\Rightarrow B = ${B}`,
+          `= \\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}}{x ${PR.s(-b)}}`,
+        ],
+        answer: `\\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}}{x ${PR.s(-b)}}`,
+        viz: { type: 'rational', num: [q, p], den: [a * b, -(a + b), 1], asym: [a, b] },
+      };
+    },
+  },
+  {
+    id: 'partial-repeated', topic: 'Decomposing expressions',
+    keywords: ['partial fraction', 'decompos', 'repeated root', 'rational'],
+    generate() {
+      // Redraw when the numerator would show a +0 constant term.
+      let A, B, a, p, q;
+      do {
+        A = PR.nz(-5, 6); B = PR.nz(-6, 6);
+        a = PR.nz(-5, 5);
+        p = A;                     // numerator: A(x-a) + B
+        q = B - A * a;
+      } while (q === 0);
+      const px = p === 1 ? 'x' : p === -1 ? '-x' : `${p}x`;
+      return {
+        question: `\\text{Express in partial fractions: } \\frac{${px} ${PR.s(q)}}{(x ${PR.s(-a)})^2}`,
+        steps: [
+          `\\text{Repeated factor} \\Rightarrow \\frac{A}{x ${PR.s(-a)}} + \\frac{B}{(x ${PR.s(-a)})^2}`,
+          `${px} ${PR.s(q)} = A(x ${PR.s(-a)}) + B`,
+          `\\text{Let } x = ${a}: \\; ${p}(${a}) ${PR.s(q)} = B \\Rightarrow B = ${B}`,
+          `\\text{Compare } x \\text{ coefficients: } A = ${A}`,
+          `= \\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}}{(x ${PR.s(-a)})^2}`,
+        ],
+        answer: `\\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}}{(x ${PR.s(-a)})^2}`,
+        viz: { type: 'rational', num: [q, p], den: [a * a, -2 * a, 1], asym: [a] },
+      };
+    },
+  },
+  {
+    id: 'partial-quadratic', topic: 'Decomposing expressions',
+    keywords: ['partial fraction', 'decompos', 'irreducible quadratic', 'rational'],
+    generate() {
+      // Redraw when any numerator term would render as 0x^2, 0x or +0.
+      let A, B, C, a, c, p, q, r;
+      do {
+        A = PR.nz(-4, 5); B = PR.nz(-4, 5); C = PR.nz(-5, 5);
+        a = PR.nz(-4, 4);
+        c = PR.choice([1, 4, 9]);
+        // A(x^2+c) + (Bx+C)(x-a)
+        p = A + B;
+        q = C - a * B;
+        r = A * c - a * C;
+      } while (p === 0 || q === 0 || r === 0);
+      const px = p === 1 ? 'x^2' : p === -1 ? '-x^2' : `${p}x^2`;
+      const qx = q === 1 ? '+ x' : q === -1 ? '- x' : `${PR.s(q)}x`;
+      return {
+        question: `\\text{Express in partial fractions: } \\frac{${px} ${qx} ${PR.s(r)}}{(x ${PR.s(-a)})(x^2 + ${c})}`,
+        steps: [
+          `\\text{Irreducible quadratic} \\Rightarrow \\frac{A}{x ${PR.s(-a)}} + \\frac{Bx + C}{x^2 + ${c}}`,
+          `${px} ${qx} ${PR.s(r)} = A(x^2 + ${c}) + (Bx + C)(x ${PR.s(-a)})`,
+          `\\text{Let } x = ${a}: \\; A(${a * a} + ${c}) = ${A * (a * a + c)} \\Rightarrow A = ${A}`,
+          `\\text{Compare } x^2: \\; A + B = ${p} \\Rightarrow B = ${B}`,
+          `\\text{Compare constants: } ${c}A - ${a}C = ${r} \\Rightarrow C = ${C}`,
+          `= \\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}x ${PR.s(C)}}{x^2 + ${c}}`,
+        ],
+        answer: `\\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}x ${PR.s(C)}}{x^2 + ${c}}`,
       };
     },
   },
 ];
+
+// The key formula(s) needed to solve each template, shown inline in the practice
+// screen so the student never has to leave for the formula sheet.
+const PRACTICE_FORMULAS = {
+  'linear-eq': ['ax + b = c \\;\\Rightarrow\\; x = \\dfrac{c - b}{a}'],
+  'linear-both-sides': ['\\text{Collect } x \\text{ terms one side, numbers the other}'],
+  'quad-factorise': ['x^2 + bx + c = (x + p)(x + q), \\quad p + q = b,\\; pq = c'],
+  'quad-formula': ['x = \\dfrac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}'],
+  'expand-binomial': ['(a + b)(c + d) = ac + ad + bc + bd'],
+  'complete-square': ['x^2 + bx + c = \\left(x + \\tfrac{b}{2}\\right)^2 + c - \\tfrac{b^2}{4}'],
+  'alg-fraction': ['\\text{Factorise, then cancel the common factor}'],
+  'indices': ['x^a x^b = x^{a+b}, \\quad \\dfrac{x^a}{x^b} = x^{a-b}'],
+  'solve-exp': ['a^x = a^k \\;\\Rightarrow\\; x = k'],
+  'log-laws': ['\\log_a M + \\log_a N = \\log_a(MN)'],
+  'complex-modarg': ['|z| = \\sqrt{a^2 + b^2}, \\quad \\arg z = \\arctan\\dfrac{b}{a}'],
+  'complex-product': ['i^2 = -1, \\quad (a+bi)(c+di) = (ac-bd) + (ad+bc)i'],
+  'demoivre': ['[r(\\cos\\theta + i\\sin\\theta)]^n = r^n(\\cos n\\theta + i\\sin n\\theta)'],
+  'trig-solve': ['\\sin x = k \\;\\Rightarrow\\; x = \\sin^{-1}k \\text{ or } 180^\\circ - \\sin^{-1}k'],
+  'cosine-rule': ['c^2 = a^2 + b^2 - 2ab\\cos C'],
+  'exact-value': ['\\sin(A + B) = \\sin A\\cos B + \\cos A\\sin B'],
+  'diff-poly': ['\\dfrac{d}{dx}x^n = n x^{n-1}'],
+  'diff-chain': ['\\dfrac{dy}{dx} = \\dfrac{dy}{du}\\cdot\\dfrac{du}{dx}'],
+  'int-poly': ['\\int x^n\\,dx = \\dfrac{x^{n+1}}{n+1} + C'],
+  'int-definite': ['\\int_a^b f(x)\\,dx = F(b) - F(a)'],
+  'seq-arith': ['a_n = a + (n-1)d, \\quad S_n = \\tfrac{n}{2}\\big(2a + (n-1)d\\big)'],
+  'seq-geo': ['S_n = a\\,\\dfrac{r^n - 1}{r - 1}'],
+  'vector-dot': [
+    '\\vec a \\cdot \\vec b = a_1 b_1 + a_2 b_2 + a_3 b_3',
+    '\\cos\\theta = \\dfrac{\\vec a \\cdot \\vec b}{|\\vec a|\\,|\\vec b|}',
+  ],
+  'matrix-det-inv': [
+    '\\det A = ad - bc',
+    'A^{-1} = \\dfrac{1}{ad - bc}\\begin{pmatrix} d & -b \\\\ -c & a \\end{pmatrix}',
+  ],
+  'stats-mean-sd': ['\\bar x = \\dfrac{\\sum x}{n}, \\quad s = \\sqrt{\\dfrac{\\sum (x - \\bar x)^2}{n - 1}}'],
+  'binom-prob': ['P(X = k) = \\dbinom{n}{k} p^k (1 - p)^{n-k}'],
+  'rational-simplify': [
+    'x^2 + bx + c = (x + p)(x + q), \\quad p + q = b,\\; pq = c',
+    '\\text{Cancel common factors; exclude values making a denominator } 0',
+  ],
+  'rational-multiply': ['\\dfrac{a}{b} \\times \\dfrac{c}{d} = \\dfrac{ac}{bd} \\;\\; \\text{(factor first, then cancel)}'],
+  'rational-add': ['\\dfrac{a}{P} + \\dfrac{b}{Q} = \\dfrac{aQ + bP}{PQ}'],
+  'rational-complex': ['\\text{Multiply numerator and denominator by the overall LCD}'],
+  'partial-distinct': [
+    '\\dfrac{px + q}{(x-a)(x-b)} = \\dfrac{A}{x-a} + \\dfrac{B}{x-b}',
+    '\\text{Cover-up: substitute } x = a \\text{ to find } A,\\; x = b \\text{ to find } B',
+  ],
+  'partial-repeated': ['\\dfrac{px + q}{(x-a)^2} = \\dfrac{A}{x-a} + \\dfrac{B}{(x-a)^2}'],
+  'partial-quadratic': ['\\dfrac{px^2 + qx + r}{(x-a)(x^2+c)} = \\dfrac{A}{x-a} + \\dfrac{Bx + C}{x^2+c}'],
+};
 
 // Match templates to a free-text topic (the tutor keeps Current Topic updated).
 function practiceTemplatesFor(topicText) {

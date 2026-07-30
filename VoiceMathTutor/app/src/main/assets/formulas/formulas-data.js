@@ -79,6 +79,9 @@ const FORMULAS = [
   { id: 'frac-add', group: 'Algebra', name: 'Adding fractions', latex: '\\frac{a}{b} + \\frac{c}{d} = \\frac{ad + bc}{bd}' },
   { id: 'partial-fractions', group: 'Algebra', name: 'Partial fractions (distinct linear)', latex: '\\frac{px+q}{(x-a)(x-b)} = \\frac{A}{x-a} + \\frac{B}{x-b}' },
   { id: 'partial-fractions-rep', group: 'Algebra', name: 'Partial fractions (repeated root)', latex: '\\frac{px+q}{(x-a)^2} = \\frac{A}{x-a} + \\frac{B}{(x-a)^2}' },
+  { id: 'partial-coverup', group: 'Algebra', name: 'Partial fractions (cover-up method)', latex: '\\text{For } \\frac{A}{x-a}: \\text{ cover } (x-a) \\text{ and substitute } x = a' },
+  { id: 'rational-simplify-ref', group: 'Algebra', name: 'Simplifying rational expressions', latex: '\\frac{(x-p)(x-q)}{(x-p)(x-r)} = \\frac{x-q}{x-r}, \\quad x \\ne p,\\, r' },
+  { id: 'complex-fraction', group: 'Algebra', name: 'Complex (compound) fraction', latex: '\\frac{\\;\\frac{a}{b} + \\frac{c}{d}\\;}{\\;\\frac{e}{f} - \\frac{g}{h}\\;} = \\text{multiply top and bottom by the overall LCD}' },
 
   // ---- Indices, exponentials & logs ---------------------------------------------
   { id: 'index-product', group: 'Logs & exponentials', name: 'Index laws', latex: 'x^a x^b = x^{a+b}, \\quad \\frac{x^a}{x^b} = x^{a-b}, \\quad (x^a)^b = x^{ab}' },
