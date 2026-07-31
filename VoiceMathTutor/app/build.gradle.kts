@@ -24,8 +24,10 @@ android {
         applicationId = "com.tynan.mathtutor"
         minSdk = 34
         targetSdk = 35
+        // Bump versionCode on EVERY released build — Android refuses to install
+        // an update whose versionCode isn't higher than the installed one.
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
     }
 
     signingConfigs {

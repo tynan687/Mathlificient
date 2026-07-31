@@ -82,7 +82,7 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
-        Text("Voice Math Tutor", style = MaterialTheme.typography.headlineMedium)
+        Text("Mathlificient", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(12.dp))
 
         // ---- Status ----

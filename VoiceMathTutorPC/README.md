@@ -1,4 +1,4 @@
-# Voice Math Tutor — PC (Windows)
+# Mathlificient — PC (Windows)
 
 Electron port of the Android tutor. Same brain, same features: voice conversation
 with `gpt-realtime-2.1` over WebRTC, on-demand screenshots of your PC screen,
@@ -95,19 +95,26 @@ PC differences vs the tablet app:
   device settings (change them in Windows Sound settings).
 - Mute and Watch toggles live as buttons in the app window (no notification).
 - Data (settings, encrypted API key, memory, study log, spend) lives in
-  `%APPDATA%\voice-math-tutor-pc\` — separate from the tablet's data.
+  `%APPDATA%\Mathlificient\` — separate from the tablet's data. Electron derives
+  that folder from `productName`, so renaming the app moves it; `main.js`'s
+  `migrateLegacyUserData()` copies data over from the pre-1.0 `VoiceMathTutor`
+  folder on first run.
 
 ## Running it
 
-The packaged app needs no Node.js or anything else:
+Install with `Mathlificient-Setup-<version>.exe` from the
+[Releases page](https://github.com/tynan687/Mathlificient/releases/latest) —
+nothing else is needed, no Node.js. SmartScreen will warn that the publisher is
+unknown (the installer isn't code-signed): **More info → Run anyway**.
 
-```
-%LOCALAPPDATA%\Programs\VoiceMathTutor\VoiceMathTutor.exe
-```
+You get a **Start Menu entry** and a **Desktop shortcut** with the π icon — press
+the Windows key, type "math", and open it (pin it to the taskbar from there if you
+like). The installer lets you choose the location, so there's no fixed path.
 
-Installed like a normal app: it has its own π icon, a **Desktop shortcut**, and a
-**Start Menu entry** — press the Windows key, type "voice", and open it (pin it to
-the taskbar from there if you like).
+Data (settings, encrypted API key, memory, study log, spend, uploaded PDFs) lives
+in `%APPDATA%\Mathlificient\`. If you used a pre-1.0 build, that data was under
+`%APPDATA%\VoiceMathTutor\` and is copied across automatically the first time
+1.0 starts.
 
 First run: paste your OpenAI API key → Save key (stored encrypted via Windows
 DPAPI) → Start tutor → allow the microphone if Windows asks. The π bubble
@@ -129,21 +136,35 @@ $env:PATH = "$nd;$env:PATH"
 cd $env:LOCALAPPDATA\vmt-build
 npm run dist
 ```
-Output: `dist/VoiceMathTutor Setup <version>.exe`. **Caveat**: electron-builder
-downloads a small macOS code-signing helper on first run even for a Windows-only
-build, and extracting it needs the "create symbolic links" privilege — if you hit
-`Cannot create symbolic link : A required privilege is not held by the client`,
-turn on **Settings → Privacy & security → For developers → Developer Mode**
-(no admin needed once that's on) and re-run.
+Output: `dist/Mathlificient Setup <version>.exe` (~89 MB, single file).
+
+**Known snag on Windows.** electron-builder downloads a macOS code-signing helper
+on first run even for a Windows-only build, and its archive contains symlinks that
+need the "create symbolic links" privilege to extract. Without it you get:
+
+```
+Cannot create symbolic link : A required privilege is not held by the client
+```
+
+Only the two `darwin/*.dylib` symlinks actually fail — every Windows tool in the
+archive extracts fine — so the fix is to hand electron-builder the already-extracted
+folder under the name it looks for. In
+`%LOCALAPPDATA%\electron-builder\Cache\winCodeSign\` you'll find the partial
+extraction(s) in numerically-named folders; copy one to `winCodeSign-2.6.0`
+alongside them and re-run. It's then a cache hit and the download is skipped
+entirely.
+
+(Turning on **Settings → Privacy & security → For developers → Developer Mode**
+also works, if you'd rather grant the privilege than patch the cache.)
 
 **Portable fallback** (no installer, no extra Windows privilege needed — this is
 what ships today if the above isn't available):
 ```powershell
 cd $env:LOCALAPPDATA\vmt-build
-npx @electron/packager . VoiceMathTutor --platform=win32 --arch=x64 --out=dist --overwrite --icon=icon.ico
+npx @electron/packager . Mathlificient --platform=win32 --arch=x64 --out=dist --overwrite --icon=icon.ico
 ```
-Produces `dist/VoiceMathTutor-win32-x64/VoiceMathTutor.exe` — copy the whole folder
-to `%LOCALAPPDATA%\Programs\VoiceMathTutor\` and shortcut it yourself.
+Produces `dist/Mathlificient-win32-x64/Mathlificient.exe` — copy the whole folder
+wherever you like and shortcut it yourself.
 
 Or for quick dev iteration without packaging either way: `npx electron .` in the build dir.
 

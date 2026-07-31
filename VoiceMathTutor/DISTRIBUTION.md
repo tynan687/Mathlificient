@@ -1,7 +1,11 @@
-# Distributing Voice Math Tutor to HSC students
+# Distributing Mathlificient to HSC students
 
 A practical guide for handing the app to other students (sideload APK — not the
 Play Store; see the caveat at the bottom).
+
+**The quickest route is now the [Releases page](https://github.com/tynan687/Mathlificient/releases/latest)** —
+send students that link and they download the APK directly. The build steps below
+are only needed when cutting a *new* version.
 
 ## Build the release APK
 
@@ -26,9 +30,15 @@ keyPassword=...
 gradlew.bat assembleRelease
 ```
 This produces a signed `app/build/outputs/apk/release/app-release.apk` directly,
-ready to share (Drive link, USB, etc.). *(Alternative: Android Studio's
-Build → Generate Signed App Bundle/APK wizard still works too, and will pick up
-the same keystore if you point it there.)*
+ready to attach to a GitHub release (or share by Drive/USB). *(Alternative:
+Android Studio's Build → Generate Signed App Bundle/APK wizard runs this same
+Gradle task and picks up the same keystore.)*
+
+**Before each new release, bump `versionCode` in `app/build.gradle.kts`.** Android
+refuses to install an update whose `versionCode` isn't higher than the one already
+installed, and the error it shows ("App not installed") doesn't say why.
+`versionName` is the human-readable one (`1.0.0`); `versionCode` is just an
+ever-increasing integer.
 
 ## What each student needs
 

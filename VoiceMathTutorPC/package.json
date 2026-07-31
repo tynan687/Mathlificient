@@ -1,8 +1,16 @@
 {
+  "_comment": "Changing 'productName' moves the userData folder (%APPDATA%/<productName>), which holds the encrypted API key, settings, tutor memory, study log and PDF library — Electron derives that path from productName, not from 'name'. If it ever changes again, extend migrateLegacyUserData() in main.js to carry the data across.",
   "name": "voice-math-tutor-pc",
-  "productName": "VoiceMathTutor",
-  "version": "0.1.0",
-  "description": "Screen-aware voice Socratic math tutor for Windows",
+  "productName": "Mathlificient",
+  "version": "1.0.0",
+  "description": "Offline maths practice and screen-aware voice tutoring for Windows",
+  "author": "Tynan Heperi",
+  "license": "MIT",
+  "homepage": "https://github.com/tynan687/Mathlificient",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tynan687/Mathlificient.git"
+  },
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -19,7 +27,7 @@
   },
   "build": {
     "appId": "com.tynan.mathlificient.pc",
-    "productName": "VoiceMathTutor",
+    "productName": "Mathlificient",
     "directories": { "output": "dist" },
     "files": ["**/*", "!dist/**"],
     "win": {

@@ -15,6 +15,42 @@ const toolWins = {};
 
 const file = (name) => path.join(app.getPath('userData'), name);
 
+/**
+ * The app was called "VoiceMathTutor" before 1.0.0. Electron derives the
+ * userData folder from productName, so renaming it to "Mathlificient" points at
+ * a fresh, empty directory and leaves the old API key, settings, memory, study
+ * log and PDF library stranded next door. Copy them across once, on first run
+ * after the rename. Chromium's own caches are deliberately not copied — they
+ * regenerate, and they're the bulk of the folder.
+ */
+function migrateLegacyUserData() {
+  const current = app.getPath('userData');
+  const legacy = path.join(path.dirname(current), 'VoiceMathTutor');
+  if (legacy === current || !fs.existsSync(legacy)) return;
+  // Anything already here wins — never clobber newer data with older.
+  if (fs.existsSync(path.join(current, 'settings.json'))) return;
+
+  const items = [
+    'apikey.bin', 'settings.json', 'spend.json', 'study_log.json',
+    'tutor_memory.json', 'worked_examples.json', 'pdfs',
+  ];
+  try {
+    fs.mkdirSync(current, { recursive: true });
+    for (const name of items) {
+      const from = path.join(legacy, name);
+      const to = path.join(current, name);
+      if (fs.existsSync(from) && !fs.existsSync(to)) {
+        fs.cpSync(from, to, { recursive: true });
+      }
+    }
+    console.log('Migrated settings from the pre-1.0 VoiceMathTutor folder.');
+  } catch (err) {
+    // Not fatal: a fresh install just starts empty.
+    console.error('Could not migrate old user data:', err.message);
+  }
+}
+migrateLegacyUserData();
+
 const DEFAULT_SETTINGS = {
   model: 'gpt-realtime-2.1',
   reasoningEffort: 'high',
@@ -69,7 +105,9 @@ function createWindows() {
   settingsWin = new BrowserWindow({
     width: 560,
     height: 900,
-    title: 'Voice Math Tutor',
+    // Keep in sync with OWN_WINDOW_TITLES below — that's how our own windows
+    // are kept out of the capture-target picker.
+    title: 'Mathlificient',
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
   });
   settingsWin.removeMenu();
@@ -358,7 +396,7 @@ async function captureFullScreenB64() {
 }
 
 // Own windows, excluded from the picker and from window matching.
-const OWN_WINDOW_TITLES = new Set(['Voice Math Tutor', 'bubble', 'engine']);
+const OWN_WINDOW_TITLES = new Set(['Mathlificient', 'bubble', 'engine']);
 
 ipcMain.handle('capture:list-sources', async () => {
   const sources = await desktopCapturer.getSources({
@@ -396,7 +434,7 @@ ipcMain.handle('search:web', async (_e, query) => {
       + '&generator=search&gsrsearch=' + encodeURIComponent(String(query))
       + '&gsrlimit=4&prop=extracts|info&exintro=1&explaintext=1&exchars=320&inprop=url';
     const resp = await fetch(url, {
-      headers: { 'User-Agent': 'VoiceMathTutor/0.1 (personal study app)' },
+      headers: { 'User-Agent': 'Mathlificient/1.0 (personal study app)' },
     });
     if (!resp.ok) return { error: `search failed (${resp.status})` };
     const json = await resp.json();

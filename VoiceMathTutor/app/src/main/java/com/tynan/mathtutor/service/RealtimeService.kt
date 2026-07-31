@@ -785,7 +785,7 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
         )
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_tutor)
-            .setContentTitle("Voice Math Tutor")
+            .setContentTitle("Mathlificient")
             .setContentText(text)
             .setOngoing(true)
             .setContentIntent(openIntent)
