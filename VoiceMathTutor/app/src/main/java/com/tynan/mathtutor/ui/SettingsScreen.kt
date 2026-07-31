@@ -3,13 +3,17 @@ package com.tynan.mathtutor.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -41,6 +45,7 @@ import com.tynan.mathtutor.memory.StudyLog
 import com.tynan.mathtutor.memory.TutorMemory
 import com.tynan.mathtutor.service.RealtimeService
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     initialApiKeySet: Boolean,
@@ -57,6 +62,8 @@ fun SettingsScreen(
     onOpenFormulas: () -> Unit = {},
     onOpenTimer: () -> Unit = {},
     onOpenPractice: () -> Unit = {},
+    onToggleBubble: () -> Unit = {},
+    bubbleShowing: Boolean = false,
 ) {
     val uiState by RealtimeService.uiState.collectAsState()
     var apiKeyInput by remember { mutableStateOf("") }
@@ -79,6 +86,8 @@ fun SettingsScreen(
     Column(
         Modifier
             .fillMaxSize()
+            .systemBarsPadding()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
@@ -129,11 +138,25 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
 
         // ---- Study tools (work with or without a session) ----
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // FlowRow, not Row: these three need ~437dp and a phone gives ~320dp, so a
+        // plain Row pushed "Timer" clean off the screen.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Button(onClick = onOpenPractice) { Text("✏️ Practice Studio") }
             OutlinedButton(onClick = onOpenFormulas) { Text("🧮 Formulas") }
             OutlinedButton(onClick = onOpenTimer) { Text("⏱ Timer") }
+            OutlinedButton(onClick = onToggleBubble) {
+                Text(if (bubbleShowing) "✕ Hide bubble" else "🫧 Show bubble")
+            }
         }
+        Text(
+            "The bubble is a floating shortcut you can keep on screen while you work " +
+                "in another app — tap it for the formula sheet, timer, ambient sound " +
+                "and practice. No API key or session needed.",
+            style = MaterialTheme.typography.bodySmall,
+        )
         Text(
             "Bubble gestures: tap = quick menu · double-tap = hint · hold = talk · " +
                 "firm drag to move.",

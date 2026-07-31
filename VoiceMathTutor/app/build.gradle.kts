@@ -22,7 +22,10 @@ android {
 
     defaultConfig {
         applicationId = "com.tynan.mathtutor"
-        minSdk = 34
+        // Android 10. Higher would rule out a lot of the phones students actually
+        // own; every dependency here supports API 21, and the foreground-service
+        // types the app relies on landed in exactly 29.
+        minSdk = 29
         targetSdk = 35
         // Bump versionCode on EVERY released build — Android refuses to install
         // an update whose versionCode isn't higher than the installed one.

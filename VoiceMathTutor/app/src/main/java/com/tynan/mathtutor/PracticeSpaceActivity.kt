@@ -9,12 +9,19 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -110,6 +117,7 @@ private fun contentOn(paper: Color): Color =
 
 private fun Color.toHex(): String = String.format("#%06X", 0xFFFFFF and toArgb())
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Studio(
     topic: String,
@@ -126,6 +134,12 @@ private fun Studio(
     val inks = if (isDarkPaper(bg)) LIGHT_INKS else DARK_INKS
     val content = contentOn(bg)                              // toolbar text/icons
     val toolbarBg = lerp(bg, content, 0.07f)                 // subtle separation
+
+    // A tablet can show the question and the paper at once. A phone can't — a
+    // fixed split leaves about a credit card's worth of writing area — so there
+    // the two become compartments you switch between, each getting the full height.
+    val compact = LocalConfiguration.current.smallestScreenWidthDp < 600
+    var showDraw by remember { mutableStateOf(false) }
 
     fun paintWeb(view: WebView?, paper: Color) {
         view?.evaluateJavascript(
@@ -152,13 +166,38 @@ private fun Studio(
     Column(
         Modifier
             .fillMaxSize()
+            .systemBarsPadding()
             .background(bg),
     ) {
-        // Question (reuses the shared practice page + generators).
+        if (compact) {
+            // Compartment switch — only one pane is on screen at a time.
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+                SegmentedButton(
+                    selected = !showDraw,
+                    onClick = { showDraw = false },
+                    shape = SegmentedButtonDefaults.itemShape(0, 2),
+                ) { Text("Question") }
+                SegmentedButton(
+                    selected = showDraw,
+                    onClick = { showDraw = true },
+                    shape = SegmentedButtonDefaults.itemShape(1, 2),
+                ) { Text("Draw") }
+            }
+        }
+
+        // Question (reuses the shared practice page + generators). Kept in the
+        // tree when hidden so the generated question and scroll position survive
+        // flipping between compartments.
         AndroidView(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.42f),
+                .then(
+                    if (compact) {
+                        if (showDraw) Modifier.height(0.dp) else Modifier.weight(1f)
+                    } else {
+                        Modifier.weight(0.42f)
+                    }
+                ),
             factory = { ctx ->
                 WebView(ctx).apply {
                     settings.javaScriptEnabled = true
@@ -182,19 +221,27 @@ private fun Studio(
             },
         )
 
-        // Ink toolbar.
-        Row(
+        // Ink toolbar. FlowRow rather than Row: the full set needs ~458dp (~556dp
+        // once "⤾ 1:1" appears) and a phone offers ~360dp, which used to push
+        // Undo and Clear off the right edge — unreachable exactly when needed.
+        FlowRow(
             Modifier
                 .fillMaxWidth()
                 .background(toolbarBg)
                 .padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Ink →", style = MaterialTheme.typography.titleMedium, color = content)
+            Text(
+                "Ink →",
+                style = MaterialTheme.typography.titleMedium,
+                color = content,
+                modifier = Modifier.align(Alignment.CenterVertically),
+            )
             inks.forEachIndexed { i, c ->
                 Box(
                     Modifier
+                        .align(Alignment.CenterVertically)
                         .size(30.dp)
                         .background(c, CircleShape)
                         .border(
@@ -213,6 +260,7 @@ private fun Studio(
             val eraserSel = selected == inks.size
             Box(
                 Modifier
+                    .align(Alignment.CenterVertically)
                     .size(30.dp)
                     .background(bg, CircleShape)
                     .border(
@@ -228,7 +276,9 @@ private fun Studio(
             ) {
                 Text("⌫", color = content, style = MaterialTheme.typography.labelMedium)
             }
-            Box(Modifier.weight(1f))
+            // Push the buttons right only where there's room; on a phone the
+            // spacer would eat the first line and force an unnecessary wrap.
+            if (!compact) Box(Modifier.weight(1f))
             if (viewTransformed) {
                 OutlinedButton(
                     onClick = { canvas?.resetView() },
@@ -248,20 +298,27 @@ private fun Studio(
             ) { Text("Clear") }
         }
 
-        // Paper (background) toolbar.
-        Row(
+        // Paper (background) toolbar. Also FlowRow — this one fits a 360dp phone
+        // by about a single dp, so it breaks the moment the font scale is raised.
+        FlowRow(
             Modifier
                 .fillMaxWidth()
                 .background(toolbarBg)
                 .padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Paper →", style = MaterialTheme.typography.titleMedium, color = content)
+            Text(
+                "Paper →",
+                style = MaterialTheme.typography.titleMedium,
+                color = content,
+                modifier = Modifier.align(Alignment.CenterVertically),
+            )
             PAPERS.forEach { paper ->
                 val active = paper.color.toArgb() == bg.toArgb()
                 Box(
                     Modifier
+                        .align(Alignment.CenterVertically)
                         .size(30.dp)
                         .background(paper.color, CircleShape)
                         .border(
@@ -272,7 +329,7 @@ private fun Studio(
                         .clickable { applyBg(paper.color) }
                 )
             }
-            Box(Modifier.weight(1f))
+            if (!compact) Box(Modifier.weight(1f))
             OutlinedButton(
                 onClick = { showRgb = true },
                 border = BorderStroke(1.dp, content.copy(alpha = 0.5f)),
@@ -280,11 +337,18 @@ private fun Studio(
             ) { Text("🎨 RGB") }
         }
 
-        // Handwriting surface.
+        // Handwriting surface. In compartment mode it takes the whole area when
+        // selected, instead of sharing a fixed split with the question.
         AndroidView(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.60f)
+                .then(
+                    if (compact) {
+                        if (showDraw) Modifier.weight(1f) else Modifier.height(0.dp)
+                    } else {
+                        Modifier.weight(0.60f)
+                    }
+                )
                 .background(bg),
             factory = { ctx ->
                 InkCanvasView(ctx).apply {

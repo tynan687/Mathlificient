@@ -27,7 +27,7 @@ No Mac build — Windows and Android only.
 
 ### Install on Android
 
-**Needs Android 14 or newer.** (Check under Settings → About phone/tablet → Software information. Older versions can't run this build.)
+**Needs Android 10 or newer** — that's most phones still in use. (Check under Settings → About phone/tablet → Software information.)
 
 1. Download `Mathlificient-1.0.0.apk` onto the device — or copy it across by USB.
 2. Tap the file. Android will say installing from this source isn't allowed yet → tap **Settings** → turn on **Allow from this source** → go back.
@@ -61,9 +61,18 @@ Open **Practice Studio** — on Android from the main screen or the bubble menu,
 
 **Quiz mode (Windows):** pick a question count, work through them one at a time, and mark yourself **✓ Got it** / **✗ Missed it** after each answer. You get a score and a list of the ones you missed at the end. **🖨 Worksheet** generates a printable page instead — questions with blank working space, then an answer key.
 
+### The study bubble (Android, no API key needed)
+
+Tap **🫧 Show bubble** on the main screen and a small draggable π sits on top of
+whatever else you're doing. Tap it for the formula sheet, focus timer, ambient
+sound or a practice question; drag it out of the way; press and hold to put it
+away. It's just a shortcut shelf for the offline tools — no microphone, no screen
+capture, no session, nothing billed. Android will ask once for "display over
+other apps".
+
 ### Formula sheet
 
-182 formulas, searchable. 82 of them are live solvers — click one, type your values, press Solve, then copy the result or the LaTeX. Handles the awkward cases properly (complex quadratic roots as a ± b*i*, singular matrices, divide-by-zero).
+185 formulas, searchable. 82 of them are live solvers — click one, type your values, press Solve, then copy the result or the LaTeX. Handles the awkward cases properly (complex quadratic roots as a ± b*i*, singular matrices, divide-by-zero).
 
 ### Live voice tutoring (needs your own API key)
 

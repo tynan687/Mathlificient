@@ -17,6 +17,8 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import android.os.Build
+import androidx.core.content.IntentCompat
 import com.tynan.mathtutor.FormulaSheetActivity
 import com.tynan.mathtutor.MainActivity
 import com.tynan.mathtutor.R
@@ -111,17 +113,31 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
 
             ACTION_START -> {
                 if (transport != null) return START_NOT_STICKY // already running
+                // A session brings its own bubble, so stand the standalone one
+                // down first — otherwise the user ends up with two.
+                if (BubbleService.running) BubbleService.stop(this)
                 keyStore = SecureKeyStore(this)
                 settings = keyStore.loadSettings()
                 createNotificationChannel()
-                startForeground(
-                    NOTIFICATION_ID,
-                    buildNotification("Starting…"),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-                )
+                // FOREGROUND_SERVICE_TYPE_MICROPHONE is API 30, and types only
+                // became mandatory at 34 — so on Android 10 start without one
+                // rather than handing the platform a constant it doesn't know.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    startForeground(
+                        NOTIFICATION_ID,
+                        buildNotification("Starting…"),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+                    )
+                } else {
+                    startForeground(NOTIFICATION_ID, buildNotification("Starting…"))
+                }
                 val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
-                val resultData = intent.getParcelableExtra(EXTRA_RESULT_DATA, Intent::class.java)
+                // The typed getParcelableExtra overload is API 33; IntentCompat
+                // picks the right one instead of throwing on older phones.
+                val resultData = IntentCompat.getParcelableExtra(
+                    intent, EXTRA_RESULT_DATA, Intent::class.java
+                )
                 if (resultCode != Activity.RESULT_OK || resultData == null) {
                     stopSelf()
                     return START_NOT_STICKY
@@ -728,7 +744,7 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
 
     private fun exitCommunicationMode() {
         val am = audioManager ?: return
-        runCatching { am.clearCommunicationDevice() }
+        if (canRouteCommunication) runCatching { am.clearCommunicationDevice() }
         am.mode = AudioManager.MODE_NORMAL
     }
 
@@ -737,13 +753,25 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
         if (am.mode == AudioManager.MODE_IN_COMMUNICATION) applyPreferredRoute(am)
     }
 
-    /** Headphones when connected (wired/USB/Bluetooth), otherwise the speaker. */
+    /**
+     * Headphones when connected (wired/USB/Bluetooth), otherwise the speaker.
+     *
+     * The whole communication-device API is API 31. Below that the app simply
+     * doesn't steer the route and lets Android pick — voice still works, it just
+     * won't actively prefer a headset. Deliberately not reimplemented with the
+     * old SCO/speakerphone calls: that path is fiddly, easy to leave in a bad
+     * state, and not worth it for the phones it would cover.
+     */
     private fun applyPreferredRoute(am: AudioManager) {
+        if (!canRouteCommunication) return
         val devices = am.availableCommunicationDevices
         val target = devices.firstOrNull { it.type in HEADPHONE_TYPES }
             ?: devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
         target?.let { runCatching { am.setCommunicationDevice(it) } }
     }
+
+    private val canRouteCommunication: Boolean
+        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     // ---- Reconnection ---------------------------------------------------------------
 
@@ -826,7 +854,7 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
         overlay = null
         audioManager?.let { am ->
             deviceCallback?.let(am::unregisterAudioDeviceCallback)
-            am.clearCommunicationDevice()
+            if (canRouteCommunication) am.clearCommunicationDevice()
             am.mode = AudioManager.MODE_NORMAL
         }
         uiState.value = TutorUiState()

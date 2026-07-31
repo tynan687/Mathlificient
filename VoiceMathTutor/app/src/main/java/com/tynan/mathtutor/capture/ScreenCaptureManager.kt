@@ -13,7 +13,7 @@ import android.media.projection.MediaProjectionManager
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Base64
-import android.view.WindowManager
+import com.tynan.mathtutor.util.screenBounds
 import java.io.ByteArrayOutputStream
 
 /**
@@ -45,8 +45,7 @@ class ScreenCaptureManager(private val context: Context) {
             }
         }, handler)
 
-        val bounds = context.getSystemService(WindowManager::class.java)
-            .currentWindowMetrics.bounds
+        val bounds = screenBounds(context)
         val width = bounds.width()
         val height = bounds.height()
         val density = context.resources.configuration.densityDpi

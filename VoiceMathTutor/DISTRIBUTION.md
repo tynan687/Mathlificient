@@ -42,7 +42,7 @@ ever-increasing integer.
 
 ## What each student needs
 
-- **An Android 14+ tablet or phone** (Samsung tablets with S Pen are ideal —
+- **An Android 10+ phone or tablet** (Samsung tablets with S Pen are ideal —
   the tutor reads handwriting on screen).
 - **Their own OpenAI API key** (platform.openai.com → API keys, with billing set
   up). The key is stored encrypted on their device and never leaves it except to

@@ -5,13 +5,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.LaunchedEffect
 import android.content.Intent
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -39,26 +45,40 @@ class TimerActivity : ComponentActivity() {
         com.tynan.mathtutor.ui.ThemeController.set(
             com.tynan.mathtutor.security.SecureKeyStore(this).loadSettings().appTheme
         )
+        val showAmbient = intent.getBooleanExtra(EXTRA_SHOW_AMBIENT, false)
         setContent {
             val themeKey by com.tynan.mathtutor.ui.ThemeController.current.collectAsState()
-            com.tynan.mathtutor.ui.AppTheme(themeKey) { TimerScreen() }
+            com.tynan.mathtutor.ui.AppTheme(themeKey) { TimerScreen(showAmbient) }
         }
+    }
+
+    companion object {
+        /** Bubble menu "Ambient sound" opens this screen scrolled to that section. */
+        const val EXTRA_SHOW_AMBIENT = "showAmbient"
     }
 }
 
 @Composable
-private fun TimerScreen() {
+private fun TimerScreen(scrollToAmbient: Boolean = false) {
     val state by TimerController.state.collectAsState()
     var goal by remember { mutableStateOf(state.goal) }
     var focusMin by remember { mutableStateOf(state.focusMin.toString()) }
     var breakMin by remember { mutableStateOf(state.breakMin.toString()) }
+    val scroll = rememberScrollState()
+
+    // Ambient lives below the fold; jump to it when opened from the bubble.
+    LaunchedEffect(scrollToAmbient) {
+        if (scrollToAmbient) scroll.animateScrollTo(scroll.maxValue)
+    }
 
     Column(
         Modifier
             .fillMaxSize()
+            .systemBarsPadding()
+            .imePadding()
+            .verticalScroll(scroll)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
         Text("Focus timer", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(6.dp))
@@ -100,21 +120,22 @@ private fun TimerScreen() {
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(10.dp))
-        Row {
+        // Share the width rather than two fixed 140dp fields, which overflow a
+        // narrow phone once the system font scale is turned up.
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
                 value = focusMin,
                 onValueChange = { focusMin = it },
                 label = { Text("Focus (min)") },
                 singleLine = true,
-                modifier = Modifier.width(140.dp),
+                modifier = Modifier.weight(1f),
             )
-            Spacer(Modifier.width(12.dp))
             OutlinedTextField(
                 value = breakMin,
                 onValueChange = { breakMin = it },
                 label = { Text("Break (min)") },
                 singleLine = true,
-                modifier = Modifier.width(140.dp),
+                modifier = Modifier.weight(1f),
             )
         }
         Spacer(Modifier.height(10.dp))
@@ -128,6 +149,7 @@ private fun TimerScreen() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AmbientSection() {
     val context = LocalContext.current
@@ -148,7 +170,12 @@ private fun AmbientSection() {
         style = MaterialTheme.typography.bodySmall,
     )
     Spacer(Modifier.height(10.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    // Four buttons need ~422dp; a phone has ~312dp. Wrap instead of clipping the
+    // last one off the edge.
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         for ((type, label) in listOf(
             "rain" to "🌧 Rain", "brown" to "🌊 Deep",
             "pink" to "🍃 Soft", "white" to "🌬 White",
@@ -164,7 +191,10 @@ private fun AmbientSection() {
         }
     }
     Spacer(Modifier.height(6.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Text("🔉")
         Slider(
             value = ambient.volume,
@@ -173,7 +203,7 @@ private fun AmbientSection() {
                 if (ambient.playing) send(AmbientService.ACTION_VOLUME, volume = v)
             },
             valueRange = 0.05f..1f,
-            modifier = Modifier.width(260.dp),
+            modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
         )
         Text("🔊")
     }

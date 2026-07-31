@@ -11,11 +11,17 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.WindowManager
+import com.tynan.mathtutor.util.screenBounds
 import kotlin.math.abs
 
 /**
  * Draggable SYSTEM_ALERT_WINDOW bubble. Tap = ask for help with the current
  * screen. Press-and-hold = push-to-talk (when enabled in settings).
+ *
+ * In [instantMenu] mode (the standalone offline bubble) there is no hint and no
+ * push-to-talk, so a tap opens the menu immediately instead of waiting out the
+ * double-tap window, and hold is free for whatever the host wires to
+ * [onHoldStart] — dismissing the bubble, in that case.
  */
 class OverlayController(
     private val context: Context,
@@ -23,6 +29,7 @@ class OverlayController(
     private val onHoldStart: () -> Unit,
     private val onHoldEnd: () -> Unit,
     private val onMenu: () -> Unit = {},
+    private val instantMenu: Boolean = false,
 ) {
     private val windowManager = context.getSystemService(WindowManager::class.java)
     private val bubble = BubbleView(context)
@@ -79,7 +86,7 @@ class OverlayController(
     fun showMenu(items: List<MenuItem>, onPick: (String) -> Unit) {
         mainHandler.post {
             hideMenu()
-            val bounds = windowManager.currentWindowMetrics.bounds
+            val bounds = screenBounds(context)
             val isPhone = context.resources.configuration.smallestScreenWidthDp < 600
             val bubbleCx = params.x + sizePx / 2
             val bubbleCy = params.y + sizePx / 2
@@ -208,20 +215,26 @@ class OverlayController(
                         dragging -> snapToEdge()
 
                         SystemClock.elapsedRealtime() - downTime < TAP_MAX_MS -> {
-                            // Single tap opens the quick-action menu (fires after the
-                            // double-tap window); double-tap asks for the hint/snapshot.
-                            val pending = pendingTap
-                            if (pending != null) {
-                                mainHandler.removeCallbacks(pending)
-                                pendingTap = null
-                                onTap()
+                            if (instantMenu) {
+                                // Nothing is bound to double-tap here, so there's no
+                                // reason to make the user wait for the window to lapse.
+                                onMenu()
                             } else {
-                                val runnable = Runnable {
+                                // Single tap opens the quick-action menu (fires after the
+                                // double-tap window); double-tap asks for the hint/snapshot.
+                                val pending = pendingTap
+                                if (pending != null) {
+                                    mainHandler.removeCallbacks(pending)
                                     pendingTap = null
-                                    onMenu()
+                                    onTap()
+                                } else {
+                                    val runnable = Runnable {
+                                        pendingTap = null
+                                        onMenu()
+                                    }
+                                    pendingTap = runnable
+                                    mainHandler.postDelayed(runnable, DOUBLE_TAP_WINDOW_MS)
                                 }
-                                pendingTap = runnable
-                                mainHandler.postDelayed(runnable, DOUBLE_TAP_WINDOW_MS)
                             }
                         }
                     }
@@ -235,7 +248,7 @@ class OverlayController(
 
     /** After a drag, glide the bubble to the nearer screen edge so it never blocks work. */
     private fun snapToEdge() {
-        val screenWidth = windowManager.currentWindowMetrics.bounds.width()
+        val screenWidth = screenBounds(context).width()
         val margin = (16 * density).toInt()
         val targetX = if (params.x + sizePx / 2 < screenWidth / 2) {
             margin

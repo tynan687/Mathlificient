@@ -26,6 +26,12 @@ class FormulaSheetActivity : ComponentActivity() {
         webView = WebView(this).apply {
             settings.javaScriptEnabled = true
             settings.allowFileAccess = true
+            // Some identities are wider than a phone. Without zoom the only way
+            // to read them is side-scrolling a nested scroller that fights the
+            // card's tap handler.
+            settings.builtInZoomControls = true
+            settings.displayZoomControls = false
+            settings.useWideViewPort = true
             addJavascriptInterface(Bridge(this@FormulaSheetActivity), "Android")
             loadUrl("file:///android_asset/formulas/formulas.html")
         }

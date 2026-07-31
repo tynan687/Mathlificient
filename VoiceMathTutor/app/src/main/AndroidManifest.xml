@@ -11,6 +11,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- The standalone study bubble: an overlay shelf for the offline tools. It
+         records nothing and captures nothing, so none of the typed categories
+         above describe it. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
         android:name=".TutorApp"
@@ -72,5 +76,20 @@
             android:name=".service.RealtimeService"
             android:exported="false"
             android:foregroundServiceType="microphone|mediaProjection" />
+
+        <!-- Bubble without a tutoring session. Must NOT use microphone or
+             mediaProjection types: on API 34+ startForeground throws
+             SecurityException with those unless the permission/projection token
+             is held, and this service deliberately holds neither. -->
+        <service
+            android:name=".service.BubbleService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps a draggable shortcut bubble on screen so the
+                    offline formula sheet, focus timer and practice questions stay
+                    reachable while the student works in another app." />
+        </service>
     </application>
 </manifest>
