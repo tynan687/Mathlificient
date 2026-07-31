@@ -221,6 +221,11 @@ private fun Studio(
             },
         )
 
+        // On a phone the ink and paper toolbars only appear in the Draw
+        // compartment — in Question mode they'd eat a quarter of the screen
+        // controlling something that isn't visible.
+        if (!compact || showDraw) {
+
         // Ink toolbar. FlowRow rather than Row: the full set needs ~458dp (~556dp
         // once "⤾ 1:1" appears) and a phone offers ~360dp, which used to push
         // Undo and Clear off the right edge — unreachable exactly when needed.
@@ -336,6 +341,8 @@ private fun Studio(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = content),
             ) { Text("🎨 RGB") }
         }
+
+        } // end of toolbars, hidden in the Question compartment on a phone
 
         // Handwriting surface. In compartment mode it takes the whole area when
         // selected, instead of sharing a fixed split with the question.

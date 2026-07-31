@@ -158,8 +158,9 @@ fun SettingsScreen(
             style = MaterialTheme.typography.bodySmall,
         )
         Text(
-            "Bubble gestures: tap = quick menu · double-tap = hint · hold = talk · " +
-                "firm drag to move.",
+            "Gestures — study bubble: tap = menu · hold = put away. During a tutor " +
+                "session: tap = menu · double-tap = hint · hold = talk. Either way, " +
+                "a firm drag moves it.",
             style = MaterialTheme.typography.bodySmall
         )
         Spacer(Modifier.height(20.dp))

@@ -8,7 +8,10 @@ import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Toast
+import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 /**
  * The 182-formula interactive sheet — same data file and KaTeX assets as the
@@ -35,7 +38,20 @@ class FormulaSheetActivity : ComponentActivity() {
             addJavascriptInterface(Bridge(this@FormulaSheetActivity), "Android")
             loadUrl("file:///android_asset/formulas/formulas.html")
         }
-        setContentView(webView)
+        // targetSdk 35 forces edge-to-edge, and CSS env(safe-area-inset-*) stays 0
+        // in an Android WebView unless the window opts into cutout mode — so pad
+        // on this side, or the sticky search sits under the status bar and the
+        // last card under the navigation bar. The padding goes on a wrapper:
+        // WebView doesn't reliably inset its own viewport.
+        val container = FrameLayout(this).apply { addView(webView) }
+        setContentView(container)
+        ViewCompat.setOnApplyWindowInsetsListener(container) { view, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
+            )
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
     }
 
     /** Shared JS bridge for the formula sheet and practice pages. */
