@@ -48,9 +48,10 @@ PC differences vs the tablet app:
   watch/mute, my progress, and the offline tools below.
 - **Offline mini-tools** (zero tokens, work without a session):
   - *Practice Studio* — full parity with the tablet app, offline and free. A
-    generated question (33 templates across 17 topics, auto-drawn diagrams —
-    real parabolas with roots marked, triangles to scale, asymptotes, Argand
-    diagrams and more) sits above a drawing canvas: **draw with the mouse, or
+    generated question (50 templates across 21 topics, auto-drawn diagrams —
+    real parabolas with roots marked, triangles to scale, your two points with
+    the midpoint between them, circles at their actual centre and radius,
+    asymptotes, Argand diagrams and more) sits above a drawing canvas: **draw with the mouse, or
     plug in a graphics tablet/pen** (Wacom, Huion, Surface Pen — the browser's
     native Pointer Events API picks up pressure and the pen's eraser end/barrel
     button automatically, no drivers to install). An eraser tool sits next to
@@ -66,7 +67,7 @@ PC differences vs the tablet app:
     Grading isn't quiz-only: every question offers Got it / Missed it once the
     answer is shown, and each mark feeds the progress screen below. A dropdown
     switches to **multiple choice** (remembered; applies from the next
-    question), where 32 of the 33 templates offer four options built from named
+    question), where 49 of the 50 templates offer four options built from named
     misconceptions — `b² + 4ac`, population vs sample SD, forgetting the inner
     derivative — so a wrong pick can name the actual slip rather than just
     marking it wrong. One pick per question; the worked steps stay locked until

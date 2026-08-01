@@ -29,6 +29,9 @@ const R = path.resolve(__dirname, '..', 'VoiceMathTutorPC', 'renderer');
 const skills = require(path.join(R, 'practice-skills.js'));
 Object.assign(globalThis, skills);
 const { PRACTICE, MISCONCEPTIONS } = require(path.join(R, 'practice-data.js'));
+// practice-viz.js touches `window` at call time only, so requiring it for the
+// type list is safe under Node.
+const { VIZ_TYPES } = require(path.join(R, 'practice-viz.js'));
 const mcq = require(path.join(R, 'practice-mcq.js'));
 const { buildChoices, normalLatex, shapeOf, equivalentAnswers, MCQ_OPTIONS } = mcq;
 
@@ -100,6 +103,9 @@ for (const t of PRACTICE) {
       if (ARTIFACT.test(text)) fail(t.id, `${field} has a coefficient artifact`, text);
     }
     if (!Array.isArray(q.steps) || !q.steps.length) fail(t.id, 'no steps');
+    if (q.viz && !VIZ_TYPES.includes(q.viz.type)) {
+      fail(t.id, `viz type "${q.viz.type}" has no renderer`);
+    }
 
     if (!t.distractors) { mcqNull++; continue; }
 
@@ -144,6 +150,10 @@ for (const t of PRACTICE) {
       }
       if (ARTIFACT.test(o.latex)) {
         fail(t.id, 'a distractor has a coefficient artifact', o.latex);
+      }
+      // A divide-by-zero somewhere in the workings, shown to the student.
+      if (/NaN|Infinity|undefined|null/.test(o.latex)) {
+        fail(t.id, 'a distractor contains a non-finite value', o.latex);
       }
       if (!o.why) {
         fail(t.id, 'a distractor carries no `why`', o.latex);

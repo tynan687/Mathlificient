@@ -77,6 +77,32 @@ const MISCONCEPTIONS = {
   'pf-swapped': { label: 'swapping the two numerators', hint: 'Check which numerator belongs over which factor by substituting a root back in.' },
   'pf-root-sign': { label: 'not negating the root in the denominator', hint: 'A root at x = 3 gives a factor (x − 3).' },
 
+  // Coordinate geometry
+  'midpoint-difference': { label: 'subtracting the coordinates for the midpoint', hint: 'The midpoint averages the coordinates — you add them and halve, not subtract.' },
+  'midpoint-no-halve': { label: 'forgetting to halve for the midpoint', hint: 'You added the coordinates but did not divide by 2.' },
+  'distance-added': { label: 'adding the two gaps instead of using Pythagoras', hint: 'The distance is √(Δx² + Δy²), not Δx + Δy.' },
+  'gradient-inverted': { label: 'using run over rise', hint: 'Gradient is rise over run — the y difference goes on top.' },
+  'gradient-sign': { label: 'getting the sign of the gradient wrong', hint: 'Check which point you subtracted from which — do it the same way on top and bottom.' },
+  'perp-no-negate': { label: 'taking the reciprocal without the minus', hint: 'Perpendicular gradients multiply to −1, so you flip it AND change the sign.' },
+  'perp-no-reciprocal': { label: 'changing the sign without flipping', hint: 'Perpendicular gradients multiply to −1, so you change the sign AND flip it.' },
+  'perp-is-parallel': { label: 'giving the parallel line', hint: 'Same gradient means parallel. Perpendicular needs the negative reciprocal.' },
+  'coords-swapped': { label: 'writing the coordinates the wrong way round', hint: 'A point is (x, y) — the x you solved for comes first.' },
+  'substituted-wrong': { label: 'substituting back into the wrong equation', hint: 'x goes back into either line, but the whole line — coefficient and constant together.' },
+  'centre-not-negated': { label: 'reading the centre straight off the coefficients', hint: 'The centre is (−D/2, −E/2) — halve them and change the sign.' },
+  'radius-is-constant': { label: 'treating the constant term as the radius', hint: 'The constant is not r². You have to complete the square first.' },
+
+  // Functions
+  'inverse-sign': { label: 'getting the sign wrong when you undo the function', hint: 'Undo the steps in reverse: take the constant off first, then divide.' },
+  'inverse-is-reciprocal': { label: 'taking the reciprocal instead of the inverse', hint: 'An inverse undoes the function. It is not 1 over it.' },
+  'composite-order': { label: 'composing them the other way round', hint: 'f(g(x)) puts g inside f — g acts first.' },
+  'composite-no-distribute': { label: 'not multiplying through the bracket', hint: 'The outer coefficient multiplies everything inside, constant included.' },
+  'composite-added': { label: 'adding the two functions', hint: 'Composing substitutes one into the other; it does not add them.' },
+  'transform-x-direction': { label: 'shifting x the way the bracket reads', hint: 'f(x − h) moves the graph h to the RIGHT — the bracket reads backwards.' },
+  'transform-order': { label: 'shifting before stretching', hint: 'The stretch applies first, then the vertical shift.' },
+  'transform-no-scale': { label: 'skipping the vertical stretch', hint: 'The coefficient in front multiplies the y value too.' },
+  'asymptote-sign': { label: 'not changing the sign for the vertical asymptote', hint: 'The bottom is zero where x + c = 0, so the asymptote is at x = −c.' },
+  'asymptote-constant': { label: 'reading the horizontal asymptote off the constant', hint: 'For large x only the leading terms matter, so it is the ratio of the x coefficients.' },
+
   // Trigonometry
   'cos-rule-sign': { label: 'adding the 2ab cos C term', hint: 'The cosine rule subtracts 2ab cos C.' },
   'cos-rule-pythag': { label: 'falling back on Pythagoras', hint: 'Pythagoras only works when the angle is 90°. Here it is not.' },
@@ -84,6 +110,26 @@ const MISCONCEPTIONS = {
   'ref-angle-only': { label: 'giving only the reference angle', hint: 'Sine is positive in two quadrants, so there is a second solution in the given range.' },
   'quadrant-wrong': { label: 'picking the wrong second quadrant', hint: 'For sine the second solution is 180° − the reference angle.' },
   'exact-value-swap': { label: 'mixing up the exact values', hint: 'Check the exact-value triangle again — that is a different angle.' },
+  'radian-conversion': { label: 'converting to radians wrongly', hint: 'Multiply degrees by π/180 and simplify the fraction.' },
+  'sector-no-half': { label: 'leaving the half out of the sector area', hint: 'Sector area is ½r²θ — the half is easy to drop.' },
+  'sector-radius-not-squared': { label: 'not squaring the radius for the area', hint: 'An area needs r², not r.' },
+  'arc-radius-squared': { label: 'squaring the radius for the arc length', hint: 'Arc length is rθ. Only the area squares the radius.' },
+  'arc-is-circumference': { label: 'giving the whole circle', hint: 'That is the full circumference or area. The sector is only part of it.' },
+  'segment-is-sector': { label: 'giving the sector instead of the segment', hint: 'The segment is the sector with the triangle cut off.' },
+  'segment-is-triangle': { label: 'giving the triangle instead of the segment', hint: 'That is the triangle. The segment is the sector minus it.' },
+  'segment-reversed': { label: 'subtracting the sector from the triangle', hint: 'It is sector minus triangle, that way round.' },
+  'pythag-identity': { label: 'mixing up which of sin and cos the identity leaves', hint: '1 − cos²θ is sin²θ, and 1 − sin²θ is cos²θ. Check which one you started with.' },
+  'period-multiplied': { label: 'multiplying by b instead of dividing', hint: 'A bigger b squeezes the wave, so the period is 360°/b.' },
+  'period-ignored-b': { label: 'ignoring b in the period', hint: 'The coefficient of x changes how fast the wave repeats.' },
+  'amplitude-is-b': { label: 'reading the amplitude off the wrong number', hint: 'The amplitude is the coefficient in FRONT of sin, not the one with x.' },
+  'amplitude-doubled': { label: 'doubling the amplitude', hint: 'The amplitude is |a| itself — peak to centre, not peak to trough.' },
+  'double-angle-no-two': { label: 'dropping the 2 from sin 2θ', hint: 'sin 2θ = 2 sin θ cos θ. The 2 is part of it.' },
+  'double-angle-doubled-sin': { label: 'doubling sin θ', hint: 'sin 2θ is not 2 sin θ — doubling the angle is not doubling the ratio.' },
+  'double-angle-wrong-identity': { label: 'using the cos 2θ identity', hint: 'cos²θ − sin²θ is cos 2θ. For sin 2θ you want 2 sin θ cos θ.' },
+  'double-angle-added': { label: 'adding sin and cos', hint: 'The identity multiplies them, and then doubles.' },
+  'harmonic-alpha-inverted': { label: 'taking tan α as a over b', hint: 'For R sin(x + α) the auxiliary angle has tan α = b/a.' },
+  'harmonic-r-added': { label: 'adding a and b instead of using Pythagoras', hint: 'R = √(a² + b²).' },
+  'domain-not-divided': { label: 'not dividing back to get x', hint: 'You solved for 2x over a domain twice as wide. Divide by 2 to finish.' },
 
   // Calculus
   'chain-no-inner': { label: 'forgetting to multiply by the inner derivative', hint: 'The chain rule multiplies by the derivative of what is inside the bracket.' },
@@ -1023,6 +1069,698 @@ const PRACTICE = [
     },
   },
 
+  // ---- Coordinate geometry ---------------------------------------------------------
+  {
+    id: 'coord-distance', skill: 'coordinate-geometry', topic: 'Coordinate geometry',
+    keywords: ['distance', 'midpoint', 'coordinate', 'two points'],
+    // "distance = 10, midpoint = (3, 4)" — two different quantities, so a
+    // distractor may share its numbers without being the same answer.
+    mcqOrdered: true,
+    generate() {
+      // Pythagorean legs so the distance comes out whole, and an even sum on
+      // both coordinates so the midpoint does too. Both matter: a student
+      // checking their arithmetic against an ugly surd learns nothing.
+      const [dx, dy, d] = PR.choice([[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 6, 10], [9, 12, 15]]);
+      const sx = PR.choice([1, -1]); const sy = PR.choice([1, -1]);
+      const x1 = PR.int(-6, 6) * 2; const y1 = PR.int(-6, 6) * 2;
+      const x2 = x1 + sx * dx * 2; const y2 = y1 + sy * dy * 2;
+      const mx = (x1 + x2) / 2; const my = (y1 + y2) / 2;
+      const dist = 2 * d;
+      return {
+        question: `\\text{For } A(${x1}, ${y1}) \\text{ and } B(${x2}, ${y2}), \\text{ find } AB \\text{ and the midpoint}`,
+        steps: [
+          `\\Delta x = ${x2} - ${PR.par(x1)} = ${x2 - x1}, \\quad \\Delta y = ${y2} - ${PR.par(y1)} = ${y2 - y1}`,
+          `AB = \\sqrt{${x2 - x1}^2 + ${PR.par(y2 - y1)}^2} = \\sqrt{${(x2 - x1) ** 2 + (y2 - y1) ** 2}} = ${dist}`,
+          `M = \\left(\\frac{${x1} + ${PR.par(x2)}}{2}, \\frac{${y1} + ${PR.par(y2)}}{2}\\right) = (${mx}, ${my})`,
+        ],
+        answer: `AB = ${dist}, \\quad M = (${mx}, ${my})`,
+        viz: {
+          type: 'points',
+          points: [[x1, y1, 'A'], [x2, y2, 'B']],
+          segments: [[0, 1]],
+          mark: [mx, my, 'M'],
+        },
+        w: { x1, y1, x2, y2, mx, my, dist },
+      };
+    },
+    distractors({ x1, y1, x2, y2, mx, my, dist }) {
+      const form = (d, a, b, why) =>
+        ({ latex: `AB = ${PR.r(d, 3)}, \\quad M = (${PR.r(a, 2)}, ${PR.r(b, 2)})`, why });
+      return [
+        // Subtracting the coordinates instead of averaging them.
+        form(dist, (x2 - x1) / 2, (y2 - y1) / 2, 'midpoint-difference'),
+        // Adding the legs rather than using Pythagoras.
+        form(Math.abs(x2 - x1) + Math.abs(y2 - y1), mx, my, 'distance-added'),
+        form(Math.abs(x2 - x1) + Math.abs(y2 - y1), (x2 - x1) / 2, (y2 - y1) / 2, 'distance-added'),
+        // Forgot the square root.
+        form((x2 - x1) ** 2 + (y2 - y1) ** 2, mx, my, 'no-sqrt'),
+        form(dist, x1 + x2, y1 + y2, 'midpoint-no-halve'),
+      ];
+    },
+  },
+  {
+    id: 'coord-line', skill: 'coordinate-geometry', topic: 'Coordinate geometry',
+    keywords: ['gradient', 'equation of a line', 'straight line', 'coordinate'],
+    generate() {
+      // Whole-number gradient: the point of the exercise is rise over run, not
+      // fraction arithmetic. Non-zero x1 and intercept, because at either of
+      // those two of the distractors below land on the answer, and PR.ct drops
+      // a zero intercept so the answer would be visibly shorter than the rest.
+      let m, x1, y1, c;
+      do {
+        m = PR.nz(-4, 4);
+        x1 = PR.nz(-6, 5);
+        y1 = PR.int(-8, 8);
+        c = y1 - m * x1;
+      } while (c === 0);
+      const run = PR.int(1, 4);
+      const x2 = x1 + run; const y2 = y1 + m * run;
+      return {
+        question: `\\text{Find the equation of the line through } (${x1}, ${y1}) \\text{ and } (${x2}, ${y2})`,
+        steps: [
+          `m = \\frac{${y2} - ${PR.par(y1)}}{${x2} - ${PR.par(x1)}} = \\frac{${y2 - y1}}{${x2 - x1}} = ${m}`,
+          `y - ${PR.par(y1)} = ${m}(x - ${PR.par(x1)})`,
+          `y = ${PR.lead(m)}${PR.ct(c)}`,
+        ],
+        answer: `y = ${PR.lead(m)}${PR.ct(c)}`,
+        viz: {
+          type: 'points',
+          points: [[x1, y1, ''], [x2, y2, '']],
+          lines: [{ m, c }],
+        },
+        w: { m, c, x1, y1, x2, y2 },
+      };
+    },
+    distractors({ m, c, x1, y1, x2, y2 }) {
+      const form = (grad, konst, why) =>
+        (konst === 0 ? null : { latex: `y = ${PR.lead(grad)}${PR.ct(konst)}`, why });
+      return [
+        // Run over rise.
+        form(PR.r((x2 - x1) / (y2 - y1), 3), c, 'gradient-inverted'),
+        form(-m, c, 'gradient-sign'),
+        form(m, y1 + m * x1, 'move-sign'),
+        form(m, -c, 'move-sign'),
+        form(-m, -c, 'gradient-sign'),
+        form(PR.r((x2 - x1) / (y2 - y1), 3), y1 + m * x1, 'gradient-inverted'),
+      ].filter(Boolean);
+    },
+  },
+  {
+    id: 'coord-perpendicular', skill: 'coordinate-geometry', topic: 'Coordinate geometry',
+    keywords: ['perpendicular', 'parallel', 'normal', 'gradient', 'coordinate'],
+    generate() {
+      // The GIVEN gradient is the fraction (1/k) and the perpendicular one is
+      // the whole number, not the other way round. That way the answer and
+      // every distractor go through PR.lead/PR.ct like every other template, so
+      // none of them can be picked out by its shape.
+      let k, sign, x1, y1, pm, c;
+      do {
+        k = PR.int(2, 5);
+        sign = PR.choice([1, -1]);
+        pm = -sign * k;                 // perpendicular to 1/k is -k
+        x1 = PR.nz(-5, 5); y1 = PR.int(-6, 6);
+        c = y1 - pm * x1;
+      } while (c === 0);
+      const mTex = `\\tfrac{${sign}}{${k}}`;
+      return {
+        question: `\\text{A line has gradient } ${mTex}. \\text{ Find the line perpendicular to it through } (${x1}, ${y1})`,
+        steps: [
+          `\\text{Perpendicular gradients multiply to } -1`,
+          `m_{\\perp} = -\\frac{1}{${mTex}} = ${pm}`,
+          `y - ${PR.par(y1)} = ${pm}(x - ${PR.par(x1)})`,
+          `y = ${PR.lead(pm)}${PR.ct(c)}`,
+        ],
+        answer: `y = ${PR.lead(pm)}${PR.ct(c)}`,
+        viz: {
+          type: 'points', points: [[x1, y1, '']],
+          lines: [{ m: pm, c }, { m: sign / k, c: y1 - (sign / k) * x1 }],
+        },
+        w: { k, sign, pm, x1, y1, c },
+      };
+    },
+    distractors({ k, sign, pm, x1, y1, c }) {
+      const m = sign / k; // the given gradient
+      const form = (grad, konst, why) =>
+        (konst === 0 ? null
+          : { latex: `y = ${PR.lead(PR.r(grad, 3))}${PR.ct(PR.r(konst, 3))}`, why });
+      return [
+        // Flipped but not negated — the classic slip this template exists for.
+        form(sign * k, y1 - sign * k * x1, 'perp-no-negate'),
+        // Negated but not flipped.
+        form(-m, y1 + m * x1, 'perp-no-reciprocal'),
+        // Parallel instead of perpendicular.
+        form(m, y1 - m * x1, 'perp-is-parallel'),
+        form(pm, y1 + pm * x1, 'move-sign'),
+        form(sign * k, c, 'perp-no-negate'),
+      ].filter(Boolean);
+    },
+  },
+  {
+    id: 'coord-intersect', skill: 'coordinate-geometry', topic: 'Coordinate geometry',
+    keywords: ['intersection', 'simultaneous', 'point of intersection', 'coordinate'],
+    mcqOrdered: true, // (x, y) — the two coordinates are different quantities
+    generate() {
+      // Built backwards from an integer intersection point. px non-zero: at
+      // x = 0 three of the four slips below all produce the right point, since
+      // every line meets the y-axis at its own intercept.
+      const px = PR.nz(-5, 5); const py = PR.int(-6, 6);
+      let m1, m2;
+      do { m1 = PR.nz(-4, 4); m2 = PR.nz(-4, 4); } while (m1 === m2);
+      const c1 = py - m1 * px; const c2 = py - m2 * px;
+      return {
+        question: `\\text{Where do } y = ${PR.lead(m1)}${PR.ct(c1)} \\text{ and } y = ${PR.lead(m2)}${PR.ct(c2)} \\text{ meet?}`,
+        steps: [
+          `${PR.lead(m1)}${PR.ct(c1)} = ${PR.lead(m2)}${PR.ct(c2)}`,
+          `${PR.lead(m1 - m2)} = ${c2 - c1}`,
+          `x = \\frac{${c2 - c1}}{${m1 - m2}} = ${px}`,
+          `y = ${m1}(${px})${PR.ct(c1)} = ${py}`,
+        ],
+        answer: `(${px}, ${py})`,
+        viz: {
+          type: 'points', points: [], lines: [{ m: m1, c: c1 }, { m: m2, c: c2 }],
+          mark: [px, py, 'meet'],
+        },
+        w: { m1, c1, m2, c2, px, py },
+      };
+    },
+    distractors({ m1, c1, m2, c2, px, py }) {
+      // m1 + m2 is zero whenever the gradients are opposite, and dividing by it
+      // would offer the student "(NaN, 3)".
+      const pt = (x, y, why) =>
+        (!isFinite(x) || !isFinite(y) ? null
+          : { latex: `(${PR.r(x, 2)}, ${PR.r(y, 2)})`, why });
+      return [
+        pt(py, px, 'coords-swapped'),
+        // Subtracted the gradients the wrong way round.
+        pt((c1 - c2) / (m1 - m2), py, 'move-sign'),
+        pt(px, m2 * px + c1, 'substituted-wrong'),
+        pt(m1 + m2 === 0 ? NaN : (c2 - c1) / (m1 + m2), py, 'move-sign'),
+        pt(-px, -py, 'coords-swapped'),
+      ].filter(Boolean);
+    },
+  },
+  {
+    id: 'circle-centre-radius', skill: 'circles-loci', topic: 'Coordinate geometry',
+    keywords: ['circle', 'centre', 'radius', 'general form', 'locus'],
+    mcqOrdered: true, // centre and radius are different quantities
+    generate() {
+      // x^2 + y^2 + Dx + Ey + F = 0 with integer centre and whole radius.
+      const a = PR.int(-5, 5); const b = PR.int(-5, 5);
+      const r = PR.int(2, 7);
+      const D = -2 * a; const E = -2 * b; const F = a * a + b * b - r * r;
+      return {
+        question: `\\text{Find the centre and radius of } x^2 + y^2${PR.xt(D)}${PR.xt(E, 'y')}${PR.ct(F)} = 0`,
+        steps: [
+          `\\text{Complete the square in } x: \\ x^2${PR.xt(D)} = (x ${PR.s(-a)})^2 - ${a * a}`,
+          `\\text{And in } y: \\ y^2${PR.xt(E, 'y')} = (y ${PR.s(-b)})^2 - ${b * b}`,
+          `(x ${PR.s(-a)})^2 + (y ${PR.s(-b)})^2 = ${a * a + b * b - F} = ${r * r}`,
+          `\\text{Centre } (${a}, ${b}), \\text{ radius } ${r}`,
+        ],
+        answer: `\\text{centre } (${a}, ${b}), \\ r = ${r}`,
+        viz: { type: 'circle', cx: a, cy: b, r },
+        w: { a, b, r, D, E, F },
+      };
+    },
+    distractors({ a, b, r, D, E, F }) {
+      const form = (cx, cy, rad, why) =>
+        (rad <= 0 ? null
+          : { latex: `\\text{centre } (${PR.r(cx, 2)}, ${PR.r(cy, 2)}), \\ r = ${PR.r(rad, 3)}`, why });
+      return [
+        // Centre read straight off the coefficients, without negating and halving.
+        form(D, E, r, 'centre-not-negated'),
+        form(-a, -b, r, 'centre-not-negated'),
+        form(a, b, r * r, 'no-sqrt'),
+        form(a, b, Math.abs(F) > 0 ? Math.sqrt(Math.abs(F)) : r + 1, 'radius-is-constant'),
+        form(D / 2, E / 2, r, 'centre-not-negated'),
+      ].filter(Boolean);
+    },
+  },
+
+  // ---- Trigonometry: radians, arcs and graphs ---------------------------------------
+  {
+    id: 'radians-convert', skill: 'radians-arcs', topic: 'Trigonometry',
+    keywords: ['radian', 'degrees', 'convert', 'exact radians'],
+    mcqShapeVaries: true, // some answers are a bare pi, others a fraction of it
+    generate() {
+      const table = [
+        [30, '\\tfrac{\\pi}{6}'], [45, '\\tfrac{\\pi}{4}'], [60, '\\tfrac{\\pi}{3}'],
+        [90, '\\tfrac{\\pi}{2}'], [120, '\\tfrac{2\\pi}{3}'], [135, '\\tfrac{3\\pi}{4}'],
+        [150, '\\tfrac{5\\pi}{6}'], [180, '\\pi'], [225, '\\tfrac{5\\pi}{4}'],
+        [270, '\\tfrac{3\\pi}{2}'], [300, '\\tfrac{5\\pi}{3}'], [315, '\\tfrac{7\\pi}{4}'],
+      ];
+      const [deg, rad] = PR.choice(table);
+      return {
+        question: `\\text{Write } ${deg}^\\circ \\text{ in radians, as an exact multiple of } \\pi`,
+        steps: [
+          `\\text{Multiply by } \\frac{\\pi}{180}`,
+          `${deg} \\times \\frac{\\pi}{180} = \\frac{${deg}\\pi}{180}`,
+          `= ${rad}`,
+        ],
+        answer: `${rad}`,
+        w: { deg, rad, table },
+      };
+    },
+    distractors({ rad, table }) {
+      // Other entries from the same table: every option is a real angle, so
+      // none can be ruled out for looking wrong.
+      return table.map(([, r]) => r).filter((r) => r !== rad)
+        .sort(() => Math.random() - 0.5)
+        .map((latex) => ({ latex, why: 'radian-conversion' }));
+    },
+  },
+  {
+    id: 'arc-sector', skill: 'radians-arcs', topic: 'Trigonometry',
+    keywords: ['arc length', 'sector', 'radian', 'sector area'],
+    mcqOrdered: true, // a length and an area are different quantities
+    generate() {
+      // Angle as a whole number of radians keeps l = rθ and A = ½r²θ exact.
+      const r = PR.int(3, 12);
+      const th = PR.choice([0.5, 1, 1.5, 2, 2.5, 3]);
+      const arc = PR.r(r * th, 3);
+      const area = PR.r(0.5 * r * r * th, 3);
+      return {
+        question: `\\text{A sector has radius } ${r} \\text{ and angle } ${th} \\text{ radians.}`
+          + ` \\text{ Find the arc length and the area}`,
+        steps: [
+          `\\ell = r\\theta = ${r} \\times ${th} = ${arc}`,
+          `A = \\tfrac{1}{2}r^2\\theta = \\tfrac{1}{2} \\times ${r * r} \\times ${th}`,
+          `A = ${area}`,
+        ],
+        answer: `\\ell = ${arc}, \\quad A = ${area}`,
+        w: { r, th, arc, area },
+      };
+    },
+    distractors({ r, th, arc, area }) {
+      const form = (l, a, why) =>
+        ({ latex: `\\ell = ${PR.r(l, 3)}, \\quad A = ${PR.r(a, 3)}`, why });
+      return [
+        // Forgot the half in the area.
+        form(arc, r * r * th, 'sector-no-half'),
+        // Used degrees formulas with a radian angle.
+        form(arc, 0.5 * r * th, 'sector-radius-not-squared'),
+        form(r * r * th, area, 'arc-radius-squared'),
+        form(2 * Math.PI * r, area, 'arc-is-circumference'),
+        form(arc, Math.PI * r * r, 'arc-is-circumference'),
+      ];
+    },
+  },
+  {
+    id: 'segment-area', skill: 'radians-arcs', topic: 'Trigonometry',
+    keywords: ['segment', 'segment area', 'minor segment', 'radian'],
+    generate() {
+      const r = PR.int(4, 12);
+      const th = PR.choice([0.8, 1, 1.2, 1.5, 2, 2.4]);
+      const area = PR.r(0.5 * r * r * (th - Math.sin(th)), 3);
+      return {
+        question: `\\text{Find the area of the minor segment cut off by a chord in a circle of radius }`
+          + `${r}, \\text{ subtending } ${th} \\text{ radians at the centre}`,
+        steps: [
+          `\\text{Segment} = \\text{sector} - \\text{triangle}`,
+          `= \\tfrac{1}{2}r^2\\theta - \\tfrac{1}{2}r^2\\sin\\theta = \\tfrac{1}{2}r^2(\\theta - \\sin\\theta)`,
+          `= \\tfrac{1}{2}(${r * r})(${th} - ${PR.r(Math.sin(th), 4)}) = ${area}`,
+        ],
+        answer: `${area}`,
+        w: { r, th, area },
+      };
+    },
+    distractors({ r, th, area }) {
+      const val = (x, why) => ({ latex: `${PR.r(x, 3)}`, why });
+      const half = 0.5 * r * r;
+      return [
+        // The sector on its own — forgot to take the triangle off.
+        val(half * th, 'segment-is-sector'),
+        // The triangle on its own.
+        val(half * Math.sin(th), 'segment-is-triangle'),
+        // Dropped the half.
+        val(r * r * (th - Math.sin(th)), 'sector-no-half'),
+        // Subtracted the other way round.
+        val(Math.abs(half * (Math.sin(th) - th)), 'segment-reversed'),
+        val(half * (th + Math.sin(th)), 'segment-reversed'),
+      ];
+    },
+  },
+  {
+    id: 'trig-simplify', skill: 'trig-identities', topic: 'Trigonometry',
+    keywords: ['identity', 'simplify', 'pythagorean identity', 'trig identity'],
+    // The answers are different kinds of thing (a ratio, a function, a number),
+    // which is inherent to the topic rather than a formatting tell.
+    mcqShapeVaries: true,
+    generate() {
+      // Every one of these reduces through sin^2 + cos^2 = 1 or tan = sin/cos.
+      const cases = [
+        ['\\frac{1 - \\cos^2\\theta}{\\sin\\theta}', '\\sin\\theta'],
+        ['\\frac{1 - \\sin^2\\theta}{\\cos\\theta}', '\\cos\\theta'],
+        ['\\tan\\theta\\cos\\theta', '\\sin\\theta'],
+        ['\\frac{\\sin^2\\theta}{1 - \\cos^2\\theta}', '1'],
+        ['\\frac{\\sin\\theta}{\\cos\\theta}', '\\tan\\theta'],
+        ['\\frac{1 - \\cos^2\\theta}{\\sin\\theta\\cos\\theta}', '\\tan\\theta'],
+        ['(1 - \\sin^2\\theta) + \\sin^2\\theta', '1'],
+        ['\\frac{\\cos\\theta}{\\sin\\theta}\\tan\\theta', '1'],
+      ];
+      const [expr, ans] = PR.choice(cases);
+      return {
+        question: `\\text{Simplify } ${expr}`,
+        steps: [
+          `\\text{Use } \\sin^2\\theta + \\cos^2\\theta = 1 \\text{ and } \\tan\\theta = \\frac{\\sin\\theta}{\\cos\\theta}`,
+          `${expr} = ${ans}`,
+        ],
+        answer: `${ans}`,
+        w: { expr, ans },
+      };
+    },
+    distractors({ ans }) {
+      // Other plausible reductions of the same expression — each is what you get
+      // by mis-remembering which of sin/cos the identity leaves behind.
+      return ['\\sin\\theta', '\\cos\\theta', '\\tan\\theta', '1', '\\sin^2\\theta']
+        .filter((v) => v !== ans)
+        .map((latex) => ({ latex, why: 'pythag-identity' }));
+    },
+  },
+  {
+    id: 'trig-graph-features', skill: 'trig-graphs', topic: 'Trigonometry',
+    keywords: ['amplitude', 'period', 'phase shift', 'trig graph'],
+    mcqOrdered: true, // amplitude and period are different quantities
+    generate() {
+      const a = PR.choice([2, 3, 4, 5, -2, -3]);
+      const b = PR.choice([2, 3, 4, 6]);
+      const period = 360 / b;
+      return {
+        question: `\\text{For } y = ${PR.lead(a, `\\sin ${b}x`)}, \\text{ find the amplitude and the period in degrees}`,
+        steps: [
+          `\\text{Amplitude} = |a| = |${a}| = ${Math.abs(a)}`,
+          `\\text{Period} = \\frac{360^\\circ}{b} = \\frac{360^\\circ}{${b}}`,
+          `= ${period}^\\circ`,
+        ],
+        answer: `\\text{amplitude } ${Math.abs(a)}, \\text{ period } ${period}^\\circ`,
+        viz: { type: 'sine', a, b, xmax: Math.round(period * 2) },
+        w: { a, b, period },
+      };
+    },
+    distractors({ a, b, period }) {
+      const form = (amp, per, why) =>
+        ({ latex: `\\text{amplitude } ${PR.r(amp, 3)}, \\text{ period } ${PR.r(per, 3)}^\\circ`, why });
+      return [
+        // Period multiplied by b instead of divided.
+        form(Math.abs(a), 360 * b, 'period-multiplied'),
+        // b read as the amplitude and a as the period.
+        form(b, Math.abs(a), 'amplitude-is-b'),
+        form(Math.abs(a), 360, 'period-ignored-b'),
+        form(a * 2, period, 'amplitude-doubled'),
+        form(b, period, 'amplitude-is-b'),
+      ];
+    },
+  },
+  {
+    id: 'trig-double-angle', skill: 'trig-identities', topic: 'Trigonometry',
+    keywords: ['double angle', 'identity', 'sin 2x', 'cos 2x'],
+    generate() {
+      // sin θ and cos θ from a Pythagorean triple, so sin 2θ is exact.
+      const [p, q, h] = PR.choice([[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25]]);
+      const flip = PR.choice([true, false]);
+      const s = flip ? q : p;   // sin
+      const c = flip ? p : q;   // cos
+      const sin2 = PR.r(2 * s * c / (h * h), 4);
+      return {
+        question: `\\text{Given } \\sin\\theta = \\tfrac{${s}}{${h}} \\text{ and } \\cos\\theta = \\tfrac{${c}}{${h}}`
+          + ` \\text{ with } \\theta \\text{ acute, find } \\sin 2\\theta`,
+        steps: [
+          `\\sin 2\\theta = 2\\sin\\theta\\cos\\theta`,
+          `= 2 \\times \\tfrac{${s}}{${h}} \\times \\tfrac{${c}}{${h}} = \\tfrac{${2 * s * c}}{${h * h}}`,
+          `= ${sin2}`,
+        ],
+        answer: `\\tfrac{${2 * s * c}}{${h * h}}`,
+        w: { s, c, h },
+      };
+    },
+    distractors({ s, c, h }) {
+      const frac = (top, bot, why) => ({ latex: `\\tfrac{${top}}{${bot}}`, why });
+      return [
+        // Forgot the 2.
+        frac(s * c, h * h, 'double-angle-no-two'),
+        // Doubled the angle by doubling the ratio.
+        frac(2 * s, h, 'double-angle-doubled-sin'),
+        // Used the cos 2θ identity instead.
+        frac(c * c - s * s, h * h, 'double-angle-wrong-identity'),
+        frac(s + c, h, 'double-angle-added'),
+        frac(2 * s * c, h, 'double-angle-no-two'),
+      ];
+    },
+  },
+  {
+    id: 'trig-harmonic', skill: 'trig-modelling', topic: 'Trigonometry',
+    keywords: ['harmonic form', 'auxiliary angle', 'a sin x + b cos x', 'r sin'],
+    mcqOrdered: true, // R and alpha are different quantities
+    generate() {
+      // Pythagorean pair so R is whole.
+      const [a, b, R] = PR.choice([[3, 4, 5], [4, 3, 5], [6, 8, 10], [5, 12, 13], [12, 5, 13]]);
+      const alpha = PR.r(Math.atan2(b, a) * 180 / Math.PI, 2);
+      return {
+        question: `\\text{Write } ${a}\\sin x + ${b}\\cos x \\text{ as } R\\sin(x + \\alpha), \\ R > 0`,
+        steps: [
+          `R = \\sqrt{a^2 + b^2} = \\sqrt{${a * a} + ${b * b}} = ${R}`,
+          `\\tan\\alpha = \\frac{b}{a} = \\frac{${b}}{${a}}`,
+          `\\alpha = \\arctan\\left(\\frac{${b}}{${a}}\\right) \\approx ${alpha}^\\circ`,
+        ],
+        answer: `R = ${R}, \\ \\alpha \\approx ${alpha}^\\circ`,
+        viz: { type: 'sine', a: R, b: 1, c: -alpha, xmax: 360 },
+        w: { a, b, R, alpha },
+      };
+    },
+    distractors({ a, b, R, alpha }) {
+      const form = (r, al, why) =>
+        ({ latex: `R = ${PR.r(r, 3)}, \\ \\alpha \\approx ${PR.r(al, 2)}^\\circ`, why });
+      return [
+        // tan α taken as a/b.
+        form(R, Math.atan2(a, b) * 180 / Math.PI, 'harmonic-alpha-inverted'),
+        // R as a + b rather than the hypotenuse.
+        form(a + b, alpha, 'harmonic-r-added'),
+        form(R * R, alpha, 'no-sqrt'),
+        form(a + b, Math.atan2(a, b) * 180 / Math.PI, 'harmonic-r-added'),
+        form(R, 90 - alpha, 'harmonic-alpha-inverted'),
+      ];
+    },
+  },
+  {
+    id: 'trig-equation-domain', skill: 'trig-equations', topic: 'Trigonometry',
+    keywords: ['trig equation', 'domain', 'solve trig', 'general solution'],
+    generate() {
+      // sin(bx) = k over 0..360: divide the domain by b, solve, divide back.
+      // b = 2 only: at b = 3 the answer is six angles, which is more than an
+      // option cell can show on a phone without scrolling.
+      const b = 2;
+      const o = PR.choice([
+        { k: '\\tfrac{1}{2}', kv: 0.5, ref: 30 },
+        { k: '\\tfrac{\\sqrt{2}}{2}', kv: 0.7071, ref: 45 },
+        { k: '\\tfrac{\\sqrt{3}}{2}', kv: 0.866, ref: 60 },
+      ]);
+      // Solutions of sin u = k for u in [0, 360b), then x = u / b.
+      const us = [];
+      for (let turn = 0; turn < b; turn++) {
+        us.push(o.ref + 360 * turn, 180 - o.ref + 360 * turn);
+      }
+      const xs = us.map((u) => PR.r(u / b, 2)).sort((p, q) => p - q);
+      return {
+        question: `\\text{Solve } \\sin ${b}x = ${o.k} \\ \\text{for } 0^\\circ \\le x \\le 360^\\circ`,
+        steps: [
+          `\\text{Let } u = ${b}x, \\text{ so } 0^\\circ \\le u \\le ${360 * b}^\\circ`,
+          `\\sin u = ${o.k} \\Rightarrow u = ${us.sort((p, q) => p - q).join('^\\circ, ')}^\\circ`,
+          `x = \\frac{u}{${b}} = ${xs.join('^\\circ, ')}^\\circ`,
+        ],
+        answer: `x = ${xs.join('^\\circ, ')}^\\circ`,
+        viz: { type: 'sine', b, k: o.kv, sols: xs, xmax: 360 },
+        w: { b, ref: o.ref, xs },
+      };
+    },
+    distractors({ b, ref, xs }) {
+      // Every option carries the same NUMBER of angles as the answer. An option
+      // with two where the answer has four is spotted by its length alone,
+      // before the student has thought about a single quadrant.
+      const list = (arr, why) => ({
+        latex: `x = ${arr.map((v) => PR.r(v, 2)).sort((p, q) => p - q).join('^\\circ, ')}^\\circ`,
+        why,
+      });
+      const spread = (second) => {
+        const out = [];
+        for (let turn = 0; turn < b; turn++) {
+          out.push((ref + 360 * turn) / b, (second + 360 * turn) / b);
+        }
+        return out;
+      };
+      return [
+        // Took the cosine's second solution, 360 - ref, instead of sine's.
+        list(spread(360 - ref), 'quadrant-wrong'),
+        // Solved for u and never divided back, so the angles overshoot the domain.
+        list(xs.map((v) => v * b), 'domain-not-divided'),
+        // Divided by b a second time.
+        list(xs.map((v) => v / b), 'domain-not-divided'),
+        // Started from the complementary reference angle.
+        list(spread(180 - (90 - ref)).map((v) => v), 'exact-value-swap'),
+      ];
+    },
+  },
+
+  // ---- Functions -------------------------------------------------------------------
+  {
+    id: 'func-inverse', skill: 'inverse-composite', topic: 'Functions',
+    keywords: ['inverse function', 'inverse', 'f inverse'],
+    // The numerator constant and the divisor are different roles, so an option
+    // may reuse the answer's numbers without being the answer.
+    mcqOrdered: true,
+    generate() {
+      // (ax + b) / d, chosen so the inverse has whole coefficients.
+      const a = PR.nz(-5, 5);
+      const b = PR.nz(-9, 9);
+      return {
+        question: `\\text{Find } f^{-1}(x) \\text{ for } f(x) = ${PR.lead(a)}${PR.ct(b)}`,
+        steps: [
+          `\\text{Write } y = ${PR.lead(a)}${PR.ct(b)}`,
+          `\\text{Swap } x \\text{ and } y: \\ x = ${PR.lead(a, 'y')}${PR.ct(b)}`,
+          `x ${PR.s(-b)} = ${PR.lead(a, 'y')}`,
+          `f^{-1}(x) = \\frac{x ${PR.s(-b)}}{${a}}`,
+        ],
+        answer: `f^{-1}(x) = \\frac{x ${PR.s(-b)}}{${a}}`,
+        viz: {
+          type: 'points', points: [],
+          // The function, its inverse, and y = x to show the reflection.
+          lines: [{ m: a, c: b }, { m: 1 / a, c: -b / a }, { m: 1, c: 0 }],
+        },
+        w: { a, b },
+      };
+    },
+    distractors({ a, b }) {
+      const form = (top, bot, why) =>
+        (top === 0 || bot === 0 ? null
+          : { latex: `f^{-1}(x) = \\frac{x ${PR.s(top)}}{${bot}}`, why });
+      return [
+        // Subtracted b instead of adding it back, or vice versa.
+        form(b, a, 'inverse-sign'),
+        // Divided by the wrong thing on the way back.
+        form(-b, -a, 'inverse-sign'),
+        form(b, -a, 'inverse-sign'),
+        // Divided by the constant rather than the coefficient. Dies when the two
+        // are equal, which is what the fourth candidate is here for.
+        form(-b, b, 'inverse-is-reciprocal'),
+        form(b, b, 'inverse-is-reciprocal'),
+      ].filter(Boolean);
+    },
+  },
+  {
+    id: 'func-composite', skill: 'inverse-composite', topic: 'Functions',
+    keywords: ['composite function', 'composite', 'fog', 'f of g'],
+    generate() {
+      // |a| > 1: at a = +/-1 there is nothing to distribute, so "forgot to
+      // multiply through the bracket" produces the right answer and the
+      // question stops testing the thing it is for.
+      const a = PR.choice([-4, -3, -2, 2, 3, 4]);
+      const b = PR.nz(-6, 6);
+      const c = PR.nz(-4, 4); const d = PR.nz(-6, 6);
+      // f(g(x)) = a(cx + d) + b = acx + ad + b
+      const A = a * c; const B = a * d + b;
+      return {
+        question: `f(x) = ${PR.lead(a)}${PR.ct(b)}, \\ g(x) = ${PR.lead(c)}${PR.ct(d)}. \\text{ Find } f(g(x))`,
+        steps: [
+          `f(g(x)) = ${a}(${PR.lead(c)}${PR.ct(d)})${PR.ct(b)}`,
+          `= ${PR.lead(a * c)}${PR.ct(a * d)}${PR.ct(b)}`,
+          `= ${PR.lead(A)}${PR.ct(B)}`,
+        ],
+        answer: `${PR.lead(A)}${PR.ct(B)}`,
+        w: { a, b, c, d, A, B },
+      };
+    },
+    distractors({ a, b, c, d, A, B }) {
+      // PR.lead(0) prints "0x" and PR.ct(0) drops the constant, so a candidate
+      // that lands on either would be spotted without doing any algebra.
+      const form = (p, q, why) =>
+        (p === 0 || q === 0 ? null : { latex: `${PR.lead(p)}${PR.ct(q)}`, why });
+      return [
+        // g(f(x)) — the other order.
+        form(a * c, c * b + d, 'composite-order'),
+        // Left the inner constant alone instead of multiplying it by a.
+        form(A, d + b, 'composite-no-distribute'),
+        // Dropped f's own constant.
+        form(A, a * d, 'composite-no-distribute'),
+        // Distributed a over the outer constant as well.
+        form(A, a * (d + b), 'composite-no-distribute'),
+        // Sign slip on the last addition. Never collides: b is non-zero.
+        form(A, a * d - b, 'sign-last'),
+        form(a + c, b + d, 'composite-added'),
+      ].filter(Boolean);
+    },
+  },
+  {
+    id: 'func-transform', skill: 'function-transformations', topic: 'Functions',
+    keywords: ['transformation', 'translate', 'shift', 'stretch', 'reflection'],
+    generate() {
+      // y = a·f(x − h) + k applied to a named point on y = f(x).
+      const a = PR.choice([-3, -2, 2, 3]);
+      const h = PR.nz(-4, 4);
+      const k = PR.nz(-5, 5);
+      const px = PR.nz(-4, 4); const py = PR.nz(-4, 4);
+      const ix = px + h; const iy = a * py + k;
+      return {
+        question: `\\text{The point } (${px}, ${py}) \\text{ lies on } y = f(x).`
+          + ` \\text{ Where does it move on } y = ${PR.lead(a, `f(x ${PR.s(-h)})`)}${PR.ct(k)}?`,
+        steps: [
+          `\\text{Inside the bracket shifts } x: \\ x ${PR.s(-h)} = ${px} \\Rightarrow x = ${ix}`,
+          `\\text{Outside scales then shifts } y: \\ ${a} \\times ${PR.par(py)}${PR.ct(k)} = ${iy}`,
+          `\\text{Image: } (${ix}, ${iy})`,
+        ],
+        answer: `(${ix}, ${iy})`,
+        viz: { type: 'points', points: [[px, py, 'P']], mark: [ix, iy, 'image'] },
+        w: { a, h, k, px, py, ix, iy },
+      };
+    },
+    // (x, y) — two different coordinates, not an unordered pair.
+    mcqOrdered: true,
+    distractors({ a, h, k, px, py, ix, iy }) {
+      const pt = (x, y, why) => ({ latex: `(${x}, ${y})`, why });
+      return [
+        // Shifted x the way the bracket reads rather than the opposite way.
+        pt(px - h, iy, 'transform-x-direction'),
+        // Added k before scaling.
+        pt(ix, a * (py + k), 'transform-order'),
+        pt(ix, py + k, 'transform-no-scale'),
+        pt(px - h, a * (py + k), 'transform-x-direction'),
+        pt(ix, a * py, 'transform-no-scale'),
+      ];
+    },
+  },
+  {
+    id: 'curve-asymptotes', skill: 'curve-sketching', topic: 'Functions',
+    keywords: ['asymptote', 'curve sketch', 'sketch the graph', 'vertical asymptote'],
+    mcqOrdered: true, // "x = 3, y = 2" — a vertical and a horizontal, not a pair
+    generate() {
+      // (ax + b) / (x + c): vertical at x = -c, horizontal at y = a.
+      let a, b, c;
+      do {
+        a = PR.nz(-5, 5); b = PR.nz(-9, 9); c = PR.nz(-6, 6);
+      } while (b === a * c); // otherwise it cancels to a constant
+      return {
+        question: `\\text{Find the asymptotes of } y = \\frac{${PR.lead(a)}${PR.ct(b)}}{x ${PR.s(c)}}`,
+        steps: [
+          `\\text{The bottom is zero at } x ${PR.s(c)} = 0 \\Rightarrow x = ${-c}`,
+          `\\text{As } x \\to \\pm\\infty \\text{ the } ${b} \\text{ and } ${c} \\text{ stop mattering}`,
+          `y \\to \\frac{${PR.lead(a)}}{x} = ${a}`,
+        ],
+        answer: `x = ${-c}, \\ y = ${a}`,
+        viz: { type: 'rational', num: [b, a], den: [c, 1], asym: [-c] },
+        w: { a, b, c },
+      };
+    },
+    distractors({ a, b, c }) {
+      const pair = (v, hz, why) => ({ latex: `x = ${v}, \\ y = ${hz}`, why });
+      return [
+        // Read the vertical asymptote off without changing sign.
+        pair(c, a, 'asymptote-sign'),
+        // Horizontal read off the constant rather than the leading coefficient.
+        pair(-c, b, 'asymptote-constant'),
+        pair(c, b, 'asymptote-sign'),
+        pair(-c, PR.r(b / c, 2), 'asymptote-constant'),
+        pair(-b, a, 'asymptote-sign'),
+      ];
+    },
+  },
+
   // ---- Rational expressions ------------------------------------------------------
   {
     id: 'rational-simplify', skill: 'rational-expressions', topic: 'Rational expressions',
@@ -1368,6 +2106,34 @@ const PRACTICE_FORMULAS = {
   ],
   'stats-mean-sd': ['\\bar x = \\dfrac{\\sum x}{n}, \\quad s = \\sqrt{\\dfrac{\\sum (x - \\bar x)^2}{n - 1}}'],
   'binom-prob': ['P(X = k) = \\dbinom{n}{k} p^k (1 - p)^{n-k}'],
+  'coord-distance': [
+    'd = \\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}',
+    'M = \\left(\\dfrac{x_1 + x_2}{2}, \\dfrac{y_1 + y_2}{2}\\right)',
+  ],
+  'coord-line': ['m = \\dfrac{y_2 - y_1}{x_2 - x_1}, \\quad y - y_1 = m(x - x_1)'],
+  'coord-perpendicular': ['m_1 m_2 = -1 \\quad \\text{(perpendicular)}, \\qquad m_1 = m_2 \\quad \\text{(parallel)}'],
+  'coord-intersect': ['\\text{Set the two expressions for } y \\text{ equal, solve for } x, \\text{ then substitute back}'],
+  'circle-centre-radius': [
+    '(x - a)^2 + (y - b)^2 = r^2',
+    'x^2 + y^2 + Dx + Ey + F = 0 \\;\\Rightarrow\\; \\text{centre } \\left(-\\tfrac{D}{2}, -\\tfrac{E}{2}\\right)',
+  ],
+  'radians-convert': ['\\text{degrees} \\times \\dfrac{\\pi}{180} = \\text{radians}'],
+  'arc-sector': ['\\ell = r\\theta, \\quad A = \\tfrac{1}{2}r^2\\theta \\quad (\\theta \\text{ in radians})'],
+  'segment-area': ['A = \\tfrac{1}{2}r^2(\\theta - \\sin\\theta) \\quad (\\theta \\text{ in radians})'],
+  'trig-simplify': ['\\sin^2\\theta + \\cos^2\\theta = 1, \\quad \\tan\\theta = \\dfrac{\\sin\\theta}{\\cos\\theta}'],
+  'trig-graph-features': ['y = a\\sin bx: \\ \\text{amplitude } |a|, \\ \\text{period } \\dfrac{360^\\circ}{b}'],
+  'trig-double-angle': ['\\sin 2\\theta = 2\\sin\\theta\\cos\\theta, \\quad \\cos 2\\theta = \\cos^2\\theta - \\sin^2\\theta'],
+  'trig-harmonic': ['a\\sin x + b\\cos x = R\\sin(x + \\alpha), \\quad R = \\sqrt{a^2 + b^2}, \\ \\tan\\alpha = \\dfrac{b}{a}'],
+  'trig-equation-domain': ['\\text{Substitute } u = bx, \\text{ widen the domain to } b \\times, \\text{ solve, then divide back}'],
+  'func-inverse': ['\\text{Swap } x \\text{ and } y, \\text{ then make } y \\text{ the subject}'],
+  'func-composite': ['f(g(x)): \\text{ substitute all of } g(x) \\text{ wherever } x \\text{ appears in } f'],
+  'func-transform': [
+    'y = a\\,f(x - h) + k: \\text{ right } h, \\text{ stretch } \\times a, \\text{ up } k',
+  ],
+  'curve-asymptotes': [
+    '\\text{Vertical: where the denominator is } 0',
+    '\\text{Horizontal: the ratio of the leading coefficients}',
+  ],
   'rational-simplify': [
     'x^2 + bx + c = (x + p)(x + q), \\quad p + q = b,\\; pq = c',
     '\\text{Cancel common factors; exclude values making a denominator } 0',

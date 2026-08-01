@@ -225,15 +225,88 @@ function renderVisual(canvas, viz, colors) {
     p.label(viz.b, 0, `b = ${trim(viz.b)}`, fg, -8, 16);
   }
 
+  /**
+   * y = a·sin(b(x − c)) + d over 0..xmax degrees, with an optional horizontal
+   * line at `k` and dots on the solutions. The four wave parameters default to
+   * a plain sin x, so the older `{ type:'sine', k, sols }` specs still draw
+   * exactly what they did before.
+   */
   function drawSine() {
-    const p = makePlot(0, 360, -1.6, 1.6);
-    p.axes(90, 1);
-    p.curve((x) => Math.sin(x * Math.PI / 180), accent);
-    p.dashedH(viz.k, fg);
+    const a = viz.a != null ? viz.a : 1;
+    const b = viz.b != null ? viz.b : 1;
+    const c = viz.c != null ? viz.c : 0;
+    const d = viz.d != null ? viz.d : 0;
+    const xmax = viz.xmax != null ? viz.xmax : 360;
+    const wave = (x) => a * Math.sin(b * (x - c) * Math.PI / 180) + d;
+    const amp = Math.abs(a);
+    const p = makePlot(0, xmax, d - amp * 1.6, d + amp * 1.6);
+    p.axes(xmax / 4, niceStep(amp * 2));
+    p.curve(wave, accent);
+    if (viz.k != null) p.dashedH(viz.k, fg);
     (viz.sols || []).forEach((s) => {
-      p.dot(s, viz.k, fg);
-      p.label(s, viz.k, `${trim(s)}°`, fg, 4, -8);
+      const y = viz.k != null ? viz.k : wave(s);
+      p.dot(s, y, fg);
+      p.label(s, y, `${trim(s)}°`, fg, 4, -8);
     });
+  }
+
+  /** Labelled points, optional joining segments and full lines — coordinate geometry. */
+  function drawPoints() {
+    const pts = viz.points || [];
+    const lines = viz.lines || [];
+    const xs = pts.map((q) => q[0]);
+    const ys = pts.map((q) => q[1]);
+    if (viz.mark) { xs.push(viz.mark[0]); ys.push(viz.mark[1]); }
+    // A spec can be lines only (a function and its inverse, say). Without this
+    // the min/max below are +/-Infinity and the whole panel comes out blank.
+    if (!xs.length) { xs.push(-6, 6); ys.push(-6, 6); }
+    const spanX = Math.max(...xs) - Math.min(...xs);
+    const spanY = Math.max(...ys) - Math.min(...ys);
+    const pad = Math.max(spanX, spanY, 4) * 0.35;
+    const p = makePlot(Math.min(...xs) - pad, Math.max(...xs) + pad,
+      Math.min(...ys) - pad, Math.max(...ys) + pad);
+    p.axes(niceStep(spanX + 2 * pad), niceStep(spanY + 2 * pad));
+
+    lines.forEach((ln, i) => {
+      // A vertical line has no gradient, so it's given as `x` instead of m/c.
+      if (ln.x != null) p.dashedV(ln.x, i === 0 ? accent : fg);
+      else p.curve((x) => ln.m * x + ln.c, i === 0 ? accent : fg, 1.8);
+    });
+    (viz.segments || []).forEach(([i, j]) => {
+      ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(p.px(pts[i][0]), p.py(pts[i][1]));
+      ctx.lineTo(p.px(pts[j][0]), p.py(pts[j][1]));
+      ctx.stroke();
+    });
+    pts.forEach(([x, y, label]) => {
+      p.dot(x, y, fg);
+      p.label(x, y, `${label ? label + ' ' : ''}(${trim(x)}, ${trim(y)})`, fg);
+    });
+    if (viz.mark) {
+      p.dot(viz.mark[0], viz.mark[1], accent, 5);
+      p.label(viz.mark[0], viz.mark[1], viz.mark[2] || '', accent, 6, 14);
+    }
+  }
+
+  /** A circle with its centre and radius marked — circles and loci. */
+  function drawCircle() {
+    const { cx, cy, r } = viz;
+    const m = r * 1.5;
+    const p = makePlot(cx - m, cx + m, cy - m, cy + m);
+    p.axes(niceStep(2 * m), niceStep(2 * m));
+    ctx.strokeStyle = accent; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(p.px(cx), p.py(cy), Math.abs(p.px(cx + r) - p.px(cx)), 0, 7);
+    ctx.stroke();
+    p.dot(cx, cy, fg);
+    p.label(cx, cy, `(${trim(cx)}, ${trim(cy)})`, fg);
+    // The radius, drawn to the right so it never sits on top of the centre label.
+    ctx.strokeStyle = fg; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(p.px(cx), p.py(cy)); ctx.lineTo(p.px(cx + r), p.py(cy));
+    ctx.stroke(); ctx.setLineDash([]);
+    p.label(cx + r / 2, cy, `r = ${trim(r)}`, fg, -10, -6);
   }
 
   function drawUnitCircle() {
@@ -357,10 +430,15 @@ function renderVisual(canvas, viz, colors) {
     poly: drawPoly, rational: drawRational, area: drawArea, sine: drawSine,
     unitcircle: drawUnitCircle, triangle: drawTriangle, vectors: drawVectors,
     argand: drawArgand, bars: drawBars, dots: drawDots,
+    points: drawPoints, circle: drawCircle,
   }[viz.type];
   if (draw) draw();
 }
 
-// Renderer-supported types, used by the smoke test to validate generator specs.
+// Renderer-supported types, used by tools/check-practice.js to validate specs.
 const VIZ_TYPES = ['poly', 'rational', 'area', 'sine', 'unitcircle', 'triangle',
-  'vectors', 'argand', 'bars', 'dots'];
+  'vectors', 'argand', 'bars', 'dots', 'points', 'circle'];
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { renderVisual, VIZ_TYPES };
+}
