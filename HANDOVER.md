@@ -329,6 +329,45 @@ app by its signature, so a lost `.jks` or a forgotten passphrase means the publi
 users would have to find and reinstall by hand. **Back up the `.jks` and its passphrase off this
 machine before anything else.** Neither is in the repo and neither should be.
 
+### Key custody
+
+The `.jks` and the four values in `keystore.properties` are backed up in a **shared password
+manager vault**, which is the only copy off this machine. Record the vault item's name here when
+you set it up — never the secrets themselves.
+
+Keep the key out of email and chat: both leave permanent copies on servers you do not control,
+and unlike a password this one **cannot be rotated**. A vault item can be unshared; a mail
+archive cannot be unsent.
+
+A backup that has never been restored is not a backup. Prove it once, from the vault copy alone:
+
+```bash
+apksigner verify --print-certs app-release.apk
+```
+
+The SHA-256 certificate digest must match the published v1.0.0 APK. A file that merely exists
+tells you nothing.
+
+### Transitioning the machine to someone else
+
+This project was handed over in place — same PC, new owner — which raises things a `git clone`
+never would. `%APPDATA%\Mathlificient` holds `apikey.bin`, `spend.json`, `study_log.json`,
+`tutor_memory.json` and `worked_examples.json`.
+
+**Give the new owner a fresh Windows account.** `apikey.bin` is encrypted with Electron's
+`safeStorage`, which on Windows is DPAPI and therefore keyed to the Windows user — a new account
+simply cannot decrypt it, and starts with no study history, no tutor memory and no cached git
+credentials. That is the whole mitigation, and it costs nothing.
+
+If the same Windows account is unavoidable, then before handing it over: rotate the API key at
+the provider, delete the five files above, and clear the `github.com` entry from the git
+credential helper — otherwise the new owner inherits billable API spend and can push as you.
+Do **not** delete `%LOCALAPPDATA%\vmt-build` or `vmt-tools`; they are shared tooling that the
+harnesses and the Gradle build both depend on.
+
+Verify from the new account: the PC app should prompt for an API key rather than working, and
+`git push` should ask for credentials rather than succeeding.
+
 - Release signing activates only if `VoiceMathTutor/keystore.properties` exists (gitignored).
   Without it a clone still builds. **The passphrase is not recoverable — losing it breaks all
   future signed updates.**
