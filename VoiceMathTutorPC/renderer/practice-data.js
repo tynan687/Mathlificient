@@ -136,10 +136,40 @@ const MISCONCEPTIONS = {
   'power-not-dropped': { label: 'not dropping the power by one', hint: 'Differentiating takes the power down by one.' },
   'power-not-multiplied': { label: 'not multiplying by the old power', hint: 'The old power comes down as a coefficient.' },
   'chain-inner-twice': { label: 'applying the inner derivative twice', hint: 'The inner derivative is multiplied in once, not squared.' },
+  'product-one-term': { label: 'using only one half of the product rule', hint: 'The product rule has two terms: u′v AND uv′.' },
+  'product-rule-sign': { label: 'subtracting the two product-rule terms', hint: 'The product rule adds them. It is the quotient rule that subtracts.' },
+  'product-multiplied-derivatives': { label: 'multiplying the two derivatives', hint: 'The derivative of a product is not the product of the derivatives.' },
+  'quotient-order': { label: 'writing the quotient rule the wrong way round', hint: 'It is u′v − uv′ on top, in that order. Swapping them flips the sign.' },
+  'quotient-added': { label: 'adding the two quotient-rule terms', hint: 'The quotient rule subtracts on top. It is the product rule that adds.' },
+  'quotient-one-term': { label: 'using only one half of the quotient rule', hint: 'The numerator needs both u′v and uv′.' },
+  'trig-derivative-sign': { label: 'putting a minus on the derivative of sin', hint: 'sin differentiates to +cos. It is cos that differentiates to −sin.' },
+  'implicit-swapped': { label: 'writing the fraction upside down', hint: 'Collect the dy/dx terms on one side; what multiplies dy/dx ends up on the BOTTOM.' },
+  'implicit-y-constant': { label: 'treating y as a constant', hint: 'y is a function of x, so every y term needs a dy/dx by the chain rule.' },
   'int-divide-n': { label: 'dividing by n instead of n + 1', hint: 'Integrating raises the power to n + 1 and divides by the same n + 1.' },
   'int-power-down': { label: 'lowering the power instead of raising it', hint: 'Integrating raises the power; differentiating lowers it.' },
+  'classification-swapped': { label: 'calling the maximum a minimum', hint: 'The second derivative is negative at a maximum and positive at a minimum.' },
+  'stationary-not-solved': { label: 'not finishing the equation for x', hint: 'You had 3x² = 3k². Take the square root to get x.' },
+  'answered-the-wrong-quantity': { label: 'giving a length where an area was asked for', hint: 'Read the question again — it wants the area, not the side.' },
+  'optimisation-wrong-constraint': { label: 'using the perimeter as a side', hint: 'The perimeter is all four sides. Each pair of sides adds to half of it.' },
+  'parts-sign': { label: 'adding the second integral instead of subtracting', hint: 'By parts is uv − ∫v du. That second piece comes off.' },
+  'parts-no-second-term': { label: 'stopping at uv', hint: 'By parts leaves a second integral to do; it is not finished at uv.' },
+  'area-reversed': { label: 'subtracting the curves the wrong way round', hint: 'Take the upper curve minus the lower one, or you get a negative area.' },
+  'area-one-curve': { label: 'integrating only one of the two curves', hint: 'The area between them is the integral of the difference.' },
+  'volume-not-squared': { label: 'not squaring y in the volume formula', hint: 'V = π∫y² dx — the radius of each disc is y, and its area needs y².' },
   'limits-swapped': { label: 'subtracting the limits the wrong way round', hint: 'It is F(top) − F(bottom).' },
   'upper-only': { label: 'only substituting the upper limit', hint: 'Both limits go in, and the lower one is subtracted.' },
+
+  // Differential equations
+  'de-integration-slip': { label: 'integrating the right-hand side wrongly', hint: 'Integrate it properly before exponentiating — kx becomes kx²/2, not kx.' },
+  'de-constant-misplaced': { label: 'putting the initial value in the exponent', hint: 'The initial condition fixes the constant out the front, not the power.' },
+  'if-sign': { label: 'getting the sign of the integrating factor wrong', hint: 'The factor is e raised to ∫P dx, with P exactly as it appears in dy/dx + Py = Q.' },
+  'if-no-integral': { label: 'not integrating P at all', hint: 'The integrating factor exponentiates the INTEGRAL of P, not P itself.' },
+  'aux-root-sign': { label: 'reading the roots off without changing sign', hint: 'A factor (m − 3) gives the root m = 3, so the solution carries e^{3x}.' },
+  'aux-coefficients-as-roots': { label: 'using the coefficients as the roots', hint: 'The coefficients of the auxiliary equation are not its solutions — solve it first.' },
+  'growth-ratio-inverted': { label: 'dividing the readings the wrong way round', hint: 'It is the later value over the earlier one, so a growing population gives a positive k.' },
+  'growth-is-linear': { label: 'treating the growth as a straight line', hint: 'Exponential growth is not a constant amount per year — you need a log.' },
+  'growth-forgot-n0': { label: 'leaving out the starting value', hint: 'It is ln of the RATIO, so the starting value has to be divided out first.' },
+  'growth-no-log': { label: 'not taking a log at all', hint: 'To bring k down out of the exponent you take a natural log of both sides.' },
 
   // Complex numbers, vectors, sequences, statistics
   'complex-real-sign': { label: 'adding bd instead of subtracting it', hint: 'i² = −1, so the bd term comes off the real part.' },
@@ -1303,6 +1333,611 @@ const PRACTICE = [
     },
   },
 
+  // ---- Calculus: the other differentiation rules -------------------------------------
+  {
+    id: 'diff-product', skill: 'diff-rules', topic: 'Differentiation',
+    keywords: ['product rule', 'differentiate product'],
+    generate() {
+      const a = PR.nz(-4, 5); const b = PR.nz(-6, 6);
+      const c = PR.nz(-4, 5); const d = PR.nz(-6, 6);
+      // (ax+b)(cx+d) -> a(cx+d) + c(ax+b) = 2acx + (ad + bc)
+      const B = a * d + b * c;
+      return {
+        question: `\\text{Differentiate } y = (${PR.lead(a)}${PR.ct(b)})(${PR.lead(c)}${PR.ct(d)})`,
+        steps: [
+          `\\text{Product rule: } \\frac{dy}{dx} = u'v + uv'`,
+          `u = ${PR.lead(a)}${PR.ct(b)}, \\ u' = ${a}; \\quad v = ${PR.lead(c)}${PR.ct(d)}, \\ v' = ${c}`,
+          `\\frac{dy}{dx} = ${a}(${PR.lead(c)}${PR.ct(d)}) + ${c}(${PR.lead(a)}${PR.ct(b)})`,
+          `= ${PR.lead(2 * a * c)}${PR.ct(B)}`,
+        ],
+        answer: `\\frac{dy}{dx} = ${PR.lead(2 * a * c)}${PR.ct(B)}`,
+        w: { a, b, c, d, B },
+      };
+    },
+    distractors({ a, b, c, d, B }) {
+      const form = (p, q, why) =>
+        (p === 0 || q === 0 ? null
+          : { latex: `\\frac{dy}{dx} = ${PR.lead(p)}${PR.ct(q)}`, why });
+      return [
+        // Only one of the two products.
+        form(a * c, a * d, 'product-one-term'),
+        form(a * c, b * c, 'product-one-term'),
+        // Signs mishandled when the two products were added.
+        form(2 * a * c, a * d - b * c, 'product-rule-sign'),
+        // Differentiated both factors and multiplied them.
+        form(2 * a * c, b * d, 'product-multiplied-derivatives'),
+        form(a * c, B, 'product-one-term'),
+      ].filter(Boolean);
+    },
+  },
+  {
+    id: 'diff-quotient', skill: 'diff-rules', topic: 'Differentiation',
+    keywords: ['quotient rule', 'differentiate quotient'],
+    generate() {
+      // (ax+b)/(cx+d) -> (ad - bc)/(cx+d)^2. The numerator must not vanish, or
+      // the function is a constant and there is nothing to differentiate.
+      let a, b, c, d, N;
+      do {
+        a = PR.nz(-5, 5); b = PR.nz(-7, 7);
+        c = PR.nz(-4, 4); d = PR.nz(-7, 7);
+        N = a * d - b * c;
+      } while (N === 0);
+      const den = `(${PR.lead(c)}${PR.ct(d)})^2`;
+      return {
+        question: `\\text{Differentiate } y = \\frac{${PR.lead(a)}${PR.ct(b)}}{${PR.lead(c)}${PR.ct(d)}}`,
+        steps: [
+          `\\text{Quotient rule: } \\frac{dy}{dx} = \\frac{u'v - uv'}{v^2}`,
+          `= \\frac{${a}(${PR.lead(c)}${PR.ct(d)}) - ${PR.par(c)}(${PR.lead(a)}${PR.ct(b)})}{${den}}`,
+          `= \\frac{${N}}{${den}}`,
+        ],
+        answer: `\\frac{dy}{dx} = \\frac{${N}}{${den}}`,
+        w: { a, b, c, d, N, den },
+      };
+    },
+    distractors({ a, b, c, d, N, den }) {
+      const form = (top, why) => ({ latex: `\\frac{dy}{dx} = \\frac{${top}}{${den}}`, why });
+      return [
+        form(b * c - a * d, 'quotient-order'),
+        form(a * d + b * c, 'quotient-added'),
+        form(a * d, 'quotient-one-term'),
+        form(b * c, 'quotient-one-term'),
+        form(a * c, 'quotient-added'),
+      ];
+    },
+  },
+  {
+    id: 'diff-transcendental', skill: 'diff-transcendental', topic: 'Differentiation',
+    keywords: ['differentiate exponential', 'differentiate log', 'natural log', 'e to the'],
+    generate() {
+      // |a| > 1: at a = +/-1 the inner derivative is 1, so "forgot the chain
+      // rule" gives the right answer and the question tests nothing.
+      const a = PR.choice([-5, -4, -3, -2, 2, 3, 4, 5]);
+      const b = PR.nz(-6, 6);
+      const inner = `${PR.lead(a)}${PR.ct(b)}`;
+      if (PR.choice([true, false])) {
+        return {
+          question: `\\text{Differentiate } y = e^{${inner}}`,
+          steps: [
+            `\\text{Chain rule on } e^{u}: \\ \\frac{dy}{dx} = u'e^{u}`,
+            `u = ${inner}, \\ u' = ${a}`,
+            `\\frac{dy}{dx} = ${PR.lead(a, `e^{${inner}}`)}`,
+          ],
+          answer: `\\frac{dy}{dx} = ${PR.lead(a, `e^{${inner}}`)}`,
+          w: { a, b, inner, kind: 'exp' },
+        };
+      }
+      return {
+        question: `\\text{Differentiate } y = \\ln(${inner})`,
+        steps: [
+          `\\text{Chain rule on } \\ln u: \\ \\frac{dy}{dx} = \\frac{u'}{u}`,
+          `u = ${inner}, \\ u' = ${a}`,
+          `\\frac{dy}{dx} = \\frac{${a}}{${inner}}`,
+        ],
+        answer: `\\frac{dy}{dx} = \\frac{${a}}{${inner}}`,
+        w: { a, b, inner, kind: 'ln' },
+      };
+    },
+    distractors({ a, b, inner, kind }) {
+      // Built in whichever form the question came out as, so the options can
+      // never be told apart by their shape.
+      if (kind === 'exp') {
+        return [
+          { latex: `\\frac{dy}{dx} = e^{${inner}}`, why: 'chain-no-inner' },
+          { latex: `\\frac{dy}{dx} = ${PR.lead(a * a, `e^{${inner}}`)}`, why: 'chain-inner-twice' },
+          { latex: `\\frac{dy}{dx} = ${PR.lead(-a, `e^{${inner}}`)}`, why: 'sign-last' },
+          { latex: `\\frac{dy}{dx} = ${PR.lead(a, `e^{${PR.lead(a)}}`)}`, why: 'chain-no-inner' },
+        ];
+      }
+      return [
+        { latex: `\\frac{dy}{dx} = \\frac{1}{${inner}}`, why: 'chain-no-inner' },
+        { latex: `\\frac{dy}{dx} = \\frac{${a * a}}{${inner}}`, why: 'chain-inner-twice' },
+        { latex: `\\frac{dy}{dx} = \\frac{${-a}}{${inner}}`, why: 'sign-last' },
+        { latex: `\\frac{dy}{dx} = \\frac{${b}}{${inner}}`, why: 'chain-no-inner' },
+      ];
+    },
+  },
+  {
+    id: 'diff-trig-chain', skill: 'diff-transcendental', topic: 'Differentiation',
+    keywords: ['differentiate trig', 'differentiate sin', 'differentiate cos'],
+    generate() {
+      const a = PR.nz(-5, 5); const b = PR.int(2, 6);
+      // The QUESTION alternates between sin and cos rather than the options.
+      // If three options said cos and one said sin, the odd one out could be
+      // picked off by majority without differentiating anything — and the
+      // sin-vs-cos confusion is better tested by asking about both than by
+      // making it the one option that looks different.
+      const isSin = PR.choice([true, false]);
+      const fn = isSin ? 'sin' : 'cos';
+      const dFn = isSin ? 'cos' : 'sin';
+      const coef = isSin ? a * b : -a * b;
+      return {
+        question: `\\text{Differentiate } y = ${PR.lead(a, `\\${fn} ${b}x`)}`,
+        steps: [
+          `\\frac{d}{dx}\\${fn} u = ${isSin ? '' : '-'}u'\\${dFn} u, \\quad u = ${b}x, \\ u' = ${b}`,
+          `\\frac{dy}{dx} = ${a} \\times ${isSin ? '' : '-'}${b}\\${dFn} ${b}x`,
+          `= ${PR.lead(coef, `\\${dFn} ${b}x`)}`,
+        ],
+        answer: `\\frac{dy}{dx} = ${PR.lead(coef, `\\${dFn} ${b}x`)}`,
+        viz: { type: 'sine', a, b, xmax: Math.round(720 / b) },
+        w: { a, b, dFn, coef },
+      };
+    },
+    distractors({ a, b, dFn, coef }) {
+      const form = (c, why) =>
+        ({ latex: `\\frac{dy}{dx} = ${PR.lead(c, `\\${dFn} ${b}x`)}`, why });
+      return [
+        // The sign is the whole point when cos is the one being differentiated.
+        form(-coef, 'trig-derivative-sign'),
+        // Forgot to bring the inner coefficient down.
+        form(coef > 0 ? a : -a, 'chain-no-inner'),
+        form(coef * b, 'chain-inner-twice'),
+        form(a, 'chain-no-inner'),
+        form(-a, 'chain-no-inner'),
+      ];
+    },
+  },
+  {
+    id: 'diff-implicit', skill: 'implicit-related-rates', topic: 'Differentiation',
+    keywords: ['implicit differentiation', 'implicit'],
+    generate() {
+      // ax^2 + bxy + cy^2 = k  ->  dy/dx = -(2ax + by) / (bx + 2cy)
+      const a = PR.nz(-4, 4); const b = PR.nz(-4, 4); const c = PR.nz(-4, 4);
+      const k = PR.nz(-9, 9);
+      return {
+        question: `\\text{Find } \\frac{dy}{dx} \\text{ for } ${PR.lead(a, 'x^2')}${PR.xt(b, 'xy')}${PR.xt(c, 'y^2')} = ${k}`,
+        steps: [
+          `\\text{Differentiate term by term, using the product rule on } ${PR.lead(b, 'xy')}`,
+          `${PR.lead(2 * a)}${PR.xt(b, 'y')}${PR.xt(b, 'x\\frac{dy}{dx}')}${PR.xt(2 * c, 'y\\frac{dy}{dx}')} = 0`,
+          `(${PR.lead(b)}${PR.xt(2 * c, 'y')})\\frac{dy}{dx} = -(${PR.lead(2 * a)}${PR.xt(b, 'y')})`,
+          `\\frac{dy}{dx} = -\\frac{${PR.lead(2 * a)}${PR.xt(b, 'y')}}{${PR.lead(b)}${PR.xt(2 * c, 'y')}}`,
+        ],
+        answer: `\\frac{dy}{dx} = -\\frac{${PR.lead(2 * a)}${PR.xt(b, 'y')}}{${PR.lead(b)}${PR.xt(2 * c, 'y')}}`,
+        w: { a, b, c },
+      };
+    },
+    // The numerator and denominator are different roles, so an option can reuse
+    // the answer's numbers without being the answer.
+    mcqOrdered: true,
+    distractors({ a, b, c }) {
+      const form = (nx, ny, dx, dy, why) =>
+        (nx === 0 || ny === 0 || dx === 0 || dy === 0 ? null : {
+          latex: `\\frac{dy}{dx} = -\\frac{${PR.lead(nx)}${PR.xt(ny, 'y')}}{${PR.lead(dx)}${PR.xt(dy, 'y')}}`,
+          why,
+        });
+      return [
+        // Top and bottom the wrong way round.
+        form(b, 2 * c, 2 * a, b, 'implicit-swapped'),
+        // Treated y as a constant, so the xy term lost its dy/dx.
+        form(2 * a, b, b, c, 'implicit-y-constant'),
+        // Forgot to double the squared terms.
+        form(a, b, b, c, 'implicit-y-constant'),
+        form(2 * a, b, b, -2 * c, 'sign-last'),
+        form(2 * a, -b, b, 2 * c, 'sign-last'),
+      ].filter(Boolean);
+    },
+  },
+
+  {
+    id: 'first-principles', skill: 'limits-continuity', topic: 'Differentiation',
+    keywords: ['first principles', 'limit definition', 'from first principles'],
+    generate() {
+      const a = PR.nz(-4, 5); const b = PR.nz(-7, 7);
+      return {
+        question: `\\text{Differentiate } f(x) = ${PR.lead(a, 'x^2')}${PR.xt(b)} \\text{ from first principles}`,
+        steps: [
+          `f'(x) = \\lim_{h \\to 0}\\frac{f(x+h) - f(x)}{h}`,
+          `f(x+h) = ${PR.lead(a, '(x+h)^2')}${PR.xt(b, '(x+h)')} = ${PR.lead(a, 'x^2')}${PR.xt(2 * a, 'xh')}${PR.xt(a, 'h^2')}${PR.xt(b)}${PR.xt(b, 'h')}`,
+          `f(x+h) - f(x) = ${PR.lead(2 * a, 'xh')}${PR.xt(a, 'h^2')}${PR.xt(b, 'h')}`,
+          `\\frac{\\ldots}{h} = ${PR.lead(2 * a)}${PR.xt(a, 'h')}${PR.ct(b)} \\ \\xrightarrow{h \\to 0} \\ ${PR.lead(2 * a)}${PR.ct(b)}`,
+        ],
+        answer: `f'(x) = ${PR.lead(2 * a)}${PR.ct(b)}`,
+        viz: { type: 'poly', coeffs: [0, b, a], tangentAt: 1 },
+        w: { a, b },
+      };
+    },
+    distractors({ a, b }) {
+      const form = (p, q, why) =>
+        (p === 0 || q === 0 ? null
+          : { latex: `f'(x) = ${PR.lead(p)}${PR.ct(q)}`, why });
+      return [
+        // Never doubled the x^2 coefficient.
+        form(a, b, 'power-not-multiplied'),
+        // Differentiated the linear term as if it were quadratic too.
+        form(2 * a, 2 * b, 'power-not-multiplied'),
+        form(a, 2 * b, 'power-not-multiplied'),
+        form(2 * a, -b, 'sign-last'),
+        form(a * a, b, 'power-not-multiplied'),
+      ].filter(Boolean);
+    },
+  },
+  {
+    id: 'stationary-points', skill: 'curve-analysis', topic: 'Differentiation',
+    keywords: ['stationary point', 'turning point', 'maximum', 'minimum', 'second derivative'],
+    // "max at x = -2, min at x = 2" — the two are different things, not a set.
+    mcqOrdered: true,
+    generate() {
+      // y = x^3 - 3k^2 x + c has stationary points at exactly x = +/-k, which
+      // keeps the arithmetic clean and the classification unambiguous. k > 1 so
+      // that k and k^2 are different numbers — at k = 1 the "didn't take the
+      // square root" distractor lands on the right answer.
+      const k = PR.int(2, 5);
+      const c = PR.nz(-9, 9);
+      return {
+        question: `\\text{Find and classify the stationary points of } y = x^3${PR.xt(-3 * k * k)}${PR.ct(c)}`,
+        steps: [
+          `\\frac{dy}{dx} = 3x^2 - ${3 * k * k} = 3(x^2 - ${k * k})`,
+          `3(x - ${k})(x + ${k}) = 0 \\Rightarrow x = ${-k} \\text{ or } x = ${k}`,
+          `\\frac{d^2y}{dx^2} = 6x`,
+          `\\text{At } x = ${-k}: \\ 6(${-k}) < 0 \\Rightarrow \\text{maximum}; \\quad \\text{at } x = ${k}: \\ 6(${k}) > 0 \\Rightarrow \\text{minimum}`,
+        ],
+        answer: `\\text{max at } x = ${-k}, \\ \\text{min at } x = ${k}`,
+        viz: { type: 'poly', coeffs: [c, -3 * k * k, 0, 1] },
+        w: { k, c },
+      };
+    },
+    distractors({ k, c }) {
+      const form = (mx, mn, why) =>
+        ({ latex: `\\text{max at } x = ${mx}, \\ \\text{min at } x = ${mn}`, why });
+      return [
+        // The classification the wrong way round — what the second derivative is for.
+        form(k, -k, 'classification-swapped'),
+        // Solved 3x^2 = 3k^2 as x = 3k^2.
+        form(-3 * k * k, 3 * k * k, 'stationary-not-solved'),
+        form(-k * k, k * k, 'stationary-not-solved'),
+        form(k * k, -k * k, 'classification-swapped'),
+      ];
+    },
+  },
+  {
+    id: 'optimisation', skill: 'curve-analysis', topic: 'Differentiation',
+    keywords: ['optimisation', 'maximum area', 'maximise', 'largest'],
+    generate() {
+      // Fixed perimeter, maximise area: the square wins, side P/4.
+      const side = PR.int(3, 15);
+      const P = 4 * side;
+      return {
+        question: `\\text{A rectangle has perimeter } ${P}. \\text{ What is its greatest possible area?}`,
+        steps: [
+          `\\text{Let the sides be } x \\text{ and } ${P / 2} - x`,
+          `A = x(${P / 2} - x) = ${P / 2}x - x^2`,
+          `\\frac{dA}{dx} = ${P / 2} - 2x = 0 \\Rightarrow x = ${side}`,
+          `A = ${side} \\times ${side} = ${side * side}`,
+        ],
+        answer: `${side * side}`,
+        viz: { type: 'poly', coeffs: [0, P / 2, -1], vertex: [side, side * side] },
+        w: { side, P },
+      };
+    },
+    distractors({ side, P }) {
+      const val = (x, why) => (x <= 0 ? null : { latex: `${PR.r(x, 2)}`, why });
+      return [
+        // Gave the side rather than the area.
+        val(side, 'answered-the-wrong-quantity'),
+        // Used the whole perimeter as one side.
+        val(P * P / 4, 'optimisation-wrong-constraint'),
+        val(P / 2, 'answered-the-wrong-quantity'),
+        val(side * side * 2, 'optimisation-wrong-constraint'),
+        val(P, 'answered-the-wrong-quantity'),
+      ].filter(Boolean);
+    },
+  },
+
+  // ---- Integration techniques and applications ---------------------------------------
+  {
+    id: 'int-substitution', skill: 'int-techniques', topic: 'Integration',
+    keywords: ['substitution', 'u substitution', 'integrate by substitution'],
+    generate() {
+      const a = PR.nz(-6, 6); const n = PR.int(2, 5);
+      return {
+        question: `\\text{Find } \\int 2x(x^2 ${PR.s(a)})^{${n}}\\,dx`,
+        steps: [
+          `\\text{Let } u = x^2 ${PR.s(a)}, \\text{ so } \\frac{du}{dx} = 2x \\text{ and } du = 2x\\,dx`,
+          `\\int u^{${n}}\\,du = \\frac{u^{${n + 1}}}{${n + 1}} + C`,
+          `= \\frac{(x^2 ${PR.s(a)})^{${n + 1}}}{${n + 1}} + C`,
+        ],
+        answer: `\\frac{(x^2 ${PR.s(a)})^{${n + 1}}}{${n + 1}} + C`,
+        w: { a, n },
+      };
+    },
+    distractors({ a, n }) {
+      const form = (pow, div, why) =>
+        ({ latex: `\\frac{(x^2 ${PR.s(a)})^{${pow}}}{${div}} + C`, why });
+      return [
+        // Raised the power but divided by the old one.
+        form(n + 1, n, 'int-divide-n'),
+        // Kept the power.
+        form(n, n, 'int-power-down'),
+        form(n, n + 1, 'int-power-down'),
+        form(n + 1, n + 2, 'int-divide-n'),
+        form(n - 1, n, 'int-power-down'),
+      ];
+    },
+  },
+  {
+    id: 'int-by-parts', skill: 'int-techniques', topic: 'Integration',
+    keywords: ['by parts', 'integration by parts'],
+    generate() {
+      // int (x + b) e^x dx = (x + b - 1) e^x + C. b - 1 non-zero so the bracket
+      // never collapses to a bare x, which would look shorter than every option.
+      let b;
+      do { b = PR.nz(-7, 7); } while (b === 1);
+      const k = b - 1;
+      return {
+        question: `\\text{Find } \\int (x ${PR.s(b)})e^{x}\\,dx`,
+        steps: [
+          `\\text{By parts: } u = x ${PR.s(b)}, \\ dv = e^{x}dx \\Rightarrow du = dx, \\ v = e^{x}`,
+          `\\int u\\,dv = uv - \\int v\\,du = (x ${PR.s(b)})e^{x} - \\int e^{x}dx`,
+          `= (x ${PR.s(b)})e^{x} - e^{x} + C = (x ${PR.s(k)})e^{x} + C`,
+        ],
+        answer: `(x ${PR.s(k)})e^{x} + C`,
+        w: { b, k },
+      };
+    },
+    distractors({ b, k }) {
+      const form = (konst, why) =>
+        (konst === 0 ? null : { latex: `(x ${PR.s(konst)})e^{x} + C`, why });
+      return [
+        // Added the second term instead of subtracting it.
+        form(b + 1, 'parts-sign'),
+        // Stopped at uv and never did the second integral.
+        form(b, 'parts-no-second-term'),
+        form(-k, 'parts-sign'),
+        form(k - 1, 'parts-sign'),
+        form(b + 2, 'parts-sign'),
+      ].filter(Boolean);
+    },
+  },
+  {
+    id: 'area-between', skill: 'int-applications', topic: 'Integration',
+    keywords: ['area between curves', 'area between', 'enclosed area'],
+    generate() {
+      // Between y = x^2 and y = bx: they meet at 0 and b, area = b^3/6.
+      const b = PR.int(2, 9);
+      const area = PR.r(b ** 3 / 6, 4);
+      return {
+        question: `\\text{Find the area enclosed by } y = x^2 \\text{ and } y = ${b}x`,
+        steps: [
+          `\\text{They meet where } x^2 = ${b}x \\Rightarrow x = 0 \\text{ or } x = ${b}`,
+          `A = \\int_{0}^{${b}} (${b}x - x^2)\\,dx = \\left[\\frac{${b}x^2}{2} - \\frac{x^3}{3}\\right]_{0}^{${b}}`,
+          `= \\frac{${b ** 3}}{2} - \\frac{${b ** 3}}{3} = ${area}`,
+        ],
+        answer: `${area}`,
+        viz: { type: 'area', coeffs: [0, b, -1], a: 0, b },
+        w: { b, area },
+      };
+    },
+    distractors({ b, area }) {
+      const val = (x, why) => ({ latex: `${PR.r(x, 4)}`, why });
+      return [
+        // Subtracted the curves the other way round, giving a negative.
+        val(-area, 'area-reversed'),
+        // Integrated only the line, or only the parabola.
+        val(b ** 3 / 2, 'area-one-curve'),
+        val(b ** 3 / 3, 'area-one-curve'),
+        val(b ** 3, 'area-one-curve'),
+      ];
+    },
+  },
+  {
+    id: 'volume-revolution', skill: 'int-applications', topic: 'Integration',
+    keywords: ['volume of revolution', 'solid of revolution', 'rotated about'],
+    generate() {
+      // y = ax rotated about the x-axis, 0 to h: V = pi a^2 h^3 / 3.
+      // a > 1 so that a and a^2 differ — at a = 1 "forgot to square y" gives
+      // the right answer and the question stops testing the thing it is for.
+      const a = PR.int(2, 4); const h = PR.int(2, 5);
+      const v = PR.r(a * a * h ** 3 / 3, 4);
+      return {
+        question: `\\text{The line } y = ${PR.lead(a)} \\text{ from } x = 0 \\text{ to } x = ${h}`
+          + ` \\text{ is rotated about the } x\\text{-axis. Find the volume.}`,
+        steps: [
+          `V = \\pi\\int_{0}^{${h}} y^2\\,dx = \\pi\\int_{0}^{${h}} ${PR.lead(a * a, 'x^2')}\\,dx`,
+          `= \\pi\\left[\\frac{${PR.lead(a * a, 'x^3')}}{3}\\right]_{0}^{${h}}`,
+          `= ${v}\\pi`,
+        ],
+        answer: `${v}\\pi`,
+        w: { a, h, v },
+      };
+    },
+    distractors({ a, h, v }) {
+      const val = (x, why) => ({ latex: `${PR.r(x, 4)}\\pi`, why });
+      return [
+        // Never squared y.
+        val(a * h * h / 2, 'volume-not-squared'),
+        // Forgot to divide by 3 when integrating x^2.
+        val(a * a * h ** 3, 'int-divide-n'),
+        val(a * a * h * h / 2, 'volume-not-squared'),
+        val(a * h ** 3 / 3, 'volume-not-squared'),
+      ];
+    },
+  },
+
+  // ---- Differential equations ---------------------------------------------------------
+  {
+    id: 'de-separable', skill: 'de-separable', topic: 'Differential equations',
+    keywords: ['separable', 'separation of variables', 'differential equation'],
+    generate() {
+      // dy/dx = kxy with y(0) = A  ->  y = A e^{kx^2/2}. Keep k even so the
+      // exponent's coefficient stays whole.
+      const half = PR.nz(-3, 3);
+      const k = 2 * half;
+      const A = PR.int(2, 9);
+      return {
+        question: `\\text{Solve } \\frac{dy}{dx} = ${PR.lead(k, 'xy')} \\text{ given } y(0) = ${A}`,
+        steps: [
+          `\\frac{1}{y}\\,dy = ${PR.lead(k, 'x')}\\,dx`,
+          `\\ln|y| = ${PR.lead(half, 'x^2')} + c`,
+          `y = Ae^{${PR.lead(half, 'x^2')}}`,
+          `y(0) = ${A} \\Rightarrow A = ${A}`,
+        ],
+        answer: `y = ${A}e^{${PR.lead(half, 'x^2')}}`,
+        w: { k, half, A },
+      };
+    },
+    distractors({ k, half, A }) {
+      const form = (coef, exp, why) =>
+        ({ latex: `y = ${coef}e^{${PR.lead(exp, 'x^2')}}`, why });
+      return [
+        // Integrated kx as kx rather than kx^2/2.
+        form(A, k, 'de-integration-slip'),
+        form(A, -half, 'sign-last'),
+        // Read the initial condition into the exponent.
+        form(k, half, 'de-constant-misplaced'),
+        form(A, half * 2, 'de-integration-slip'),
+        form(A * 2, half, 'de-constant-misplaced'),
+      ];
+    },
+  },
+  {
+    id: 'de-integrating-factor', skill: 'de-linear-first', topic: 'Differential equations',
+    keywords: ['integrating factor', 'first order linear', 'differential equation'],
+    generate() {
+      // dy/dx + P y = Q. Two standard shapes of P, and the factor is built to
+      // match whichever came out, so the options can never differ by form.
+      const a = PR.choice([-5, -4, -3, -2, 2, 3, 4, 5]);
+      if (PR.choice([true, false])) {
+        const q = PR.nz(-6, 6);
+        return {
+          question: `\\text{Find the integrating factor for } \\frac{dy}{dx} ${PR.s(a)}y = ${q}`,
+          steps: [
+            `P(x) = ${a}`,
+            `\\mu = e^{\\int P\\,dx} = e^{\\int ${a}\\,dx}`,
+            `\\mu = e^{${PR.lead(a)}}`,
+          ],
+          answer: `e^{${PR.lead(a)}}`,
+          w: { a, kind: 'const' },
+        };
+      }
+      return {
+        question: `\\text{Find the integrating factor for } \\frac{dy}{dx} + \\frac{${a}}{x}y = x`,
+        steps: [
+          `P(x) = \\frac{${a}}{x}`,
+          `\\int P\\,dx = ${a}\\ln|x| = \\ln|x^{${a}}|`,
+          `\\mu = e^{\\ln|x^{${a}}|} = x^{${a}}`,
+        ],
+        answer: `x^{${a}}`,
+        w: { a, kind: 'power' },
+      };
+    },
+    distractors({ a, kind }) {
+      if (kind === 'const') {
+        return [
+          { latex: `e^{${PR.lead(-a)}}`, why: 'if-sign' },
+          { latex: `e^{${PR.lead(a, 'x^2')}}`, why: 'de-integration-slip' },
+          { latex: `e^{${a}}`, why: 'if-no-integral' },
+          { latex: `e^{${PR.lead(a * a)}}`, why: 'de-integration-slip' },
+        ];
+      }
+      return [
+        { latex: `x^{${-a}}`, why: 'if-sign' },
+        { latex: `x^{${a + 1}}`, why: 'de-integration-slip' },
+        { latex: `x^{${a * a}}`, why: 'de-integration-slip' },
+        { latex: `x^{${1 - a}}`, why: 'if-sign' },
+      ];
+    },
+  },
+  {
+    id: 'de-auxiliary', skill: 'de-second-order', topic: 'Differential equations',
+    keywords: ['auxiliary equation', 'second order', 'characteristic equation', 'homogeneous'],
+    generate() {
+      // Built backwards from two distinct integer roots, so the auxiliary
+      // quadratic always factorises — same trick as quad-factorise.
+      // r2 must differ from both r1 and -r1: with symmetric roots, negating
+      // them gives back the same pair, so the question could not test the
+      // sign slip that is the main thing worth catching here.
+      let r1, r2;
+      do { r1 = PR.nz(-5, 5); r2 = PR.nz(-5, 5); } while (r1 === r2 || r1 === -r2);
+      const b = -(r1 + r2); const c = r1 * r2;
+      // PR.xt/PR.ct throughout: b is zero whenever the roots are opposite, and
+      // a root of +/-1 must print as e^{x}, not e^{1x}.
+      const sol = (p, q) => `y = Ae^{${PR.lead(p, 'x')}} + Be^{${PR.lead(q, 'x')}}`;
+      return {
+        question: `\\text{Solve } y''${PR.xt(b, "y'")}${PR.xt(c, 'y')} = 0`,
+        steps: [
+          `\\text{Auxiliary equation: } m^2${PR.xt(b, 'm')}${PR.ct(c)} = 0`,
+          `(m ${PR.s(-r1)})(m ${PR.s(-r2)}) = 0`,
+          `m = ${r1} \\text{ or } m = ${r2}`,
+          sol(r1, r2),
+        ],
+        answer: sol(r1, r2),
+        w: { r1, r2, b, c },
+      };
+    },
+    distractors({ r1, r2, b, c }) {
+      // A and B are arbitrary constants, so swapping the two terms gives the
+      // SAME general solution — buildChoices' reordering check catches that,
+      // which is why this list never offers it.
+      const form = (p, q, why) =>
+        (p === 0 || q === 0 || p === q ? null
+          : { latex: `y = Ae^{${PR.lead(p, 'x')}} + Be^{${PR.lead(q, 'x')}}`, why });
+      return [
+        // Roots read off without changing sign.
+        form(-r1, -r2, 'aux-root-sign'),
+        // Coefficients used as the roots.
+        form(b, c, 'aux-coefficients-as-roots'),
+        form(-r1, r2, 'aux-root-sign'),
+        form(r1, -r2, 'aux-root-sign'),
+        form(c, b, 'aux-coefficients-as-roots'),
+      ].filter(Boolean);
+    },
+  },
+  {
+    id: 'de-growth-decay', skill: 'de-applications', topic: 'Differential equations',
+    keywords: ['exponential growth', 'decay', 'half life', 'population', 'cooling'],
+    generate() {
+      // N = N0 e^{kt}: given two readings, find k. Chosen so N1/N0 is a whole
+      // ratio and the log is a clean multiple.
+      const N0 = PR.choice([100, 200, 500, 1000]);
+      const ratio = PR.choice([2, 3, 4, 5]);
+      const t1 = PR.int(2, 8);
+      const N1 = N0 * ratio;
+      const k = PR.r(Math.log(ratio) / t1, 4);
+      return {
+        question: `\\text{A population grows from } ${N0} \\text{ to } ${N1} \\text{ in } ${t1}`
+          + ` \\text{ years. Find } k \\text{ in } N = N_0e^{kt}`,
+        steps: [
+          `${N1} = ${N0}e^{${t1}k}`,
+          `e^{${t1}k} = ${ratio} \\Rightarrow ${t1}k = \\ln ${ratio}`,
+          `k = \\frac{\\ln ${ratio}}{${t1}} \\approx ${k}`,
+        ],
+        answer: `k \\approx ${k}`,
+        w: { N0, N1, ratio, t1, k },
+      };
+    },
+    distractors({ N0, N1, ratio, t1, k }) {
+      const val = (x, why) => (!isFinite(x) ? null : { latex: `k \\approx ${PR.r(x, 4)}`, why });
+      return [
+        // Ratio the wrong way up, giving a negative rate for a growing population.
+        val(Math.log(1 / ratio) / t1, 'growth-ratio-inverted'),
+        // Straight-line rate instead of an exponential one.
+        val((N1 - N0) / t1, 'growth-is-linear'),
+        val(Math.log(N1) / t1, 'growth-forgot-n0'),
+        val(ratio / t1, 'growth-no-log'),
+        val(Math.log(ratio) * t1, 'growth-no-log'),
+      ].filter(Boolean);
+    },
+  },
+
   // ---- Trigonometry: radians, arcs and graphs ---------------------------------------
   {
     id: 'radians-convert', skill: 'radians-arcs', topic: 'Trigonometry',
@@ -2124,6 +2759,31 @@ const PRACTICE_FORMULAS = {
     '(x - a)^2 + (y - b)^2 = r^2',
     'x^2 + y^2 + Dx + Ey + F = 0 \\;\\Rightarrow\\; \\text{centre } \\left(-\\tfrac{D}{2}, -\\tfrac{E}{2}\\right)',
   ],
+  'diff-product': ['\\dfrac{d}{dx}(uv) = u\'v + uv\''],
+  'diff-quotient': ['\\dfrac{d}{dx}\\left(\\dfrac{u}{v}\\right) = \\dfrac{u\'v - uv\'}{v^2}'],
+  'diff-transcendental': [
+    '\\dfrac{d}{dx}e^{u} = u\'e^{u}, \\quad \\dfrac{d}{dx}\\ln u = \\dfrac{u\'}{u}',
+  ],
+  'diff-trig-chain': ['\\dfrac{d}{dx}\\sin u = u\'\\cos u, \\quad \\dfrac{d}{dx}\\cos u = -u\'\\sin u'],
+  'diff-implicit': [
+    '\\text{Differentiate both sides in } x, \\text{ writing } \\dfrac{dy}{dx} \\text{ after every } y \\text{ term}',
+  ],
+  'de-separable': ['\\text{Get all the } y \\text{ on one side and all the } x \\text{ on the other, then integrate both}'],
+  'de-integrating-factor': ['\\dfrac{dy}{dx} + P(x)y = Q(x) \\;\\Rightarrow\\; \\mu = e^{\\int P\\,dx}'],
+  'de-auxiliary': [
+    'y\'\' + by\' + cy = 0 \\;\\Rightarrow\\; m^2 + bm + c = 0',
+    '\\text{Distinct real roots } m_1, m_2: \\ y = Ae^{m_1x} + Be^{m_2x}',
+  ],
+  'de-growth-decay': ['N = N_0e^{kt}, \\quad k = \\dfrac{1}{t}\\ln\\dfrac{N}{N_0}'],
+  'first-principles': ['f\'(x) = \\lim_{h \\to 0}\\dfrac{f(x+h) - f(x)}{h}'],
+  'stationary-points': [
+    '\\dfrac{dy}{dx} = 0 \\text{ locates them}; \\ \\dfrac{d^2y}{dx^2} < 0 \\text{ max}, \\ > 0 \\text{ min}',
+  ],
+  'optimisation': ['\\text{Write the quantity in one variable, then set its derivative to } 0'],
+  'int-substitution': ['\\int f(u)\\,\\dfrac{du}{dx}\\,dx = \\int f(u)\\,du'],
+  'int-by-parts': ['\\int u\\,dv = uv - \\int v\\,du'],
+  'area-between': ['A = \\int_a^b (\\text{upper} - \\text{lower})\\,dx'],
+  'volume-revolution': ['V = \\pi\\int_a^b y^2\\,dx'],
   'radians-convert': ['\\text{degrees} \\times \\dfrac{\\pi}{180} = \\text{radians}'],
   'arc-sector': ['\\ell = r\\theta, \\quad A = \\tfrac{1}{2}r^2\\theta \\quad (\\theta \\text{ in radians})'],
   'segment-area': ['A = \\tfrac{1}{2}r^2(\\theta - \\sin\\theta) \\quad (\\theta \\text{ in radians})'],

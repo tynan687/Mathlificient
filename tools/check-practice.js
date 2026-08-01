@@ -200,10 +200,21 @@ for (const t of PRACTICE) {
           fail(t.id, `misconception "${o.why}" contains LaTeX; both fields must be plain text`);
         }
       }
-      // The odd one out must not be spottable from its form alone.
-      if (!t.mcqShapeVaries && shapeOf(o.latex) !== shapeOf(q.answer)) {
-        fail(t.id, 'an option has a different shape from the answer',
-          `answer: ${q.answer}  ->  ${shapeOf(q.answer)}\n        option: ${o.latex}  ->  ${shapeOf(o.latex)}`);
+    }
+
+    // The answer must not be identifiable by its FORM alone.
+    //
+    // The rule is specifically that the answer shares its shape with at least
+    // one distractor — not that all four match. Four options in three different
+    // shapes give nothing away, because no single one stands out; what is fatal
+    // is three options looking alike and the answer being the fourth.
+    if (!t.mcqShapeVaries) {
+      const shapes = choices.options.map((o) => shapeOf(o.latex));
+      const answerShape = shapes[choices.answerIndex];
+      if (shapes.filter((s) => s === answerShape).length === 1) {
+        fail(t.id, 'the answer is the only option of its form — pickable without any maths',
+          choices.options.map((o, i) =>
+            `${i === choices.answerIndex ? '*' : ' '} ${o.latex}  ->  ${shapes[i]}`).join('\n        '));
       }
     }
   }
