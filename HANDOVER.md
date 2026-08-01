@@ -333,21 +333,102 @@ Planned as eight phases; five are merged and hardware-verified.
   the symbols page routes through a Kotlin `TextToSpeech` bridge and only shows the speaker
   where it exists. The written "say it" line is always present.
 
-### If you continue the plan
+---
 
-Phase 6 adds 8 diagram types to `practice-viz.js` (`numberline`, `setdiagram`, `riemann`, `tree`,
-`stack`, `contourpath`, `vectorfield`, `surfaceslice`) and attaches `viz` to ~50 symbol entries.
-Note the constraint recorded in the plan: `applyPaper(bg, fg)` is **called from Kotlin**, so add a
-derived `colors.accent2` *inside* `renderVisual` rather than changing that signature, which would
-need a lockstep shared-file + Kotlin change.
+## 8. The remaining plan: Phases 6 and 7
 
-Phase 7's symbol quiz should feed the **same** proficiency bars via `sym-*` skill ids — not a
-parallel progress system — and take its distractors from the `confusableWith` field that already
-drives the "easily mixed up with" card.
+Both are designed and unstarted. The full eight-phase plan lives in the session plan file; this
+is the part still to build, with the decisions already made so you don't re-litigate them.
+
+### Phase 6 — Symbol diagrams · ~1–2 days
+
+The original brief asked for "pictures to get concepts across". Phase 5 shipped the words; this
+is the pictures.
+
+**Reuse `practice-viz.js`. Do not write a second renderer.** It already gives HiDPI scaling,
+theme-awareness via `{bg, fg, accent}`, and the primitives you need: `makePlot(xmin, xmax, ymin,
+ymax)` returning `{px, py, axes, curve, dot, openDot, dashedV, dashedH, label}`, plus
+`drawArrow`, `niceStep`, `yRangeFromSamples` and `trim`. Symbol entries gain an optional `viz`
+in exactly the shape practice questions already use, and `symbols.js` renders it into the open
+card with the same lazy path.
+
+Eight new spec types. Six are compositions of existing primitives; only the last two are
+genuinely new drawing code (~100 lines together):
+
+| Type | Draws | Serves |
+|---|---|---|
+| `numberline` | a line with open/closed endpoints and a shaded span | `< ≤ ∈ [a,b) \|x\|` — including that `\|x−3\|<2` **is** an interval |
+| `setdiagram` | two or three overlapping circles with a region shaded | `∪ ∩ ⊂ ∅`, and `P(A∩B)` |
+| `riemann` | rectangles under a curve, thinning left to right | the `Σ → ∫` connection, which is the whole idea behind the elongated S |
+| `tree` | a two-level probability tree with branch labels | `P(A\|B)` — why "given" restricts you to one branch |
+| `stack` | terms as blocks accumulating | `Σ` versus `Π` side by side |
+| `contourpath` | a closed loop on a field with direction arrows | `∮` |
+| `vectorfield` | arrows on a grid, longest up the steepest slope | `∇` |
+| `surfaceslice` | a surface with one variable's slice highlighted | `∂` — the "hold the others still" idea |
+
+Attach `viz` to roughly 50 of the 100 entries. Prioritise the ones where a picture does work
+prose cannot: `∂ ∇ ∮ ∫ Σ ∈ ∪ ∩ P(A|B) |x| [a,b)`. Leave `=`, `π` and the Greek letters alone —
+a diagram there is decoration.
+
+**The one constraint that will bite.** `applyPaper(bg, fg)` is called **from Kotlin**
+(`PracticeSpaceActivity.paintWeb`). Symbol diagrams want a fourth colour for a second series.
+Add `colors.accent2` with a **derived default computed inside `renderVisual`**, e.g. a hue-shifted
+`accent`. Changing the `applyPaper` signature would need a shared-file change and a Kotlin change
+to land in lockstep across both platforms — avoidable, so avoid it.
+
+**Verification.** Extend the existing render check: every symbol `viz` must name a type the
+renderer implements, and must draw. Reuse the corner-sampling ink metric and the
+distinct-totals assertion from §5 — a diagram test that cannot fail is worse than none.
+
+**Cut order if it runs long:** `surfaceslice` and `vectorfield` first (substitute a static
+diagram or drop the `viz` from those two entries); the other six are cheap.
+
+### Phase 7 — Symbol quiz + engineering notation · ~1–2 days
+
+**Reuse the existing machinery.** `symbols-quiz.js` should call `buildChoices` from
+`practice-mcq.js` for option assembly, dedupe and the reordering guard, and record through
+`attemptFrom` + `Store.profAppend` exactly as practice does. Almost nothing here is new
+infrastructure; treating it as new is the main way this phase goes wrong.
+
+Four question modes:
+
+| Mode | Prompt | Options | Distractors from |
+|---|---|---|---|
+| glyph → meaning | the symbol | four meanings | `confusableWith` |
+| meaning → glyph | the meaning | four glyphs | `confusableWith` |
+| read the expression | a rendered expression | four spoken readings | other entries' `exampleSay` |
+| spot the symbol | "which one means *given*?" | four glyphs | same category |
+
+**Distractors come from `confusableWith`**, which already drives the "easily mixed up with"
+card — one field, two jobs, and it is already resolved symmetrically at load. That is why a
+wrong pick can say something useful rather than just "no".
+
+**Scores feed the same bars — do not build a parallel progress system.** The skill graph already
+has an empty `notation` area (`practice-skills.js`, order 10) waiting for this. Add `sym-*`
+skills to it, one per category — `sym-relations`, `sym-calculus`, `sym-sets`, and so on — with
+`prereqs: []`, since notation is not gated on anything. Symbol attempts then flow through
+`computeProficiency` untouched, appear in "focus next" alongside quadratics, and get the
+guessing correction for free. Set `flow: 'symbols'` so the log stays readable.
+
+**Level-3 entries (~60 more), for first-year engineering.** `∂ ∇ ∇· ∇× ∮ ∬ ℒ ⟨·⟩ ≜ O(·)` and the
+rest of the vector-calculus set. One entry earns a special mention: **`i` versus `j`** for the
+imaginary unit. HSC teaches `i`; first-year electrical engineering uses `j` because `i` is
+current; nobody tells students this and it costs them a week. Give it its own entry with both
+glyphs and `confusableWith` linking them.
+
+**Cut order if it runs long:** engineering symbols beyond the ~25 that actually appear in first
+year; then the "spot the symbol" mode, which is the weakest of the four.
+
+### If you only do one more thing
+
+Neither of these. Move the Electron and CDP harnesses out of the scratchpad into `tools/` and
+wire `npm test` to run everything (§5). Phases 6 and 7 are content on top of proven machinery;
+the harnesses are the machinery that keeps it proven, and they are currently the only part of
+this project that a new engineer cannot find.
 
 ---
 
-## 8. Working on this with Claude Code
+## 9. Working on this with Claude Code
 
 What actually made the difference across five phases:
 
