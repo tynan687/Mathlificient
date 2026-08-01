@@ -64,7 +64,16 @@ PC differences vs the tablet app:
     questions with blank working space, then an answer key — via your system
     print dialog (choose "Microsoft Print to PDF" to save a file instead).
     Grading isn't quiz-only: every question offers Got it / Missed it once the
-    answer is shown, and each mark feeds the progress screen below.
+    answer is shown, and each mark feeds the progress screen below. A dropdown
+    switches to **multiple choice** (remembered; applies from the next
+    question), where 32 of the 33 templates offer four options built from named
+    misconceptions — `b² + 4ac`, population vs sample SD, forgetting the inner
+    derivative — so a wrong pick can name the actual slip rather than just
+    marking it wrong. One pick per question; the worked steps stay locked until
+    it's answered, and revealing them first drops the attempt to self-marked
+    half credit rather than banking an objective score for copying. The ink
+    panel is a collapsible `<details>` — closing it frees ~460px, which is what
+    makes room for the option grid at the window's minimum height.
   - *My progress* — a bar per skill across **47 skills in 10 areas**, folded up
     into an area bar you can expand. **Focus next** names three skills to work
     on and *why* each ("Shaky at 22%", "you had this at 80% but haven't
@@ -77,7 +86,11 @@ PC differences vs the tablet app:
     (`proficiency.json` in userData, via `prof:all` / `prof:append` /
     `prof:reset`) into mastery on every read — nothing derived is ever stored,
     so bars can't drift while the app is shut and two windows practising at once
-    can at worst lose one attempt rather than clobber a record.
+    can at worst lose one attempt rather than clobber a record. Attempts record
+    *how* they were graded (`mcq` / `self`) separately from *which flow* they
+    came from (`practice` / `quiz` / `placement`), and multiple-choice attempts
+    carry the option count so the free 1/k a guess earns can be discounted —
+    without which a student who knows half a skill would read as solid.
   - *Unit & constant converter* — length/mass/force/energy/pressure/power/angle/
     time/temperature conversions + a click-to-copy physical-constants table.
   - *Focus timer* — Pomodoro-style, with a session goal; remaining time shows on

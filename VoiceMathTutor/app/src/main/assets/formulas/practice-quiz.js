@@ -3,12 +3,13 @@
 // self-mark each after seeing the answer, then review the missed ones. Also
 // runs the 12-question placement check that seeds a fresh progress screen.
 //
-// Grading itself lives in practice.js — the Got it / Missed it buttons work
-// outside a quiz too, and that's where most attempts happen. This file just
-// registers a `gradeHooks` callback to advance the queue. Reuses globals from
-// practice.js (tex, show, buildQuestion, newQuestion, topicSel, currentPool,
-// gradeHooks, gradeMode) — classic <script> tags share one top-level scope,
-// the same trick practice.js already uses to read practice-data.js.
+// Grading itself lives in practice.js — the Got it / Missed it buttons and the
+// multiple-choice grid work outside a quiz too, and that's where most attempts
+// happen. This file just registers a `gradeHooks` callback to advance the queue.
+// Reuses globals from practice.js (tex, show, buildQuestion, newQuestion,
+// topicSel, currentPool, clearAnswerUI, gradeHooks, gradeFlow) — classic
+// <script> tags share one top-level scope, the same trick practice.js already
+// uses to read practice-data.js.
 (function () {
   const quizCountEl = document.getElementById('quizCount');
   const startQuizBtn = document.getElementById('startQuiz');
@@ -52,6 +53,7 @@
     const placement = !!(opts && opts.placement);
     const queue = placement ? placementQuestions() : generateQuestionSet(count);
     if (!queue.length) return;
+    gradeFlow = placement ? 'placement' : 'quiz';
     quiz = { queue, index: 0, score: 0, missed: [], placement };
     topicSel.disabled = true;
     newQBtn.disabled = true;
@@ -70,12 +72,19 @@
     const withQuestions = SKILLS.filter((s) => templatesForSkill(s.id).length).map((s) => s.id);
     return placementPlan(withQuestions, 12).map((skillId) => {
       const pool = templatesForSkill(skillId);
-      return buildQuestion(pool[Math.floor(Math.random() * pool.length)]);
+      const q = buildQuestion(pool[Math.floor(Math.random() * pool.length)]);
+      // Placement is always self-marked. It seeds every bar on the progress
+      // screen, and not all twelve gateway skills have options — a seed built
+      // from two different weightings and two different guess floors is worse
+      // than a uniform one, even if the uniform one is the noisier signal.
+      return { ...q, choices: null };
     });
   }
 
-  // practice.js owns the Got it / Missed it buttons (they work outside a quiz
-  // too) and logs the attempt; the quiz only needs to know the verdict.
+  // practice.js owns both answering paths — Got it / Missed it, and the option
+  // grid — and logs the attempt. The quiz only needs the verdict, and only once
+  // the student has moved on (which for multiple choice is after they've read
+  // why they were wrong).
   gradeHooks.push((gotIt) => {
     if (!quiz) return;
     if (gotIt) quiz.score++; else quiz.missed.push(quiz.queue[quiz.index]);
@@ -90,8 +99,11 @@
     const missed = quiz.missed;
     const wasPlacement = quiz.placement;
 
-    gradeMode = 'self';
-    gradingEl.classList.add('hidden');
+    gradeFlow = 'practice';
+    // The option grid, its feedback line and the Next button all belong to the
+    // question that just ended — without this they sit above the summary card
+    // with Next still bound to a quiz that no longer exists.
+    clearAnswerUI();
     quizProgressEl.classList.add('hidden');
     topicSel.disabled = false;
     newQBtn.disabled = false;
@@ -130,10 +142,7 @@
     const again = document.createElement('button');
     again.className = 'primary';
     again.textContent = 'New quiz';
-    again.addEventListener('click', () => {
-      gradeMode = 'self';
-      startQuiz(Number(quizCountEl.value));
-    });
+    again.addEventListener('click', () => startQuiz(Number(quizCountEl.value)));
     const back = document.createElement('button');
     back.textContent = 'Back to practice';
     back.addEventListener('click', () => {
@@ -148,16 +157,10 @@
     quiz = null;
   }
 
-  startQuizBtn.addEventListener('click', () => {
-    gradeMode = 'self';
-    startQuiz(Number(quizCountEl.value));
-  });
+  startQuizBtn.addEventListener('click', () => startQuiz(Number(quizCountEl.value)));
 
   /** Called by the progress screen (PC IPC / Android intent extra). */
-  window.startPlacement = () => {
-    gradeMode = 'placement';
-    startQuiz(12, { placement: true });
-  };
+  window.startPlacement = () => startQuiz(12, { placement: true });
   if (typeof window.tutor !== 'undefined') {
     window.tutor.on('practice:placement', () => window.startPlacement());
   }

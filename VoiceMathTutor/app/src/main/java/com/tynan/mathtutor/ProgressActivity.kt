@@ -28,6 +28,7 @@ class ProgressActivity : ComponentActivity() {
         webView = WebView(this).apply {
             settings.javaScriptEnabled = true
             settings.allowFileAccess = true
+            settings.domStorageEnabled = true // shared bucket with the practice page
             addJavascriptInterface(FormulaSheetActivity.Bridge(this@ProgressActivity), "Android")
             loadUrl("file:///android_asset/formulas/progress.html")
         }

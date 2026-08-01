@@ -3,8 +3,8 @@
  * Copy the shared offline-engine files between the PC and Android trees.
  *
  * These files are meant to be byte-identical on both platforms, but the paths
- * do NOT line up: most live in `renderer/` on PC, while `practice.js` and the
- * quiz/MCQ modules live in `renderer/tools/`. On Android everything is flat in
+ * do NOT line up: most live in `renderer/` on PC, while `practice.js` and
+ * `progress.js` live in `renderer/tools/`. On Android everything is flat in
  * `assets/formulas/`. A directory-level copy therefore silently misses files —
  * which is how `formulas.js` drifted apart without anyone noticing. Hence an
  * explicit pair manifest rather than a glob.
@@ -32,6 +32,7 @@ const PAIRS = [
   ['practice-prof.js', 'practice-prof.js'],
   ['practice-store.js', 'practice-store.js'],
   ['practice-quiz.js', 'practice-quiz.js'],
+  ['practice-mcq.js', 'practice-mcq.js'],
   ['formulas-data.js', 'formulas-data.js'],
   ['tools/practice.js', 'practice.js'],
   ['tools/progress.js', 'progress.js'],
@@ -53,6 +54,47 @@ const DIVERGENT = [
 
 const sha = (p) => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 const exists = (p) => fs.existsSync(p);
+
+/**
+ * The two practice pages are in DIVERGENT — their markup and CSS are genuinely
+ * meant to differ — but the SET OF SCRIPTS they pull in is not. Nothing else
+ * would catch adding a shared module to one page and forgetting the other,
+ * which is exactly the class of drift the DIVERGENT list warns about.
+ * Scripts that legitimately belong to one platform are listed with a reason.
+ */
+const HTML_PAIRS = [['tools/practice.html', 'practice.html']];
+const SCRIPT_ONLY = {
+  'practice-ink.js': 'PC only — Android draws on a native InkCanvasView below the WebView',
+};
+
+function scriptNames(file) {
+  const html = fs.readFileSync(file, 'utf8');
+  const names = new Set();
+  for (const m of html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)) {
+    names.add(path.basename(m[1]));
+  }
+  return names;
+}
+
+/** Returns the number of mismatches found. */
+function checkScriptTags() {
+  let bad = 0;
+  for (const [pcRel, androidRel] of HTML_PAIRS) {
+    const pcPath = path.join(PC, pcRel);
+    const androidPath = path.join(ANDROID, androidRel);
+    if (!exists(pcPath) || !exists(androidPath)) continue;
+    const onPc = scriptNames(pcPath);
+    const onAndroid = scriptNames(androidPath);
+    for (const [set, other, label] of [[onPc, onAndroid, 'Android'], [onAndroid, onPc, 'PC']]) {
+      for (const name of set) {
+        if (other.has(name) || SCRIPT_ONLY[name]) continue;
+        console.log(`SCRIPT   ${pcRel} <-> ${androidRel}: "${name}" is missing on ${label}`);
+        bad++;
+      }
+    }
+  }
+  return bad;
+}
 
 function main() {
   const check = process.argv.includes('--check');
@@ -87,12 +129,17 @@ function main() {
   }
 
   if (check) {
+    const scriptDrift = checkScriptTags();
     if (missing) console.log(`\n${missing} file(s) missing.`);
     if (drift) {
       console.log(`\n${drift} shared file(s) out of sync. Run: node tools/sync-shared.js`);
       process.exit(1);
     }
-    console.log(`All ${PAIRS.length} shared files match.`);
+    if (scriptDrift) {
+      console.log(`\n${scriptDrift} script tag(s) present on one platform only.`);
+      process.exit(1);
+    }
+    console.log(`All ${PAIRS.length} shared files match, and both practice pages load the same scripts.`);
     if (DIVERGENT.length) {
       console.log('\nIntentionally divergent (not checked):');
       for (const [a, , why] of DIVERGENT) console.log(`  ${a} — ${why}`);

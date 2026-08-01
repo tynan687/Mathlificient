@@ -208,6 +208,7 @@ private fun Studio(
                 WebView(ctx).apply {
                     settings.javaScriptEnabled = true
                     settings.allowFileAccess = true
+                    settings.domStorageEnabled = true // remembers the answering mode
                     setBackgroundColor(bg.toArgb())
                     addJavascriptInterface(FormulaSheetActivity.Bridge(ctx as ComponentActivity), "Android")
                     webViewClient = object : WebViewClient() {

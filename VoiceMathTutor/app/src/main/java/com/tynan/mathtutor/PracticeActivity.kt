@@ -32,6 +32,10 @@ class PracticeActivity : ComponentActivity() {
         webView = WebView(this).apply {
             settings.javaScriptEnabled = true
             settings.allowFileAccess = true
+            // Off by default in a WebView. The practice page remembers the
+            // answering mode in localStorage — a UI preference, not part of the
+            // study record, so it doesn't belong in SecureKeyStore.
+            settings.domStorageEnabled = true
             addJavascriptInterface(
                 FormulaSheetActivity.Bridge(this@PracticeActivity), "Android"
             )

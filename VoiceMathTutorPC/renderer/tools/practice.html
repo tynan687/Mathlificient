@@ -58,6 +58,29 @@
     #missedIt { border-color: #C62828; color: #C62828; }
     .missed-item { border-top: 1px dashed color-mix(in srgb, CanvasText 15%, transparent);
       padding: 8px 0; }
+
+    /* Multiple choice. The options are <div>s, not <button>s, on purpose: the
+       Android studio injects `select,button{...!important}` on every paper
+       change, which would repaint the right/wrong states away. */
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+    .mcq-option { border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      border-radius: 10px; padding: 12px 14px; min-height: 46px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      overflow-x: auto; }
+    .mcq-option:hover:not(.locked) { border-color: #4F7DF7; }
+    .mcq-option:focus-visible { outline: 2px solid #4F7DF7; outline-offset: 2px; }
+    .mcq-option.locked { cursor: default; }
+    /* State via box-shadow as well as border, so it survives applyPaper. */
+    .mcq-option.correct { border-color: #2E7D32; box-shadow: inset 0 0 0 2px #2E7D32; }
+    .mcq-option.wrong { border-color: #C62828; box-shadow: inset 0 0 0 2px #C62828; }
+    .mcq-feedback { font-size: 13.5px; margin: 6px 0 10px; line-height: 1.45; }
+    .mcq-feedback.good { color: #2E7D32; }
+    .mcq-feedback.bad { color: #C62828; }
+    #modeNote { font-size: 12.5px; opacity: 0.7; margin: 4px 0 8px; }
+
+    details#inkPanel { margin-top: 10px; }
+    details#inkPanel > summary { cursor: pointer; font-size: 13.5px; opacity: 0.8;
+      padding: 6px 0; }
   </style>
 </head>
 <body>
@@ -66,6 +89,10 @@
     <button class="primary" id="newQ">New question</button>
   </div>
   <div class="quizbar">
+    <select id="answerMode" title="How you answer">
+      <option value="self">Work it out</option>
+      <option value="mcq">Multiple choice</option>
+    </select>
     <select id="quizCount">
       <option value="5">Quiz: 5 questions</option>
       <option value="10">Quiz: 10 questions</option>
@@ -75,6 +102,7 @@
     <button id="printWorksheet">🖨 Worksheet</button>
     <span id="quizProgress" class="hidden"></span>
   </div>
+  <div id="modeNote" class="hidden"></div>
   <div class="card">
     <div class="src" id="src"></div>
     <div class="q" id="question"><span class="hint">Press "New question" — work it on paper,
@@ -82,6 +110,8 @@
     <div id="steps"></div>
     <div class="answer hidden" id="answer"></div>
   </div>
+  <div class="choices hidden" id="choices"></div>
+  <div class="mcq-feedback hidden" id="mcqFeedback"></div>
   <div class="formulas hidden" id="formulas"></div>
   <button class="vizbar hidden" id="vizBar">📈 Visual available — tap to show</button>
   <div class="vizwrap hidden" id="vizWrap"><canvas id="viz"></canvas></div>
@@ -89,6 +119,7 @@
     <button id="nextStep" disabled>Show next step</button>
     <button id="showAnswer" disabled>Show answer</button>
     <button id="copyQ" disabled>Copy LaTeX</button>
+    <button class="primary hidden" id="mcqNext">Next question →</button>
   </div>
   <div class="grading hidden" id="grading">
     <button id="gotIt">✓ Got it</button>
@@ -96,24 +127,33 @@
   </div>
   <div class="card hidden" id="quizSummary"></div>
 
-  <div class="toolbar-row">
-    <span class="tlabel">Ink →</span>
-    <div class="swatches" id="inkSwatches"></div>
-    <div class="swatch eraser-swatch" id="eraserSwatch">⌫</div>
-    <div class="spacer"></div>
-    <button id="inkZoomOut" title="Zoom out">−</button>
-    <button id="inkZoomIn" title="Zoom in">+</button>
-    <button id="inkZoomReset" class="hidden" title="Reset view">⤾ 1:1</button>
-    <button id="inkSave" title="Save drawing as PNG">💾 Save</button>
-    <button id="inkUndo">Undo</button>
-    <button id="inkClear">Clear</button>
-  </div>
-  <div class="toolbar-row">
-    <span class="tlabel">Paper →</span>
-    <div class="swatches" id="paperSwatches"></div>
-    <input type="color" id="paperCustom" value="#ffffff" title="Custom paper colour">
-  </div>
-  <div id="inkCanvasWrap"><canvas id="inkCanvas"></canvas></div>
+  <!-- The toolbars live inside the <details> with the canvas: they control
+       something that isn't on screen otherwise. Collapsing takes ~460px off the
+       page, which is what makes room for the option grid without pushing the
+       question off screen at the window's minimum height. No extra wiring is
+       needed — measured, Chromium leaves the canvas's own box alone while the
+       panel is shut, and strokes are in world coordinates either way. -->
+  <details id="inkPanel" open>
+    <summary>✏️ Working space</summary>
+    <div class="toolbar-row">
+      <span class="tlabel">Ink →</span>
+      <div class="swatches" id="inkSwatches"></div>
+      <div class="swatch eraser-swatch" id="eraserSwatch">⌫</div>
+      <div class="spacer"></div>
+      <button id="inkZoomOut" title="Zoom out">−</button>
+      <button id="inkZoomIn" title="Zoom in">+</button>
+      <button id="inkZoomReset" class="hidden" title="Reset view">⤾ 1:1</button>
+      <button id="inkSave" title="Save drawing as PNG">💾 Save</button>
+      <button id="inkUndo">Undo</button>
+      <button id="inkClear">Clear</button>
+    </div>
+    <div class="toolbar-row">
+      <span class="tlabel">Paper →</span>
+      <div class="swatches" id="paperSwatches"></div>
+      <input type="color" id="paperCustom" value="#ffffff" title="Custom paper colour">
+    </div>
+    <div id="inkCanvasWrap"><canvas id="inkCanvas"></canvas></div>
+  </details>
 
   <script src="../../node_modules/katex/dist/katex.min.js" id="katexJs"></script>
   <script src="../practice-skills.js"></script>
@@ -121,6 +161,7 @@
   <script src="../practice-viz.js"></script>
   <script src="../practice-prof.js"></script>
   <script src="../practice-store.js"></script>
+  <script src="../practice-mcq.js"></script>
   <script src="practice.js"></script>
   <script src="../practice-ink.js"></script>
   <script src="../practice-quiz.js"></script>

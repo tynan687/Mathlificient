@@ -13,7 +13,9 @@
     select { padding: 10px; border-radius: 8px; font-size: 15px; flex: 1; min-width: 130px;
       border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
       background: Canvas; color: CanvasText; }
+    /* 44px minimum: every button on this page is a touch target. */
     button { padding: 11px 15px; border-radius: 9px; font-size: 15px; cursor: pointer;
+      min-height: 44px;
       border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
       background: Canvas; color: CanvasText; }
     button.primary { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
@@ -50,10 +52,33 @@
     .missed-item { border-top: 1px dashed color-mix(in srgb, CanvasText 15%, transparent);
       padding: 8px 0; }
 
+    /* Multiple choice. The options are <div>s, not <button>s, on purpose: the
+       studio injects `select,button{...!important}` from Kotlin on every paper
+       change, which would repaint the right/wrong states away. */
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+    .mcq-option { border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      border-radius: 10px; padding: 12px 10px; min-height: 52px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .mcq-option.locked { cursor: default; }
+    /* State via box-shadow as well as border, so it survives applyPaper. */
+    .mcq-option.correct { border-color: #2E7D32; box-shadow: inset 0 0 0 2px #2E7D32; }
+    .mcq-option.wrong { border-color: #C62828; box-shadow: inset 0 0 0 2px #C62828; }
+    .mcq-feedback { font-size: 14px; margin: 6px 0 10px; line-height: 1.5; }
+    .mcq-feedback.good { color: #2E7D32; }
+    .mcq-feedback.bad { color: #C62828; }
+    #modeNote { font-size: 13px; opacity: 0.7; margin: 4px 0 8px; }
+
     /* The floating PracticeActivity popup is capped at 520x640dp — a quiz bar
        and a summary card turn it into a scrolling mess for what is meant to be
-       a glanceable "here's a question" prompt. PracticeActivity adds .mini. */
+       a glanceable "here's a question" prompt. PracticeActivity adds .mini.
+       Grading stays: marking a tutor-pushed question is what the popup is for.
+       The mode picker goes, because a tutor question has no template and so can
+       never have options — leaving it would promise something it can't do. */
     body.mini .quizbar,
+    body.mini #modeNote,
+    body.mini #choices,
+    body.mini #mcqFeedback,
     body.mini #quizSummary { display: none !important; }
     body.mini { padding: 12px; }
   </style>
@@ -64,6 +89,10 @@
     <button class="primary" id="newQ">New question</button>
   </div>
   <div class="quizbar">
+    <select id="answerMode" title="How you answer">
+      <option value="self">Work it out</option>
+      <option value="mcq">Multiple choice</option>
+    </select>
     <select id="quizCount">
       <option value="5">Quiz: 5 questions</option>
       <option value="10">Quiz: 10 questions</option>
@@ -72,6 +101,7 @@
     <button id="startQuiz">▶ Start quiz</button>
     <span id="quizProgress" class="hidden"></span>
   </div>
+  <div id="modeNote" class="hidden"></div>
   <div class="card">
     <div class="src" id="src"></div>
     <div class="q" id="question"><span class="hint">Press "New question", work it on
@@ -79,6 +109,8 @@
     <div id="steps"></div>
     <div class="answer hidden" id="answer"></div>
   </div>
+  <div class="choices hidden" id="choices"></div>
+  <div class="mcq-feedback hidden" id="mcqFeedback"></div>
   <div class="formulas hidden" id="formulas"></div>
   <button class="vizbar hidden" id="vizBar">📈 Visual available — tap to show</button>
   <div class="vizwrap hidden" id="vizWrap"><canvas id="viz"></canvas></div>
@@ -86,6 +118,7 @@
     <button id="nextStep" disabled>Show next step</button>
     <button id="showAnswer" disabled>Show answer</button>
     <button id="copyQ" disabled>Copy LaTeX</button>
+    <button class="primary hidden" id="mcqNext">Next question →</button>
   </div>
   <div class="grading hidden" id="grading">
     <button id="gotIt">✓ Got it</button>
@@ -98,6 +131,7 @@
   <script src="practice-viz.js"></script>
   <script src="practice-prof.js"></script>
   <script src="practice-store.js"></script>
+  <script src="practice-mcq.js"></script>
   <script src="practice.js"></script>
   <script src="practice-quiz.js"></script>
 </body>

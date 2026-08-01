@@ -23,12 +23,55 @@ const missedItBtn = document.getElementById('missedIt');
 let vizOpen = false;
 let paperColors = null; // set by applyPaper (Android); PC derives from page styles
 
-let current = null;   // { question, steps, answer, fromTutor }
+let current = null;   // { question, steps, answer, choices, fromTutor }
 let revealed = 0;
 let shownAt = 0;      // when the current question appeared, for the attempt's `ms`
-let graded = false;   // one attempt per question — see grade() below
+let graded = false;   // one attempt per question — see recordAttempt() below
+let advanced = false; // separate from `graded`: MCQ records now, advances on Next
+// Whether the question ON SCREEN is being answered by picking. Frozen when the
+// question is shown, never re-read from `answerMode`: a student who flips the
+// selector mid-question would otherwise be left with neither answering path
+// live — the grid was never drawn, and the self-mark row now thinks a grid is
+// showing — which inside a quiz means nothing ever advances.
+let usingMcq = false;
 let preferredTopic = '';
 let focusSkill = '';  // set by the progress screen: "practise this one"
+
+// ---- Answering mode ------------------------------------------------------------------
+//
+// "Work it out" is the default and stays the default: this app is built around
+// writing a solution by hand, and options on screen change how you read a
+// question. Multiple choice is opt-in, and remembered.
+//
+// localStorage rather than a new setting plumbed through Electron's settings.json
+// and Android's SecureKeyStore — this is a UI preference, not part of the study
+// record. The key is namespaced because file:// pages all share one bucket.
+const MODE_KEY = 'mathlificient.answerMode';
+const modeSel = document.getElementById('answerMode');
+const modeNoteEl = document.getElementById('modeNote');
+
+function readMode() {
+  try {
+    return window.localStorage.getItem(MODE_KEY) === 'mcq' ? 'mcq' : 'self';
+  } catch {
+    return 'self'; // storage disabled — fall back to the default, don't throw
+  }
+}
+let answerMode = readMode();
+
+/**
+ * The floating PracticeActivity popup only ever shows tutor-pushed questions,
+ * which have no template and therefore never have options — so multiple choice
+ * there would say "no options for this one" every single time. Checked lazily
+ * because Android injects the class in onPageFinished, after this script runs.
+ */
+function miniMode() {
+  return typeof document !== 'undefined' && document.body.classList.contains('mini');
+}
+
+function mcqActive() {
+  return answerMode === 'mcq' && !miniMode();
+}
 
 function tex(el, latex, display = true) {
   try {
@@ -96,17 +139,41 @@ function currentPool() {
   return bySkill.length ? bySkill : PRACTICE;
 }
 
-/** One generated question, tagged with everything the proficiency log needs. */
+/**
+ * One generated question, tagged with everything the proficiency log needs, and
+ * with its multiple-choice options already built.
+ *
+ * The options are frozen here rather than derived when the question is drawn,
+ * for four reasons: the workings bag `w` stays a local and never rides along
+ * into the worksheet's IPC payload; the options can't reshuffle under the
+ * student on a re-render; a tutor-pushed question has no template and so gets no
+ * options without any special case; and a question whose distractors happen to
+ * collide can simply be regenerated, because we are still upstream of show().
+ */
 function buildQuestion(template) {
   const formulas = (typeof PRACTICE_FORMULAS !== 'undefined' && PRACTICE_FORMULAS[template.id]) || [];
-  return {
-    ...template.generate(),
+  const tag = {
     formulas,
     fromTutor: false,
     templateId: template.id,
     topic: template.topic,
     skill: typeof skillOf === 'function' ? skillOf(template) : null,
   };
+  const canBuild = typeof buildChoices === 'function' && template.distractors;
+
+  let last = null;
+  // generate() is pure and costs microseconds, so a few extra draws are free.
+  for (let tries = 0; tries < (canBuild ? 5 : 1); tries++) {
+    const { w, ...gen } = template.generate();
+    last = gen;
+    if (!canBuild) break;
+    const choices = buildChoices(gen.answer, template.distractors, w,
+      { ordered: template.mcqOrdered });
+    if (choices) return { ...gen, ...tag, choices };
+  }
+  // No honest option set for this instance — self-mark it. The template is not
+  // disabled; the next question may well manage four distinct options.
+  return { ...last, ...tag, choices: null };
 }
 
 function newQuestion() {
@@ -120,7 +187,8 @@ function show(item, label) {
   revealed = 0;
   shownAt = Date.now();
   graded = false;
-  if (gradingEl) gradingEl.classList.add('hidden');
+  advanced = false;
+  clearAnswerUI();
   srcEl.textContent = item.fromTutor ? '✨ From your tutor' : label || '';
   tex(qEl, item.question, false); // inline: long questions wrap instead of clipping
   stepsEl.innerHTML = '';
@@ -148,10 +216,19 @@ function show(item, label) {
     }
   }
 
-  nextBtn.disabled = false;
-  nextBtn.textContent = 'Show next step';
-  answerBtn.disabled = false;
   copyBtn.disabled = false;
+  nextBtn.textContent = 'Show next step';
+
+  // Multiple choice: draw the grid and lock the reveal buttons until a pick.
+  // Reading the last step first would hand over the answer, and banking an
+  // objectively-graded score for copying it is worse than the self-marking it
+  // replaces. They reopen the moment a pick lands.
+  usingMcq = mcqActive() && mcqShow(item);
+  nextBtn.disabled = usingMcq;
+  answerBtn.disabled = usingMcq;
+  if (mcqActive() && !usingMcq && item.skill && !item.fromTutor) {
+    setModeNote('No options for this one — work it out and mark yourself.');
+  }
   updateViz();
 }
 
@@ -208,29 +285,73 @@ answerBtn.addEventListener('click', () => {
   // Grading is offered on every question, not just inside a quiz — that's where
   // most attempts happen, and a proficiency bar built only from quizzes would be
   // built from a small minority of the work. Hidden when there's no skill to
-  // credit, so the buttons are never a no-op.
-  if (gradingEl && !graded && current.skill) gradingEl.classList.remove('hidden');
+  // credit, and never alongside a live option grid.
+  if (gradingEl && !graded && current.skill && !usingMcq) {
+    gradingEl.classList.remove('hidden');
+  }
 });
 
 // ---- Grading -----------------------------------------------------------------------
 //
-// Self-marking is the honest option here: nothing in this app parses a written
-// answer, so the alternative is no signal at all. It's weighted below MCQ in
-// practice-prof.js, and the UI says so.
+// Two steps, deliberately kept apart. Multiple choice records the moment an
+// option is picked — so the attempt survives the window being closed — but must
+// not jump to the next question until the student has read why they were wrong.
+// Self-marking does both at once.
+//
+// `flow` (practice / quiz / placement) is a different axis from `mode` (mcq /
+// self). Conflating them, as an earlier version did, meant a multiple-choice
+// question answered inside a quiz was logged as self-marked and quietly given
+// the lower weight.
 
-const gradeHooks = []; // quiz mode registers here rather than double-binding the buttons
-let gradeMode = 'self'; // quiz/placement modes set this so the log stays readable
+const gradeHooks = []; // quiz mode registers here rather than binding the buttons
+let gradeFlow = 'practice';
+let lastVerdict = false; // what to hand the hooks when advance() eventually runs
 
-function grade(gotIt) {
+/** Write one attempt. `extra` carries { k, miss } for a picked option. */
+function recordAttempt(score, mode, extra) {
   if (!current || graded) return;
   graded = true;
+  lastVerdict = score >= 0.5;
   if (gradingEl) gradingEl.classList.add('hidden');
   if (current.skill && typeof Store !== 'undefined' && typeof attemptFrom === 'function') {
     Store.profAppend(attemptFrom(
-      current.skill, current.templateId, gotIt ? 1 : 0, gradeMode, Date.now() - shownAt,
+      current.skill, current.templateId, score, mode, Date.now() - shownAt,
+      { ...(extra || {}), flow: gradeFlow },
     ));
   }
-  for (const fn of gradeHooks) fn(gotIt);
+}
+
+/** Move on — in a quiz that means the next question, otherwise nothing. */
+function advance() {
+  if (advanced) return; // a second Next press must not skip a question
+  advanced = true;
+  for (const fn of gradeHooks) fn(lastVerdict);
+}
+
+/** Self-marked: recording and moving on happen together. */
+function grade(gotIt) {
+  if (!current || graded) return;
+  recordAttempt(gotIt ? 1 : 0, 'self', {});
+  advance();
+}
+
+/** Reopen the worked steps once the question has been answered. */
+function enableReveal() {
+  nextBtn.disabled = revealed >= (current ? current.steps.length : 0);
+  answerBtn.disabled = false;
+}
+
+/** Reset every answering surface. Shared by show() and the end of a quiz. */
+function clearAnswerUI() {
+  if (gradingEl) gradingEl.classList.add('hidden');
+  if (typeof mcqClear === 'function') mcqClear();
+  setModeNote('');
+}
+
+function setModeNote(text) {
+  if (!modeNoteEl) return;
+  modeNoteEl.textContent = text || '';
+  modeNoteEl.classList.toggle('hidden', !text);
 }
 
 if (gotItBtn) gotItBtn.addEventListener('click', () => grade(true));
@@ -245,6 +366,26 @@ copyBtn.addEventListener('click', () => {
 
 document.getElementById('newQ').addEventListener('click', newQuestion);
 topicSel.addEventListener('change', () => { focusSkill = ''; });
+
+// A mode change takes effect on the NEXT question. Switching mid-question has no
+// good answer: after a pick `graded` is already set, so the self-mark row stays
+// suppressed and inside a quiz nothing would ever call advance() — the quiz
+// would sit there with no way forward.
+if (modeSel) {
+  modeSel.value = answerMode;
+  modeSel.addEventListener('change', () => {
+    answerMode = modeSel.value === 'mcq' ? 'mcq' : 'self';
+    try { window.localStorage.setItem(MODE_KEY, answerMode); } catch { /* not fatal */ }
+    // The drawing panel is dead weight when you're picking from four options,
+    // and the page needs the room for the grid. PC only; Android's studio has a
+    // native canvas outside this page.
+    const inkPanel = document.getElementById('inkPanel');
+    if (inkPanel) inkPanel.open = answerMode !== 'mcq';
+    setModeNote(answerMode === 'mcq'
+      ? 'Multiple choice starts on the next question.'
+      : 'Back to working it out on the next question.');
+  });
+}
 
 // A tutor-generated question pushed from a live session.
 function showTutorQuestion(payload) {
@@ -292,7 +433,14 @@ window.applyPaper = (bg, fg) => {
     `.src,.hint,.flabel{color:${fg}!important;opacity:0.75}` +
     `select,button{color:${fg}!important;border-color:${fg}66!important;background:transparent!important}` +
     `button.primary{background:${fg}!important;color:${bg}!important;border-color:${fg}!important}` +
-    `.step{border-top-color:${fg}33!important}`;
+    `.step{border-top-color:${fg}33!important}` +
+    // The options are <div>s, not <button>s, so the blanket rule above can't
+    // reach them — but they still need to follow the paper, and the right/wrong
+    // colours have to survive it, because they are the only feedback there is.
+    `.mcq-option{color:${fg}!important;border-color:${fg}55!important}` +
+    `.mcq-option.correct{border-color:#2E7D32!important;box-shadow:inset 0 0 0 2px #2E7D32}` +
+    `.mcq-option.wrong{border-color:#C62828!important;box-shadow:inset 0 0 0 2px #C62828}` +
+    `.mcq-feedback.good{color:#2E7D32!important}.mcq-feedback.bad{color:#C62828!important}`;
 };
 window.showPractice = (json) => {
   try { showTutorQuestion(JSON.parse(json)); } catch { /* ignore */ }

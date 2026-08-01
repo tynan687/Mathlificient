@@ -16,19 +16,29 @@ const PROF_VERSION = 1;
 const SHAKY = 0.30;
 const SOLID = 0.60;
 
-// Self-marked answers are worth less than objectively-graded ones — a student
-// marking their own work is a noisier signal than a picked option, and pretending
-// otherwise would make the bars overconfident. `placement` isn't listed because
-// it's self-marked too; it gets the 0.8 default, and only carries its own mode
-// so a placement run stays identifiable in the log.
+// How the answer was graded, which is a statement about signal quality. A
+// student marking their own work is noisier than a picked option, and pretending
+// otherwise would make the bars overconfident.
+//
+// This is deliberately NOT the same axis as which flow the question came from
+// (free practice / quiz / placement) — that lives in `a.flow`. Conflating them
+// would mean a multiple-choice question answered inside a quiz got logged as
+// self-marked, which is exactly the sort of quiet mis-weighting that makes a
+// progress bar untrustworthy.
 const WEIGHT = { mcq: 1.0, self: 0.8 };
 
 const DAY_MS = 86400000;
 
 function clamp(x, lo, hi) { return x < lo ? lo : x > hi ? hi : x; }
 
-/** Build one attempt record. `score`: 1 right, 0.5 right-after-hint, 0 wrong. */
-function attemptFrom(skill, templateId, score, mode, ms, miss) {
+/**
+ * Build one attempt record. `score`: 1 right, 0.5 right-after-hint, 0 wrong.
+ * `extra` carries the optional fields: `{ miss, flow, k }` — the misconception
+ * key behind a wrong pick, the flow it happened in, and how many options were
+ * on offer (see chanceAdjusted).
+ */
+function attemptFrom(skill, templateId, score, mode, ms, extra) {
+  const e = extra || {};
   const a = {
     t: Date.now(),
     skill,
@@ -37,8 +47,36 @@ function attemptFrom(skill, templateId, score, mode, ms, miss) {
     mode: mode || 'self',
   };
   if (ms != null) a.ms = Math.round(ms);
-  if (miss) a.miss = miss;
+  if (e.miss) a.miss = e.miss;
+  if (e.flow) a.flow = e.flow;
+  if (e.k > 1) a.k = e.k;
   return a;
+}
+
+/**
+ * Discount the free 1/k a multiple-choice question hands out for guessing.
+ *
+ * Without this, mastery converges to the mean raw score, and on four options a
+ * student who genuinely knows half of a skill converges to 0.5 + 0.5x0.25 =
+ * 0.625 — above SOLID — where the same student self-marking sits at 0.5. Moving
+ * a skill to multiple choice would turn its bar green with no change in ability,
+ * and the recommender would then route them away from it.
+ *
+ * The result is deliberately NOT clamped to [0,1]: a wrong pick on four options
+ * is worth -1/3, and that is the whole mechanism. Clamping here would make the
+ * correction a no-op, because on a binary score it maps 1 to 1 and 0 to 0 and
+ * changes nothing — the discount only shows up once the negatives are averaged
+ * against the wins. `s.p` is clamped after the fold instead, so nothing outside
+ * this function ever sees a negative.
+ *
+ * Attempts with no `k` (every self-mark, and everything written before this
+ * existed) pass through untouched. Changing this formula needs no migration
+ * precisely because the log stores attempts and never the computed mastery.
+ */
+function chanceAdjusted(a) {
+  if (!a.k || a.k < 2) return a.score;
+  const floor = 1 / a.k;
+  return (a.score - floor) / (1 - floor);
 }
 
 /**
@@ -60,11 +98,15 @@ function computeProficiency(log, now) {
     });
     const weight = WEIGHT[a.mode] != null ? WEIGHT[a.mode] : 0.8;
     const alpha = Math.max(0.18, 1 / (s.n + 1));
-    s.p += alpha * weight * (a.score - s.p);
+    s.p += alpha * weight * (chanceAdjusted(a) - s.p);
     s.n += 1;
+    // Streaks and the correct count stay on the RAW score — they describe what
+    // the student did, not what it's worth. "3 in a row" must mean three right.
     if (a.score >= 0.5) { s.correct += 1; s.streak += 1; } else { s.streak = 0; }
     s.last = Math.max(s.last, a.t || 0);
-    if (a.miss) s.miss[a.miss] = (s.miss[a.miss] || 0) + 1;
+    // Only wrong answers carry a misconception. Counting one off a correct
+    // answer would poison the "you keep…" line on the progress screen.
+    if (a.miss && a.score < 0.5) s.miss[a.miss] = (s.miss[a.miss] || 0) + 1;
   }
 
   // Derived-at-read-time, never stored: bars must not drift while the app is shut.
@@ -219,15 +261,20 @@ function weakestPrereq(skill, skills) {
   return worst && worst.p < SOLID ? worst : null;
 }
 
-/** The misconception this skill trips on most, as a sentence. */
+/**
+ * The misconception this skill trips on most, as a sentence fragment that reads
+ * after "Shaky at 22% — ". Returns null rather than leaking the raw key when a
+ * `why` has no entry: an unexplained slip is better than "you keep disc-sgn."
+ */
 function topMiss(s) {
   const entries = Object.entries(s.miss || {});
   if (!entries.length) return null;
   entries.sort((a, b) => b[1] - a[1]);
   const [why, count] = entries[0];
-  if (count < 2) return null;
-  const label = (typeof MISCONCEPTIONS !== 'undefined' && MISCONCEPTIONS[why]) || why;
-  return `you keep ${label}.`;
+  if (count < 2) return null; // one slip is noise, not a pattern
+  if (typeof MISCONCEPTIONS === 'undefined') return null;
+  const entry = MISCONCEPTIONS[why];
+  return entry && entry.label ? `you keep ${entry.label}.` : null;
 }
 
 /** Skills whose recall has decayed but which were once learned. */
@@ -269,7 +316,7 @@ function placementPlan(pool, count) {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    PROF_VERSION, SHAKY, SOLID, computeProficiency, recommend, dueForReview,
-    attemptFrom, placementPlan, readinessOf, evidenceOf, blankSkill,
+    PROF_VERSION, SHAKY, SOLID, WEIGHT, computeProficiency, recommend, dueForReview,
+    attemptFrom, chanceAdjusted, placementPlan, readinessOf, evidenceOf, blankSkill,
   };
 }

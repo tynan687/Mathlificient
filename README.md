@@ -7,6 +7,7 @@ Most of it works **completely offline and free** — no account, no sign-up, no 
 - **Practice Studio** — unlimited generated questions across 33 topics (algebra, quadratics, trig, calculus, vectors, matrices, statistics, partial fractions and more), each with step-by-step worked solutions and a diagram drawn from the actual numbers in your question: the real parabola with its roots marked, the triangle to scale, asymptotes, Argand diagrams, bar charts.
 - **Work it out by hand** — a drawing canvas sits under every question. On Android that's the S Pen (with palm rejection, hold-the-button to erase, and pinch-to-zoom for more room). On Windows it's your mouse, or a graphics tablet if you have one.
 - **Quiz mode** — run a scored set of 5/10/20 questions with a review of what you missed. On Windows you can also print a worksheet with working space and a separate answer key.
+- **Multiple choice that actually teaches** — switch any question to four options, and the three wrong ones are real mistakes, not filler: `b² + 4ac`, dividing by *n* instead of *n − 1*, forgetting to multiply by the inside of the bracket. Pick one and it tells you exactly which slip you made. Repeat the same slip and your progress screen starts saying so.
 - **Progress tracking that tells you what to study next** — mark each question ✓ Got it / ✗ Missed it and the app builds a picture of where you're strong and where you're not, across 47 named skills in 10 areas. A **Focus next** list names three things to work on *and why* ("Shaky at 22%", "You had this at 80% but haven't practised in 19 days", "Quadratics first would make this easier"). A twelve-question placement check gets you started from scratch in about ten minutes.
 - **Formula sheet** — 182 formulas across 15 topic groups, 82 of them interactive solvers: type your values in, get the answer plus LaTeX you can paste into Word or Samsung Notes.
 - **Focus timer** (Pomodoro) and **ambient background noise** (rain, brown, pink, fan), all generated on-device.
@@ -62,18 +63,24 @@ Open **Practice Studio** — on Android from the main screen or the bubble menu,
 
 **Quiz mode:** pick a question count, work through them one at a time, and mark yourself **✓ Got it** / **✗ Missed it** after each answer. You get a score and a list of the ones you missed at the end. On Windows, **🖨 Worksheet** generates a printable page instead — questions with blank working space, then an answer key.
 
+**Multiple choice:** the dropdown next to the quiz controls switches between **Work it out** (the default — write it by hand, then mark yourself) and **Multiple choice**. It's remembered, and takes effect on the next question.
+
+Every wrong option is a mistake someone actually makes, so guessing by elimination doesn't work. Pick a wrong one and it names the slip — *"That is b² + 4ac. The discriminant is b² − 4ac."* — highlights the right answer, and unlocks the worked steps. One pick per question, so the score means something.
+
+Two deliberate rules: the steps stay locked until you've answered (reading them first and then picking is copying, not answering — if you do reveal first, the question is scored as self-marked instead), and a few question types have no sensible wrong options, so those keep asking you to mark yourself and say so.
+
 ### My progress
 
 Open **📊 Progress** — on Android from the main screen or the bubble menu, on Windows from the π bubble's menu.
 
 Everything you mark, in a quiz or just while practising, feeds a bar per skill.
 
-- **Focus next** picks three things and tells you why each one: which are shaky, which you had once and have let go stale, and which would be easier if you shored something up first. **Practise** on any of them jumps straight into questions on that skill.
+- **Focus next** picks three things and tells you why each one: which are shaky, which you had once and have let go stale, and which would be easier if you shored something up first. Once you've made the same mistake twice it names it — *"Shaky at 22% — you keep using b² + 4ac."* **Practise** on any of them jumps straight into questions on that skill.
 - **Due for review** catches topics you'd learned and haven't touched in a while. Bars fade the longer you leave a topic alone, so this fills up on its own.
 - **Every topic** opens into per-skill bars. A faded bar means too few attempts to be sure of the number yet — not a low score.
 - Fresh install with no history? Take the **twelve-question placement check** — one question from each area, about ten minutes, and the recommendations have something real to work from.
 
-It's all self-marked, so it's only as accurate as you are — the app weights self-marking below anything it can grade itself, and says so on the screen. Nothing is uploaded; it's a file on your own device, and there's a Reset button.
+Self-marked answers count for less than multiple-choice ones, because you grading yourself is a noisier signal than a picked option — the app says so on the screen. Multiple-choice scores are also discounted for the free 25% a four-option question hands out, so switching modes doesn't inflate a bar. Nothing is uploaded; it's a file on your own device, and there's a Reset button.
 
 ### The study bubble (Android, no API key needed)
 
@@ -128,7 +135,15 @@ Full details, including the keystore setup and a known electron-builder snag on 
 node tools/sync-shared.js
 ```
 
-`node tools/sync-shared.js --check` fails if the two trees have drifted, and prints which files are divergent on purpose (the HTML pages differ per platform, by design — see the notes in that script).
+`node tools/sync-shared.js --check` fails if the two trees have drifted, and prints which files are divergent on purpose (the HTML pages differ per platform, by design — see the notes in that script). It also checks that both practice pages pull in the same set of scripts, since that part of them is *not* meant to differ.
+
+The question generators and their multiple-choice distractors have their own harness — it hammers every template a few hundred times looking for a "wrong" option that is secretly right, an option that gives itself away by its shape, and a misconception key with no explanation attached:
+
+```bash
+node tools/check-practice.js
+```
+
+Add `--sample` to print one example question per template, or `--runs 50` for a quicker pass while you're writing new ones.
 
 ---
 

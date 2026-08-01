@@ -479,6 +479,12 @@
   if (paperCustomEl) {
     paperCustomEl.addEventListener('input', () => setPaper(paperCustomEl.value));
   }
+  // The canvas now lives inside a collapsible <details> (the multiple-choice
+  // grid needs the room). Nothing here needs a guard for that: measured in
+  // Chromium 35, closing the panel takes ~460px off the page height but leaves
+  // the wrap's own box intact, so the canvas is never resized to zero and
+  // ResizeObserver never even fires. Strokes are in world coordinates and would
+  // survive a resize regardless.
   if (undoBtn) undoBtn.addEventListener('click', () => ink.undo());
   if (clearBtn) clearBtn.addEventListener('click', () => ink.clear());
   if (zoomInBtn) zoomInBtn.addEventListener('click', () => ink.zoomBy(1.25, ink.cssW / 2, ink.cssH / 2));
