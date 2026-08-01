@@ -225,22 +225,43 @@ back it prints *which candidate died and why* — that diagnostic pays for itsel
 
 ## 5. Verification
 
-There is no CI. Verification is five layers of harness plus a hardware pass; all of it runs
-from the command line in a couple of minutes.
+There is no CI. Verification is six layers of harness plus a hardware pass; everything except
+the hardware pass runs from one command in about two minutes.
 
-| Layer | Command | Covers |
+```powershell
+$env:ELECTRON_RUN_AS_NODE = 1
+& "$env:LOCALAPPDATA\vmt-build\node_modules\electron\dist\electron.exe" tools\test\run-all.js
+```
+
+`--fast` skips the generator sweep (~30 s); a bare word filters by suite name. There is no
+system Node on the original dev machine, which is why Electron doubles as the JS runtime —
+`run-all.js` locates it and sets `ELECTRON_RUN_AS_NODE` per suite. Full detail, including how to
+attach to the tablet, is in [tools/test/README.md](tools/test/README.md).
+
+| Layer | Suite | Covers |
 |---|---|---|
-| Generators + distractors | `node tools/check-practice.js` | ~130k generations across 66 templates |
-| Symbols data | `node tools/check-practice.js` → `check-symbols.js` | ids, cross-references both ways, no LaTeX in spoken lines |
-| Mastery model | scratchpad `phase1-prof.mjs` | decay, recovery, area rollup, guessing correction (Monte Carlo) |
-| PC UI | scratchpad Electron harnesses | real pages, real IPC, synthetic pointer events |
-| Android UI | scratchpad harness at 360 dp | **real asset copies**, stand-in bridge, touch targets, overflow |
-| Hardware | scratchpad CDP suites | real Kotlin bridge, real `filesDir`, force-stop persistence |
+| Generators + distractors | `tools/check-practice.js` | ~130k generations across 66 templates |
+| Symbols data | `tools/check-symbols.js` | ids, cross-references both ways, no LaTeX in spoken lines |
+| Shared-file drift | `tools/sync-shared.js --check` | PC and Android copies identical, same `<script>` sets |
+| Mastery model | `tools/test/model.mjs`, `skills.mjs` | decay, recovery, area rollup, guessing correction (Monte Carlo) |
+| PC UI | `tools/test/pc-*.js`, `viz.js` | real pages, real IPC, synthetic pointer events |
+| Android UI | `tools/test/android-*.js` | **real asset copies**, stand-in bridge, touch targets, overflow |
+| Hardware | `tools/test/device-*.js` | real Kotlin bridge, real `filesDir`, force-stop persistence |
 
-The Electron/CDP harnesses live in the session scratchpad rather than the repo. **Moving them
-into `tools/` and wiring `npm test` to run the lot is the single highest-value next piece of
-engineering work** — they are the reason the last four phases landed without regressions, and
-right now they are not where a new engineer would find them.
+The `device-*` suites are excluded from `run-all.js` — they need a tablet and a debug build.
+Run them individually after any change to `Proficiency.kt` or the `Bridge` methods.
+
+**The PC suites run against `%LOCALAPPDATA%\vmt-build`, not the repo.** The repo sits in OneDrive
+and `npm install` was never run there, so Electron and KaTeX live in `vmt-build` and the pages
+load from it. Copy the renderer across before testing a PC-side edit:
+
+```
+robocopy "<repo>\VoiceMathTutorPC\renderer" "%LOCALAPPDATA%\vmt-build\renderer" /MIR
+```
+
+`paths.js` hashes both trees on every run and **exits 1 naming the drifted files** rather than
+letting a stale copy report green. Running `npm install` inside `VoiceMathTutorPC` makes the repo
+win the resolution order and removes the two-copy problem entirely.
 
 ### Driving the tablet
 
@@ -325,7 +346,12 @@ Planned as eight phases; five are merged and hardware-verified.
 - **`matrix-det-inv` has no multiple choice, deliberately.** The question asks for `det A` *and*
   `A⁻¹` but the `answer` string carries only the determinant, so four determinants would not
   answer the question on screen. Fix properly by splitting it into two templates.
-- **No CI, and the UI harnesses are not in the repo** (§5).
+- **No CI.** The harnesses are all in `tools/test/` and run from one command (§5), but nothing
+  runs them automatically. They need a windowed Electron, so a GitHub Actions runner would want
+  `xvfb` or a Windows runner — the `node:true` suites would run anywhere as-is.
+- **The recommender has never met a real student.** It is verified against synthetic attempt
+  logs and Monte Carlo runs, which prove the maths, not the pedagogy. Whether "focus next"
+  names skills a student agrees are their weak spots is unmeasured.
 - **`formulas.js` is genuinely forked** between platforms — Android has the lazy-render and phone
   work, PC has `runSolve`/Enter-key/`optionalVars`. It is in the sync script's `DIVERGENT` list
   with the reason. Reconcile deliberately, never by copying.
@@ -421,10 +447,17 @@ year; then the "spot the symbol" mode, which is the weakest of the four.
 
 ### If you only do one more thing
 
-Neither of these. Move the Electron and CDP harnesses out of the scratchpad into `tools/` and
-wire `npm test` to run everything (§5). Phases 6 and 7 are content on top of proven machinery;
-the harnesses are the machinery that keeps it proven, and they are currently the only part of
-this project that a new engineer cannot find.
+Neither of these. **Put it in front of a student and watch the progress screen** with them.
+
+Everything below the UI is verified — 66 templates over ~130k generations, the mastery model
+under Monte Carlo, 74 assertions on real hardware. What is *not* verified is the only claim the
+product actually makes: that "focus next" names the three things a student would themselves say
+they are worst at. That is checkable in an afternoon with one willing HSC student and a
+12-question placement check, and it can invalidate design decisions that Phases 6–8 would
+otherwise be built on top of.
+
+If a second thing: Phase 6 before Phase 7. The diagrams make the symbols section teach, and the
+quiz is worth much less without them.
 
 ---
 

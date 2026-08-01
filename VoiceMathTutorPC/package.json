@@ -15,7 +15,9 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis",
-    "test": "node ../tools/check-practice.js",
+    "test": "node ../tools/test/run-all.js",
+    "test:fast": "node ../tools/test/run-all.js --fast",
+    "test:practice": "node ../tools/check-practice.js",
     "sync": "node ../tools/sync-shared.js",
     "sync:check": "node ../tools/sync-shared.js --check"
   },
