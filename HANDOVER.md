@@ -339,14 +339,25 @@ Keep the key out of email and chat: both leave permanent copies on servers you d
 and unlike a password this one **cannot be rotated**. A vault item can be unshared; a mail
 archive cannot be unsent.
 
-A backup that has never been restored is not a backup. Prove it once, from the vault copy alone:
+A backup that has never been restored is not a backup. Prove it once, from the vault copy alone —
+build a release APK with it and print the certificate:
 
 ```bash
 apksigner verify --print-certs app-release.apk
 ```
 
-The SHA-256 certificate digest must match the published v1.0.0 APK. A file that merely exists
-tells you nothing.
+It must come back with the v1.0.0 identity:
+
+```
+DN:      CN=Mathlificient, OU=Mathlificient, O=Mathlificient, C=AU
+SHA-256: c66704b5516975ef78433e78222f7138335a99a8b884e063640d7a6475ee07fc
+SHA-1:   51901bc81b7f90eca9c078f069cdb4e1502bf058
+```
+
+Anything else means the backup is not the shipping key, and an APK signed with it will not
+install over an existing copy. The digest is public — it is in every APK already distributed —
+so recording it here is safe and is what makes the check possible at all. `apksigner` lives in
+the Android SDK build-tools and needs the same `JAVA_HOME` as the Gradle build.
 
 ### Transitioning the machine to someone else
 
