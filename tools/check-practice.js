@@ -51,6 +51,26 @@ const fail = (template, msg, detail) => {
  *  legitimate "-8 + 0i" (complex) and "24 - 0 = 24" (definite-integral step). */
 const ARTIFACT = /(^|[^0-9a-zA-Z\\])(0x|[+-] 0x|1x(?![0-9])|[+-] 0(?![0-9ix.]))/;
 
+/**
+ * A negative number raised to a power without brackets. "-16^2" is -(16^2) in
+ * every convention there is, so writing it where (-16)^2 is meant puts a
+ * different — and wrong — number on the screen. PR.par exists for this.
+ * Found on-device in coord-distance's working, after four harnesses missed it.
+ *
+ * `^\circ` is excluded: "-118.07^\circ" is a negative angle, not a power.
+ */
+const UNBRACKETED_POWER = /-\d+(?:\.\d+)?\^(?!\\circ)/;
+
+/**
+ * Only the coefficient artifacts, for scanning STEPS.
+ *
+ * Steps legitimately contain "- 0" and "+ 0" — "24 - 0 = 24" in a definite
+ * integral, "5(5) + 0(-2)" in a dot product with a zero component — because
+ * they show the arithmetic as it actually happens. "0x" and "1x" are never
+ * right anywhere, so those still fail.
+ */
+const STEP_ARTIFACT = /(^|[^0-9a-zA-Z\\])(0x|1x(?![0-9]))/;
+
 // --- self-test ----------------------------------------------------------------
 // Every check below leans on these three helpers. If they are wrong, the whole
 // run is a green light that means nothing — so prove them first.
@@ -103,6 +123,19 @@ for (const t of PRACTICE) {
       if (ARTIFACT.test(text)) fail(t.id, `${field} has a coefficient artifact`, text);
     }
     if (!Array.isArray(q.steps) || !q.steps.length) fail(t.id, 'no steps');
+    // The worked steps are read as carefully as the answer, so they get the same
+    // scrutiny. This was previously unchecked, which is how a "-16^2" shipped.
+    for (const [i, text] of (q.steps || []).entries()) {
+      if (UNBRACKETED_POWER.test(text)) {
+        fail(t.id, `step ${i + 1} raises a negative to a power without brackets`, text);
+      }
+      if (STEP_ARTIFACT.test(text)) fail(t.id, `step ${i + 1} has a coefficient artifact`, text);
+    }
+    for (const [field, text] of [['question', q.question], ['answer', q.answer]]) {
+      if (UNBRACKETED_POWER.test(text)) {
+        fail(t.id, `${field} raises a negative to a power without brackets`, text);
+      }
+    }
     if (q.viz && !VIZ_TYPES.includes(q.viz.type)) {
       fail(t.id, `viz type "${q.viz.type}" has no renderer`);
     }

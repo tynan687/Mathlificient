@@ -735,8 +735,9 @@ const PRACTICE = [
       return {
         question: `\\text{Differentiate } f(x) = ${PR.lead(a, `x^{${n}}`)}${PR.xt(b, 'x^2')}${PR.xt(c)}`,
         steps: [
-          `\\frac{d}{dx}${PR.par(a)}x^{${n}} = ${PR.lead(a * n, `x^{${n - 1}}`)}`,
-          `\\frac{d}{dx}${PR.par(b)}x^2 = ${PR.lead(2 * b)}, \\quad \\frac{d}{dx}${PR.lead(c)} = ${c}`,
+          `\\frac{d}{dx}${PR.lead(a, `x^{${n}}`)} = ${PR.lead(a * n, `x^{${n - 1}}`)}`,
+          // PR.lead, not PR.par: at b = 1 the latter printed "1x^2".
+          `\\frac{d}{dx}${PR.lead(b, 'x^2')} = ${PR.lead(2 * b)}, \\quad \\frac{d}{dx}${PR.lead(c)} = ${c}`,
           `f'(x) = ${PR.lead(a * n, `x^{${n - 1}}`)}${PR.xt(2 * b)}${PR.ct(c)}`,
         ],
         answer: `f'(x) = ${PR.lead(a * n, `x^{${n - 1}}`)}${PR.xt(2 * b)}${PR.ct(c)}`,
@@ -1090,7 +1091,9 @@ const PRACTICE = [
         question: `\\text{For } A(${x1}, ${y1}) \\text{ and } B(${x2}, ${y2}), \\text{ find } AB \\text{ and the midpoint}`,
         steps: [
           `\\Delta x = ${x2} - ${PR.par(x1)} = ${x2 - x1}, \\quad \\Delta y = ${y2} - ${PR.par(y1)} = ${y2 - y1}`,
-          `AB = \\sqrt{${x2 - x1}^2 + ${PR.par(y2 - y1)}^2} = \\sqrt{${(x2 - x1) ** 2 + (y2 - y1) ** 2}} = ${dist}`,
+          // PR.par on both: a bare "-16^2" reads as -(16^2) = -256, which is a
+          // different and wrong number from (-16)^2.
+          `AB = \\sqrt{${PR.par(x2 - x1)}^2 + ${PR.par(y2 - y1)}^2} = \\sqrt{${(x2 - x1) ** 2 + (y2 - y1) ** 2}} = ${dist}`,
           `M = \\left(\\frac{${x1} + ${PR.par(x2)}}{2}, \\frac{${y1} + ${PR.par(y2)}}{2}\\right) = (${mx}, ${my})`,
         ],
         answer: `AB = ${dist}, \\quad M = (${mx}, ${my})`,
@@ -1130,7 +1133,7 @@ const PRACTICE = [
       do {
         m = PR.nz(-4, 4);
         x1 = PR.nz(-6, 5);
-        y1 = PR.int(-8, 8);
+        y1 = PR.nz(-8, 8); // also non-zero: "y - 0 = ..." reads badly
         c = y1 - m * x1;
       } while (c === 0);
       const run = PR.int(1, 4);
@@ -1178,7 +1181,8 @@ const PRACTICE = [
         k = PR.int(2, 5);
         sign = PR.choice([1, -1]);
         pm = -sign * k;                 // perpendicular to 1/k is -k
-        x1 = PR.nz(-5, 5); y1 = PR.int(-6, 6);
+        // y1 non-zero so the point-slope step doesn't read "y - 0 = ...".
+        x1 = PR.nz(-5, 5); y1 = PR.nz(-6, 6);
         c = y1 - pm * x1;
       } while (c === 0);
       const mTex = `\\tfrac{${sign}}{${k}}`;
@@ -1265,7 +1269,10 @@ const PRACTICE = [
     mcqOrdered: true, // centre and radius are different quantities
     generate() {
       // x^2 + y^2 + Dx + Ey + F = 0 with integer centre and whole radius.
-      const a = PR.int(-5, 5); const b = PR.int(-5, 5);
+      // Both centre coordinates non-zero: a zero one has nothing to complete,
+      // so the working degenerates to "(x + 0)^2 - 0" and the exercise stops
+      // exercising the thing it is named after.
+      const a = PR.nz(-5, 5); const b = PR.nz(-5, 5);
       const r = PR.int(2, 7);
       const D = -2 * a; const E = -2 * b; const F = a * a + b * b - r * r;
       return {
