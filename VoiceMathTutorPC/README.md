@@ -92,6 +92,19 @@ PC differences vs the tablet app:
     came from (`practice` / `quiz` / `placement`), and multiple-choice attempts
     carry the option count so the free 1/k a guess earns can be discounted —
     without which a student who knows half a skill would read as solid.
+  - *Symbols* — **100 symbols across 13 categories**, each with what it means,
+    how you say it, a worked example with its spoken reading, and what it gets
+    mixed up with. The confusion links are declared once and resolved BOTH ways
+    at load (`confusablesOf` unions the declared list with the back-links), so
+    neither card can end up missing the warning. Searchable by name, meaning,
+    spoken form or raw LaTeX — `\partial`, "curly d" and "partial" all land on
+    the same entry. A second tab breaks **20 whole expressions** into the
+    fragments you actually say, in reading order, with notes where the grouping
+    is the hard part. KaTeX is IntersectionObserver-lazy from the start (~500
+    expressions; only 11-15 render at load). Speech is an enhancement only:
+    Android routes through a Kotlin `Bridge.speak()` using the platform
+    TextToSpeech rather than Web Speech, which can be silently mute inside a
+    WebView, and the written line is always on screen regardless.
   - *Unit & constant converter* — length/mass/force/energy/pressure/power/angle/
     time/temperature conversions + a click-to-copy physical-constants table.
   - *Focus timer* — Pomodoro-style, with a session goal; remaining time shows on

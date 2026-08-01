@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import com.tynan.mathtutor.FormulaSheetActivity
 import com.tynan.mathtutor.PracticeSpaceActivity
 import com.tynan.mathtutor.ProgressActivity
+import com.tynan.mathtutor.SymbolsActivity
 import com.tynan.mathtutor.R
 import com.tynan.mathtutor.TimerActivity
 import com.tynan.mathtutor.overlay.MenuItem
@@ -84,6 +85,7 @@ class BubbleService : Service() {
         overlay?.showMenu(
             listOf(
                 MenuItem("formulas", "🧮", "Formula sheet"),
+                MenuItem("symbols", "∫", "Symbols"),
                 MenuItem("practice", "✏️", "Practice"),
                 MenuItem("progress", "📊", "My progress"),
                 MenuItem("timer", "⏱", "Focus timer"),
@@ -93,6 +95,7 @@ class BubbleService : Service() {
         ) { id ->
             when (id) {
                 "formulas" -> openActivity(FormulaSheetActivity::class.java)
+                "symbols" -> openActivity(SymbolsActivity::class.java)
                 "practice" -> openActivity(PracticeSpaceActivity::class.java)
                 "progress" -> openActivity(ProgressActivity::class.java)
                 "timer" -> openActivity(TimerActivity::class.java)

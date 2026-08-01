@@ -63,6 +63,7 @@ fun SettingsScreen(
     onOpenTimer: () -> Unit = {},
     onOpenPractice: () -> Unit = {},
     onOpenProgress: () -> Unit = {},
+    onOpenSymbols: () -> Unit = {},
     onToggleBubble: () -> Unit = {},
     bubbleShowing: Boolean = false,
 ) {
@@ -148,6 +149,7 @@ fun SettingsScreen(
             Button(onClick = onOpenPractice) { Text("✏️ Practice Studio") }
             OutlinedButton(onClick = onOpenProgress) { Text("📊 Progress") }
             OutlinedButton(onClick = onOpenFormulas) { Text("🧮 Formulas") }
+            OutlinedButton(onClick = onOpenSymbols) { Text("∫ Symbols") }
             OutlinedButton(onClick = onOpenTimer) { Text("⏱ Timer") }
             OutlinedButton(onClick = onToggleBubble) {
                 Text(if (bubbleShowing) "✕ Hide bubble" else "🫧 Show bubble")

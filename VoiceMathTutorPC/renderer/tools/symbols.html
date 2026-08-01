@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Symbols</title>
+  <link rel="stylesheet" href="../../node_modules/katex/dist/katex.min.css">
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 0 0 28px;
+      background: Canvas; color: CanvasText; font-size: 15px; }
+    .hidden { display: none !important; }
+
+    /* Sticky header: search and category chips stay reachable while scrolling
+       a long list, the same pattern the formula sheet settled on. */
+    header { position: sticky; top: 0; z-index: 5; background: Canvas;
+      padding: 12px 16px 8px;
+      border-bottom: 1px solid color-mix(in srgb, CanvasText 12%, transparent); }
+    .toprow { display: flex; gap: 8px; align-items: center; }
+    h1 { font-size: 18px; margin: 0; flex: 1; }
+    #count { font-size: 12.5px; opacity: 0.6; }
+    input[type=search] { width: 100%; box-sizing: border-box; margin-top: 8px;
+      padding: 9px 12px; border-radius: 9px; font-size: 14.5px;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      background: Canvas; color: CanvasText; }
+    button { font-family: inherit; cursor: pointer; }
+
+    .tabs { display: flex; gap: 6px; margin-top: 9px; }
+    .tab { flex: 1; padding: 8px; border-radius: 9px; font-size: 14px;
+      border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+      background: Canvas; color: CanvasText; }
+    .tab.on { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+
+    .chips { display: flex; gap: 6px; overflow-x: auto; padding: 9px 0 2px;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { white-space: nowrap; padding: 6px 11px; border-radius: 999px; font-size: 12.5px;
+      border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+      background: Canvas; color: CanvasText; }
+    .chip.on { background: CanvasText; color: Canvas; border-color: CanvasText; }
+
+    main { padding: 4px 16px 0; }
+    h2.cat { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px;
+      opacity: 0.55; margin: 20px 0 6px; }
+
+    /* A symbol, collapsed to a row and opened on click. */
+    .sym { border: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+      border-radius: 12px; margin: 6px 0; overflow: hidden; }
+    .sym.open { border-color: color-mix(in srgb, #4F7DF7 55%, transparent); }
+    .sym-head { display: flex; align-items: center; gap: 12px; padding: 10px 13px;
+      cursor: pointer; }
+    .glyph { font-size: 21px; min-width: 46px; text-align: center; }
+    .sym-titles { flex: 1; min-width: 0; }
+    .sym-name { font-weight: 600; }
+    .sym-say { font-size: 12.5px; opacity: 0.7; }
+    .lvl { font-size: 10.5px; padding: 2px 7px; border-radius: 999px; opacity: 0.75;
+      border: 1px solid color-mix(in srgb, CanvasText 30%, transparent); }
+    .sym-body { padding: 0 13px 13px; }
+    .sym-meaning { font-size: 14px; line-height: 1.5; opacity: 0.9; }
+    .sym-example { margin-top: 10px; padding: 10px 12px; border-radius: 10px;
+      background: color-mix(in srgb, CanvasText 4%, transparent); }
+    .ex-tex { overflow-x: auto; }
+    .ex-say { display: flex; align-items: center; gap: 8px; margin-top: 6px;
+      font-size: 13.5px; opacity: 0.85; }
+    .ex-say-text { flex: 1; }
+    .speak { border: none; background: transparent; font-size: 16px; padding: 4px 6px;
+      border-radius: 8px; }
+    .speak:hover { background: color-mix(in srgb, CanvasText 10%, transparent); }
+
+    .confusable { margin-top: 11px; }
+    .cf-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px;
+      opacity: 0.55; margin-bottom: 5px; }
+    .cf-row { display: flex; gap: 7px; flex-wrap: wrap; }
+    .cf-pill { display: flex; align-items: center; gap: 7px; padding: 5px 10px;
+      border-radius: 999px; font-size: 12.5px;
+      border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+      background: Canvas; color: CanvasText; }
+    .cf-glyph { font-size: 15px; }
+    .reading-link { display: block; width: 100%; text-align: left; margin-top: 11px;
+      padding: 8px 11px; border-radius: 9px; font-size: 13px;
+      border: 1px dashed color-mix(in srgb, CanvasText 25%, transparent);
+      background: transparent; color: CanvasText; opacity: 0.85; }
+
+    /* Reading a whole expression. */
+    .reading { border: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+      border-radius: 12px; padding: 14px; margin: 12px 0; transition: border-color 0.4s; }
+    .reading.lit { border-color: #4F7DF7; }
+    .reading-tex { overflow-x: auto; padding: 4px 0 10px; }
+    .reading-full { display: flex; align-items: center; gap: 8px; font-size: 14px;
+      padding: 9px 11px; border-radius: 9px;
+      background: color-mix(in srgb, CanvasText 4%, transparent); }
+    .reading-full-text { flex: 1; line-height: 1.5; }
+    .token-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px;
+      opacity: 0.55; margin: 14px 0 6px; }
+    ol.tokens { list-style: decimal; margin: 0; padding-left: 22px; }
+    .token { padding: 8px 10px; margin: 5px 0; border-radius: 9px; cursor: pointer;
+      border: 1px solid transparent; }
+    .token:hover { background: color-mix(in srgb, CanvasText 5%, transparent); }
+    .token.lit { border-color: #4F7DF7;
+      background: color-mix(in srgb, #4F7DF7 10%, transparent); }
+    .token-tex { display: inline-block; margin-right: 10px; }
+    .token-say { opacity: 0.85; font-size: 13.5px; }
+    .token-note { font-size: 12.5px; opacity: 0.7; margin-top: 5px; line-height: 1.45;
+      border-left: 2px solid color-mix(in srgb, CanvasText 20%, transparent);
+      padding-left: 9px; }
+
+    /* Reserve space so lazily-typeset nodes don't make the page jump. */
+    .tex-pending { display: inline-block; min-height: 1em; min-width: 1.2em; }
+    .hint { opacity: 0.65; font-size: 13.5px; padding: 20px 4px; line-height: 1.55; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="toprow">
+      <h1>Symbols</h1>
+      <span id="count"></span>
+    </div>
+    <input type="search" id="search" placeholder="Search a symbol, a meaning, or how it sounds…">
+    <div class="tabs">
+      <button class="tab on" id="tabBrowse">What it means</button>
+      <button class="tab" id="tabRead">How to read it</button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <main>
+    <div id="browse">
+      <div id="list"></div>
+      <div class="hint hidden" id="empty">Nothing matches that. Try the symbol's
+        name, what it does, or the LaTeX you copied it from — searching
+        <code>\partial</code> works as well as searching “curly d”.</div>
+    </div>
+    <div id="read" class="hidden">
+      <div class="hint">Reading maths is mostly chunking: knowing which bits group
+        together and what order you say them in. Tap any line to hear it.</div>
+      <div id="readings"></div>
+    </div>
+  </main>
+
+  <script src="../../node_modules/katex/dist/katex.min.js"></script>
+  <script src="../symbols-data.js"></script>
+  <script src="symbols.js"></script>
+</body>
+</html>

@@ -3,8 +3,10 @@ package com.tynan.mathtutor
 import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Toast
@@ -13,6 +15,7 @@ import androidx.activity.ComponentActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.tynan.mathtutor.memory.Proficiency
+import java.util.Locale
 
 /**
  * The 182-formula interactive sheet — same data file and KaTeX assets as the
@@ -138,6 +141,59 @@ class FormulaSheetActivity : ComponentActivity() {
         @JavascriptInterface
         fun closeWindow() {
             activity.runOnUiThread { activity.finish() }
+        }
+
+        /**
+         * Say a line of maths out loud, for the symbols reference.
+         *
+         * Android's own TextToSpeech rather than the WebView's Web Speech API:
+         * that one can be silently mute inside a WebView depending on the
+         * system WebView build, and a button that does nothing is worse than no
+         * button. The page only shows the speaker where this method exists, and
+         * the written "say it" line is always on screen regardless.
+         */
+        @JavascriptInterface
+        fun speak(text: String) {
+            if (text.isBlank()) return
+            activity.runOnUiThread { speakOnUiThread(activity, text) }
+        }
+
+        companion object {
+            // One engine for the process, created on first use. Starting it is
+            // slow enough to be visible, so it is kept alive between taps and
+            // shut down when the symbols screen closes.
+            private var tts: TextToSpeech? = null
+            private var ready = false
+            private val queued = ArrayDeque<String>()
+
+            private fun speakOnUiThread(context: Context, text: String) {
+                val engine = tts
+                if (engine != null && ready) {
+                    engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "sym")
+                    return
+                }
+                queued.addLast(text)
+                if (engine != null) return // still starting up; it will drain below
+                tts = TextToSpeech(context.applicationContext) { status ->
+                    ready = status == TextToSpeech.SUCCESS
+                    if (!ready) { queued.clear(); return@TextToSpeech }
+                    tts?.language = Locale.UK
+                    // Maths read at full speed is hard to follow.
+                    tts?.setSpeechRate(0.9f)
+                    while (queued.isNotEmpty()) {
+                        tts?.speak(queued.removeFirst(), TextToSpeech.QUEUE_ADD, null, "sym")
+                    }
+                }
+            }
+
+            /** Called when the symbols screen goes away. */
+            fun releaseSpeech() {
+                tts?.stop()
+                tts?.shutdown()
+                tts = null
+                ready = false
+                queued.clear()
+            }
         }
     }
 }

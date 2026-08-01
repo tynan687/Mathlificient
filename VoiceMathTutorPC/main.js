@@ -218,6 +218,7 @@ const TOOL_SIZES = {
   formulas: [560, 720],
   practice: [760, 960],
   progress: [620, 820],
+  symbols: [620, 860],
   ambient: [380, 360],
 };
 
@@ -687,6 +688,7 @@ ipcMain.on('menu:action', (_e, action) => {
     case 'timer': openTool('timer'); break;
     case 'formulas': openTool('formulas'); break;
     case 'progress': openTool('progress'); break;
+    case 'symbols': openTool('symbols'); break;
     case 'ambient': openTool('ambient'); break;
     case 'chat': openChat(); break;
     default: break;

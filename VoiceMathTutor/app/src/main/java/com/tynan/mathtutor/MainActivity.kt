@@ -109,6 +109,9 @@ class MainActivity : ComponentActivity() {
                     onOpenProgress = {
                         startActivity(Intent(this, ProgressActivity::class.java))
                     },
+                    onOpenSymbols = {
+                        startActivity(Intent(this, SymbolsActivity::class.java))
+                    },
                     onToggleBubble = { toggleStudyBubble() },
                     bubbleShowing = bubbleShowing,
                 )

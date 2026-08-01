@@ -34,8 +34,10 @@ const PAIRS = [
   ['practice-quiz.js', 'practice-quiz.js'],
   ['practice-mcq.js', 'practice-mcq.js'],
   ['formulas-data.js', 'formulas-data.js'],
+  ['symbols-data.js', 'symbols-data.js'],
   ['tools/practice.js', 'practice.js'],
   ['tools/progress.js', 'progress.js'],
+  ['tools/symbols.js', 'symbols.js'],
 ];
 
 /**
@@ -50,6 +52,8 @@ const DIVERGENT = [
     'Android has the sticky header, group chips and safe-area insets.'],
   ['tools/progress.html', 'progress.html',
     'Same structure, but Android uses 44px targets and asset-relative script paths.'],
+  ['tools/symbols.html', 'symbols.html',
+    'Same structure, but Android uses 44px targets and asset-relative script paths.'],
 ];
 
 const sha = (p) => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
@@ -62,7 +66,11 @@ const exists = (p) => fs.existsSync(p);
  * which is exactly the class of drift the DIVERGENT list warns about.
  * Scripts that legitimately belong to one platform are listed with a reason.
  */
-const HTML_PAIRS = [['tools/practice.html', 'practice.html']];
+const HTML_PAIRS = [
+  ['tools/practice.html', 'practice.html'],
+  ['tools/progress.html', 'progress.html'],
+  ['tools/symbols.html', 'symbols.html'],
+];
 const SCRIPT_ONLY = {
   'practice-ink.js': 'PC only — Android draws on a native InkCanvasView below the WebView',
 };

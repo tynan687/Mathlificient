@@ -62,6 +62,11 @@
             android:exported="true"
             android:label="My Progress" />
 
+        <activity
+            android:name=".SymbolsActivity"
+            android:exported="true"
+            android:label="Symbols" />
+
         <service
             android:name=".timer.AmbientService"
             android:exported="false"

@@ -10,6 +10,7 @@ Most of it works **completely offline and free** — no account, no sign-up, no 
 - **Multiple choice that actually teaches** — switch any question to four options, and the three wrong ones are real mistakes, not filler: `b² + 4ac`, dividing by *n* instead of *n − 1*, forgetting to multiply by the inside of the bracket. Pick one and it tells you exactly which slip you made. Repeat the same slip and your progress screen starts saying so.
 - **Progress tracking that tells you what to study next** — mark each question ✓ Got it / ✗ Missed it and the app builds a picture of where you're strong and where you're not, across 47 named skills in 10 areas. A **Focus next** list names three things to work on *and why* ("Shaky at 22%", "You had this at 80% but haven't practised in 19 days", "Quadratics first would make this easier"). A twelve-question placement check gets you started from scratch in about ten minutes.
 - **Formula sheet** — 182 formulas across 15 topic groups, 82 of them interactive solvers: type your values in, get the answer plus LaTeX you can paste into Word or Samsung Notes.
+- **Symbols, and how to read them out loud** — 100 symbols with what each one means, how you actually say it, and what it gets mixed up with (∈ and ε, ∂ and δ, `f⁻¹` and "one over f"). Plus 20 whole expressions broken into the fragments you say, in the order you say them — because knowing every symbol separately still leaves you stuck on a line you can't read.
 - **Focus timer** (Pomodoro) and **ambient background noise** (rain, brown, pink, fan), all generated on-device.
 
 **Optional: live voice tutoring.** Bring your own [OpenAI API key](https://platform.openai.com/api-keys) and a floating bubble will listen, watch your screen or your handwriting, and talk you through problems Socratically — nudging rather than handing over answers. Roughly **A$2–6 per hour** of actual conversation, with a hard budget cap built in. Everything above still works without it.
@@ -90,6 +91,16 @@ sound or a practice question; drag it out of the way; press and hold to put it
 away. It's just a shortcut shelf for the offline tools — no microphone, no screen
 capture, no session, nothing billed. Android will ask once for "display over
 other apps".
+
+### Symbols
+
+Open **Symbols** — on Android from the main screen or the bubble menu, on Windows from the π bubble's menu.
+
+**What it means** lists 100 symbols in 13 groups, searchable. You can search the name, what it does, how it sounds, *or* the LaTeX you copied out of a PDF — `\partial`, "curly d" and "partial" all find the same entry. Tap one for what it means, an example, how to say that example, and what it's easily confused with. Those cross-links go both ways, so you get the warning from whichever side you arrived on.
+
+**How to read it** takes 20 real expressions and breaks each into the pieces you actually say, in the order you say them — including the bits that aren't left-to-right, like saying "the integral from nought to three" before you say what's being integrated. Where the grouping is the hard part, it says so: everything under a square-root bar is one chunk, the fraction bar is said last as "all over".
+
+Where your device supports it there's a speaker button, but the written line is always on screen — the reading is the point, the audio is a bonus.
 
 ### Formula sheet
 
