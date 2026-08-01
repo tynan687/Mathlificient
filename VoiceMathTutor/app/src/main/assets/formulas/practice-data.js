@@ -23,7 +23,7 @@ const PR = {
 
 const PRACTICE = [
   {
-    id: 'linear-eq', topic: 'Linear equations', keywords: ['linear', 'equation', 'solve'],
+    id: 'linear-eq', skill: 'linear-equations', topic: 'Linear equations', keywords: ['linear', 'equation', 'solve'],
     generate() {
       const x0 = PR.int(-6, 8);
       const a = PR.nz(2, 7);
@@ -42,7 +42,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'linear-both-sides', topic: 'Linear equations', keywords: ['linear', 'both sides'],
+    id: 'linear-both-sides', skill: 'linear-equations', topic: 'Linear equations', keywords: ['linear', 'both sides'],
     generate() {
       const x0 = PR.int(-5, 7);
       const a = PR.int(3, 9);
@@ -66,7 +66,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'quad-factorise', topic: 'Quadratics', keywords: ['quadratic', 'factorise', 'factoring', 'roots'],
+    id: 'quad-factorise', skill: 'quadratics', topic: 'Quadratics', keywords: ['quadratic', 'factorise', 'factoring', 'roots'],
     generate() {
       // Both roots non-zero and distinct, so no "(x + 0)" factor appears.
       let p, q;
@@ -89,7 +89,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'quad-formula', topic: 'Quadratics', keywords: ['quadratic', 'formula', 'discriminant'],
+    id: 'quad-formula', skill: 'quadratics', topic: 'Quadratics', keywords: ['quadratic', 'formula', 'discriminant'],
     generate() {
       const a = PR.int(1, 3);
       const b = PR.nz(-8, 8);
@@ -112,7 +112,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'expand-binomial', topic: 'Expanding', keywords: ['expand', 'binomial', 'brackets', 'foil'],
+    id: 'expand-binomial', skill: 'expand-factorise', topic: 'Expanding', keywords: ['expand', 'binomial', 'brackets', 'foil'],
     generate() {
       const a = PR.int(1, 4); const b = PR.nz(-6, 6);
       const c = PR.int(1, 4); const d = PR.nz(-6, 6);
@@ -130,7 +130,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'complete-square', topic: 'Quadratics', keywords: ['completing the square', 'vertex'],
+    id: 'complete-square', skill: 'quadratics', topic: 'Quadratics', keywords: ['completing the square', 'vertex'],
     generate() {
       const h = PR.nz(-6, 6);
       const b = 2 * h;
@@ -149,7 +149,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'alg-fraction', topic: 'Algebraic fractions', keywords: ['fraction', 'simplify', 'cancel'],
+    id: 'alg-fraction', skill: 'algebraic-fractions', topic: 'Algebraic fractions', keywords: ['fraction', 'simplify', 'cancel'],
     generate() {
       const p = PR.int(1, 7);
       let q = PR.nz(-7, 7); if (q === p) q += 1;
@@ -166,7 +166,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'indices', topic: 'Indices', keywords: ['indices', 'exponent', 'power', 'index laws'],
+    id: 'indices', skill: 'indices-surds', topic: 'Indices', keywords: ['indices', 'exponent', 'power', 'index laws'],
     generate() {
       const a = PR.int(2, 7); const b = PR.int(2, 6); const c = PR.int(1, 4);
       return {
@@ -181,7 +181,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'solve-exp', topic: 'Exponentials & logs', keywords: ['exponential', 'solve', 'logarithm'],
+    id: 'solve-exp', skill: 'logs-exponentials', topic: 'Exponentials & logs', keywords: ['exponential', 'solve', 'logarithm'],
     generate() {
       const a = PR.choice([2, 3, 5]);
       const k = PR.int(2, a === 5 ? 4 : 5);
@@ -198,7 +198,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'log-laws', topic: 'Exponentials & logs', keywords: ['log', 'logarithm', 'laws'],
+    id: 'log-laws', skill: 'logs-exponentials', topic: 'Exponentials & logs', keywords: ['log', 'logarithm', 'laws'],
     generate() {
       const a = PR.choice([2, 3]);
       const m = PR.int(1, 3); const n = PR.int(1, 3);
@@ -215,7 +215,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'complex-modarg', topic: 'Complex numbers', keywords: ['complex', 'modulus', 'argument'],
+    id: 'complex-modarg', skill: 'complex-numbers', topic: 'Complex numbers', keywords: ['complex', 'modulus', 'argument'],
     generate() {
       const pairs = [[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 15, 17]];
       const [a, b, m] = PR.choice(pairs);
@@ -235,7 +235,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'complex-product', topic: 'Complex numbers', keywords: ['complex', 'multiply', 'product'],
+    id: 'complex-product', skill: 'complex-numbers', topic: 'Complex numbers', keywords: ['complex', 'multiply', 'product'],
     generate() {
       const a = PR.nz(-4, 4); const b = PR.nz(-4, 4);
       const c = PR.nz(-4, 4); const d = PR.nz(-4, 4);
@@ -253,7 +253,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'demoivre', topic: 'Complex numbers', keywords: ['de moivre', 'polar', 'power'],
+    id: 'demoivre', skill: 'complex-polar', topic: 'Complex numbers', keywords: ['de moivre', 'polar', 'power'],
     generate() {
       const r = PR.choice([1, 2]);
       const th = PR.choice([30, 45, 60]);
@@ -275,7 +275,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'trig-solve', topic: 'Trigonometry', keywords: ['trig', 'solve', 'sin', 'equation'],
+    id: 'trig-solve', skill: 'trig-equations', topic: 'Trigonometry', keywords: ['trig', 'solve', 'sin', 'equation'],
     generate() {
       const opts = [
         { k: '\\tfrac{1}{2}', kv: 0.5, ref: 30 },
@@ -296,7 +296,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'cosine-rule', topic: 'Trigonometry', keywords: ['cosine rule', 'triangle', 'side'],
+    id: 'cosine-rule', skill: 'trig-ratios', topic: 'Trigonometry', keywords: ['cosine rule', 'triangle', 'side'],
     generate() {
       const a = PR.int(4, 9); const b = PR.int(4, 9);
       const C = PR.choice([40, 55, 60, 75, 100, 120]);
@@ -315,7 +315,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'exact-value', topic: 'Trigonometry', keywords: ['exact value', 'compound angle'],
+    id: 'exact-value', skill: 'trig-identities', topic: 'Trigonometry', keywords: ['exact value', 'compound angle'],
     generate() {
       const pairs = [[60, 30], [45, 45], [30, 60]];
       const [A, B] = PR.choice(pairs);
@@ -332,7 +332,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'diff-poly', topic: 'Differentiation', keywords: ['differentiate', 'derivative', 'polynomial'],
+    id: 'diff-poly', skill: 'differentiation', topic: 'Differentiation', keywords: ['differentiate', 'derivative', 'polynomial'],
     generate() {
       const a = PR.nz(-5, 6); const n = PR.int(3, 5);
       const b = PR.nz(-6, 6); const c = PR.nz(-9, 9);
@@ -357,7 +357,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'diff-chain', topic: 'Differentiation', keywords: ['chain rule', 'composite'],
+    id: 'diff-chain', skill: 'diff-rules', topic: 'Differentiation', keywords: ['chain rule', 'composite'],
     generate() {
       const a = PR.int(2, 5); const b = PR.nz(-6, 6); const n = PR.int(3, 6);
       return {
@@ -386,7 +386,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'int-poly', topic: 'Integration', keywords: ['integrate', 'antiderivative', 'indefinite'],
+    id: 'int-poly', skill: 'integration', topic: 'Integration', keywords: ['integrate', 'antiderivative', 'indefinite'],
     generate() {
       const n = PR.int(2, 5); const k = (n + 1) * PR.int(1, 3); const b = PR.nz(-7, 7);
       return {
@@ -401,7 +401,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'int-definite', topic: 'Integration', keywords: ['definite integral', 'evaluate', 'area'],
+    id: 'int-definite', skill: 'integration', topic: 'Integration', keywords: ['definite integral', 'evaluate', 'area'],
     generate() {
       const b = PR.int(2, 5); const p = PR.int(0, 2); const q = p + PR.int(2, 4);
       const F = (x) => x * x + b * x;
@@ -418,7 +418,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'seq-arith', topic: 'Sequences & series', keywords: ['arithmetic', 'sequence', 'nth term'],
+    id: 'seq-arith', skill: 'sequences-series', topic: 'Sequences & series', keywords: ['arithmetic', 'sequence', 'nth term'],
     generate() {
       const a = PR.int(1, 9); const d = PR.nz(-4, 6); const n = PR.int(8, 20);
       const an = a + (n - 1) * d;
@@ -436,7 +436,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'seq-geo', topic: 'Sequences & series', keywords: ['geometric', 'series', 'sum'],
+    id: 'seq-geo', skill: 'sequences-series', topic: 'Sequences & series', keywords: ['geometric', 'series', 'sum'],
     generate() {
       const a = PR.int(1, 5); const r = PR.choice([2, 3]); const n = PR.int(4, 6);
       const Sn = a * (Math.pow(r, n) - 1) / (r - 1);
@@ -453,7 +453,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'vector-dot', topic: 'Vectors', keywords: ['vector', 'dot product', 'angle'],
+    id: 'vector-dot', skill: 'vectors', topic: 'Vectors', keywords: ['vector', 'dot product', 'angle'],
     generate() {
       const a = [PR.nz(-5, 5), PR.nz(-5, 5), PR.int(-3, 3)];
       const b = [PR.nz(-5, 5), PR.nz(-5, 5), PR.int(-3, 3)];
@@ -473,7 +473,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'matrix-det-inv', topic: 'Matrices', keywords: ['matrix', 'determinant', 'inverse'],
+    id: 'matrix-det-inv', skill: 'matrices', topic: 'Matrices', keywords: ['matrix', 'determinant', 'inverse'],
     generate() {
       let a, b, c, d, det;
       do {
@@ -492,7 +492,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'stats-mean-sd', topic: 'Statistics', keywords: ['mean', 'standard deviation', 'data'],
+    id: 'stats-mean-sd', skill: 'statistics', topic: 'Statistics', keywords: ['mean', 'standard deviation', 'data'],
     generate() {
       const xs = Array.from({ length: 5 }, () => PR.int(2, 14));
       const mean = xs.reduce((s, x) => s + x, 0) / 5;
@@ -511,7 +511,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'binom-prob', topic: 'Statistics', keywords: ['binomial', 'probability', 'combinations'],
+    id: 'binom-prob', skill: 'distributions', topic: 'Statistics', keywords: ['binomial', 'probability', 'combinations'],
     generate() {
       const n = PR.int(4, 6); const k = PR.int(1, n - 1);
       const p = PR.choice([0.5, 0.2, 0.3]);
@@ -543,7 +543,7 @@ const PRACTICE = [
 
   // ---- Rational expressions ------------------------------------------------------
   {
-    id: 'rational-simplify', topic: 'Rational expressions',
+    id: 'rational-simplify', skill: 'rational-expressions', topic: 'Rational expressions',
     keywords: ['rational', 'simplify', 'algebraic fraction', 'cancel'],
     generate() {
       // (x+p)(x+q) / (x+p)(x+r) — cancel the shared factor.
@@ -574,7 +574,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'rational-multiply', topic: 'Rational expressions',
+    id: 'rational-multiply', skill: 'rational-expressions', topic: 'Rational expressions',
     keywords: ['rational', 'multiply', 'divide', 'algebraic fraction'],
     generate() {
       // (x+a)(x+b)/(x+c) · (x+c)(x+d)/(x+a) = (x+b)(x+d)
@@ -602,7 +602,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'rational-add', topic: 'Rational expressions',
+    id: 'rational-add', skill: 'rational-expressions', topic: 'Rational expressions',
     keywords: ['rational', 'add', 'subtract', 'lcd', 'common denominator'],
     generate() {
       // Redraw until the denominators are distinct and non-zero and the
@@ -630,7 +630,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'rational-complex', topic: 'Complex rational expressions',
+    id: 'rational-complex', skill: 'rational-expressions', topic: 'Complex rational expressions',
     keywords: ['complex rational', 'compound fraction', 'complex fraction', 'rational'],
     generate() {
       // (1/x + 1/p) / (1/x - 1/q) = q(p + x) / (p(q - x))
@@ -651,7 +651,7 @@ const PRACTICE = [
 
   // ---- Decomposing expressions (partial fractions) --------------------------------
   {
-    id: 'partial-distinct', topic: 'Decomposing expressions',
+    id: 'partial-distinct', skill: 'partial-fractions', topic: 'Decomposing expressions',
     keywords: ['partial fraction', 'decompos', 'distinct linear', 'rational'],
     generate() {
       // Built from the answer so A and B are always whole numbers. Redraw when
@@ -681,7 +681,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'partial-repeated', topic: 'Decomposing expressions',
+    id: 'partial-repeated', skill: 'partial-fractions', topic: 'Decomposing expressions',
     keywords: ['partial fraction', 'decompos', 'repeated root', 'rational'],
     generate() {
       // Redraw when the numerator would show a +0 constant term.
@@ -708,7 +708,7 @@ const PRACTICE = [
     },
   },
   {
-    id: 'partial-quadratic', topic: 'Decomposing expressions',
+    id: 'partial-quadratic', skill: 'partial-fractions', topic: 'Decomposing expressions',
     keywords: ['partial fraction', 'decompos', 'irreducible quadratic', 'rational'],
     generate() {
       // Redraw when any numerator term would render as 0x^2, 0x or +0.
@@ -790,13 +790,34 @@ const PRACTICE_FORMULAS = {
   'partial-quadratic': ['\\dfrac{px^2 + qx + r}{(x-a)(x^2+c)} = \\dfrac{A}{x-a} + \\dfrac{Bx + C}{x^2+c}'],
 };
 
-// Match templates to a free-text topic (the tutor keeps Current Topic updated).
+/** Every template belonging to one skill — the exact lookup. */
+function templatesForSkill(skillId) {
+  if (!skillId) return [];
+  const fn = typeof skillOf === 'function' ? skillOf : (t) => t.skill;
+  return PRACTICE.filter((t) => fn(t) === skillId);
+}
+
+/**
+ * Match templates to a free-text topic — the tutor keeps Current Topic updated,
+ * so the input is prose written by a language model, not an id.
+ *
+ * Resolves through the skill graph's aliases (longest match wins) rather than
+ * the old bidirectional substring test, which had `k.includes(t)` and so let a
+ * query of "rational" drag in seven templates across three unrelated topics.
+ * Falls back to keyword matching, then to everything — never returns empty.
+ */
 function practiceTemplatesFor(topicText) {
-  const t = String(topicText || '').toLowerCase();
+  const t = String(topicText || '').toLowerCase().trim();
   if (!t) return PRACTICE;
-  const matched = PRACTICE.filter(
-    (p) => p.topic.toLowerCase().split(/\W+/).some((w) => w && t.includes(w)) ||
-      p.keywords.some((k) => t.includes(k) || k.includes(t))
-  );
+
+  if (typeof resolveSkill === 'function') {
+    const skillId = resolveSkill(t);
+    if (skillId) {
+      const matched = templatesForSkill(skillId);
+      if (matched.length) return matched;
+    }
+  }
+  // No skill matched: fall back to one-directional keyword containment.
+  const matched = PRACTICE.filter((p) => p.keywords.some((k) => t.includes(k)));
   return matched.length ? matched : PRACTICE;
 }

@@ -32,6 +32,12 @@ function tex(el, latex, display = true) {
   }
 }
 
+/**
+ * The picker lists SKILLS grouped by area, not the legacy free-form `topic`
+ * strings (which are inconsistent — "Statistics" vs "Statistics & probability").
+ * Option values are skill ids; topic strings survive only as internal labels.
+ * Skills with no questions yet are skipped, so the list grows as content lands.
+ */
 function buildTopics() {
   topicSel.innerHTML = '';
   const auto = document.createElement('option');
@@ -40,21 +46,48 @@ function buildTopics() {
     ? `Match my topic (${preferredTopic.slice(0, 30)})`
     : 'All topics';
   topicSel.appendChild(auto);
-  for (const t of [...new Set(PRACTICE.map((p) => p.topic))]) {
-    const o = document.createElement('option');
-    o.value = t;
-    o.textContent = t;
-    topicSel.appendChild(o);
+
+  if (typeof AREAS === 'undefined') { // skill graph absent — fall back to topics
+    for (const t of [...new Set(PRACTICE.map((p) => p.topic))]) {
+      const o = document.createElement('option');
+      o.value = 'topic::' + t;
+      o.textContent = t;
+      topicSel.appendChild(o);
+    }
+    return;
+  }
+
+  for (const area of AREAS) {
+    const skills = skillsInArea(area.id).filter((s) => templatesForSkill(s.id).length);
+    if (!skills.length) continue;
+    const group = document.createElement('optgroup');
+    group.label = area.name;
+    for (const skill of skills) {
+      const o = document.createElement('option');
+      o.value = skill.id;
+      o.textContent = skill.name;
+      group.appendChild(o);
+    }
+    topicSel.appendChild(group);
   }
 }
 
+/** Templates for whatever the picker is currently set to. */
+function currentPool() {
+  const v = topicSel.value;
+  if (!v) return practiceTemplatesFor(preferredTopic);
+  if (v.startsWith('topic::')) {
+    return PRACTICE.filter((p) => p.topic === v.slice(7));
+  }
+  const bySkill = templatesForSkill(v);
+  return bySkill.length ? bySkill : PRACTICE;
+}
+
 function newQuestion() {
-  const pool = topicSel.value
-    ? PRACTICE.filter((p) => p.topic === topicSel.value)
-    : practiceTemplatesFor(preferredTopic);
+  const pool = currentPool();
   const template = pool[Math.floor(Math.random() * pool.length)];
   const formulas = (typeof PRACTICE_FORMULAS !== 'undefined' && PRACTICE_FORMULAS[template.id]) || [];
-  show({ ...template.generate(), formulas, fromTutor: false }, template.topic);
+  show({ ...template.generate(), formulas, fromTutor: false, templateId: template.id }, template.topic);
 }
 
 function show(item, label) {

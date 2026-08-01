@@ -21,9 +21,11 @@
 
   let quiz = null; // { queue, index, score, missed }
 
+  // Shares practice.js's picker logic so the quiz always draws from whatever
+  // the topic dropdown is showing.
   function questionPool() {
-    return topicSel.value ? PRACTICE.filter((p) => p.topic === topicSel.value)
-                           : practiceTemplatesFor(preferredTopic);
+    return typeof currentPool === 'function' ? currentPool()
+                                             : practiceTemplatesFor(preferredTopic);
   }
 
   function generateQuestionSet(count) {
