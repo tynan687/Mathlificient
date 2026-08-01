@@ -16,13 +16,19 @@ const formulasEl = document.getElementById('formulas');
 const vizBar = document.getElementById('vizBar');
 const vizWrap = document.getElementById('vizWrap');
 const vizCanvas = document.getElementById('viz');
+const gradingEl = document.getElementById('grading');
+const gotItBtn = document.getElementById('gotIt');
+const missedItBtn = document.getElementById('missedIt');
 
 let vizOpen = false;
 let paperColors = null; // set by applyPaper (Android); PC derives from page styles
 
 let current = null;   // { question, steps, answer, fromTutor }
 let revealed = 0;
+let shownAt = 0;      // when the current question appeared, for the attempt's `ms`
+let graded = false;   // one attempt per question — see grade() below
 let preferredTopic = '';
+let focusSkill = '';  // set by the progress screen: "practise this one"
 
 function tex(el, latex, display = true) {
   try {
@@ -74,6 +80,13 @@ function buildTopics() {
 
 /** Templates for whatever the picker is currently set to. */
 function currentPool() {
+  // A skill sent over from the progress screen wins until the student touches
+  // the picker — it may not even be listed there, if its only questions are
+  // reached through a broader skill.
+  if (focusSkill) {
+    const focused = templatesForSkill(focusSkill);
+    if (focused.length) return focused;
+  }
   const v = topicSel.value;
   if (!v) return practiceTemplatesFor(preferredTopic);
   if (v.startsWith('topic::')) {
@@ -83,16 +96,31 @@ function currentPool() {
   return bySkill.length ? bySkill : PRACTICE;
 }
 
+/** One generated question, tagged with everything the proficiency log needs. */
+function buildQuestion(template) {
+  const formulas = (typeof PRACTICE_FORMULAS !== 'undefined' && PRACTICE_FORMULAS[template.id]) || [];
+  return {
+    ...template.generate(),
+    formulas,
+    fromTutor: false,
+    templateId: template.id,
+    topic: template.topic,
+    skill: typeof skillOf === 'function' ? skillOf(template) : null,
+  };
+}
+
 function newQuestion() {
   const pool = currentPool();
   const template = pool[Math.floor(Math.random() * pool.length)];
-  const formulas = (typeof PRACTICE_FORMULAS !== 'undefined' && PRACTICE_FORMULAS[template.id]) || [];
-  show({ ...template.generate(), formulas, fromTutor: false, templateId: template.id }, template.topic);
+  show(buildQuestion(template), template.topic);
 }
 
 function show(item, label) {
   current = item;
   revealed = 0;
+  shownAt = Date.now();
+  graded = false;
+  if (gradingEl) gradingEl.classList.add('hidden');
   srcEl.textContent = item.fromTutor ? '✨ From your tutor' : label || '';
   tex(qEl, item.question, false); // inline: long questions wrap instead of clipping
   stepsEl.innerHTML = '';
@@ -177,7 +205,36 @@ answerBtn.addEventListener('click', () => {
   if (!current) return;
   answerEl.classList.remove('hidden');
   tex(answerEl, current.answer);
+  // Grading is offered on every question, not just inside a quiz — that's where
+  // most attempts happen, and a proficiency bar built only from quizzes would be
+  // built from a small minority of the work. Hidden when there's no skill to
+  // credit, so the buttons are never a no-op.
+  if (gradingEl && !graded && current.skill) gradingEl.classList.remove('hidden');
 });
+
+// ---- Grading -----------------------------------------------------------------------
+//
+// Self-marking is the honest option here: nothing in this app parses a written
+// answer, so the alternative is no signal at all. It's weighted below MCQ in
+// practice-prof.js, and the UI says so.
+
+const gradeHooks = []; // quiz mode registers here rather than double-binding the buttons
+let gradeMode = 'self'; // quiz/placement modes set this so the log stays readable
+
+function grade(gotIt) {
+  if (!current || graded) return;
+  graded = true;
+  if (gradingEl) gradingEl.classList.add('hidden');
+  if (current.skill && typeof Store !== 'undefined' && typeof attemptFrom === 'function') {
+    Store.profAppend(attemptFrom(
+      current.skill, current.templateId, gotIt ? 1 : 0, gradeMode, Date.now() - shownAt,
+    ));
+  }
+  for (const fn of gradeHooks) fn(gotIt);
+}
+
+if (gotItBtn) gotItBtn.addEventListener('click', () => grade(true));
+if (missedItBtn) missedItBtn.addEventListener('click', () => grade(false));
 
 copyBtn.addEventListener('click', () => {
   if (!current) return;
@@ -187,16 +244,24 @@ copyBtn.addEventListener('click', () => {
 });
 
 document.getElementById('newQ').addEventListener('click', newQuestion);
+topicSel.addEventListener('change', () => { focusSkill = ''; });
 
 // A tutor-generated question pushed from a live session.
 function showTutorQuestion(payload) {
   const steps = Array.isArray(payload.steps) ? payload.steps : [String(payload.steps || '')];
+  // No template to read a skill off, so infer one from whatever the session is
+  // about. If that resolves to nothing the question still works — it just isn't
+  // graded, rather than being logged against the wrong bar.
+  const skill = typeof resolveSkill === 'function'
+    ? resolveSkill(payload.topic || preferredTopic)
+    : null;
   show({
     question: String(payload.question || ''),
     steps,
     answer: String(payload.answer || steps[steps.length - 1] || ''),
     formulas: Array.isArray(payload.formulas) ? payload.formulas : [],
     fromTutor: true,
+    skill,
   });
 }
 
@@ -241,6 +306,22 @@ window.setPreferredTopic = (t) => {
   preferredTopic = String(t || '');
   buildTopics();
 };
+
+/**
+ * "Practise this one" from the progress screen: select the skill in the picker
+ * and generate straight away, so the student lands on a question rather than on
+ * a dropdown they have to find the skill in again.
+ */
+window.setFocusSkill = (skillId) => {
+  focusSkill = String(skillId || '');
+  if (!focusSkill) return;
+  const match = [...topicSel.options].some((o) => o.value === focusSkill);
+  if (match) topicSel.value = focusSkill;
+  newQuestion();
+};
+if (isElectron) {
+  window.tutor.on('practice:skill', (skillId) => window.setFocusSkill(skillId));
+}
 (async () => {
   if (isElectron) {
     try {

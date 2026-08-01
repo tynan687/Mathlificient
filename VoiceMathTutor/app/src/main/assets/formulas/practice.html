@@ -38,12 +38,39 @@
     .vizwrap canvas { width: 100%; height: 280px; display: block; }
     .hidden { display: none !important; }
     .hint { opacity: 0.65; font-size: 13px; }
+
+    .quizbar { display: flex; align-items: center; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+    #quizProgress { font-size: 13px; opacity: 0.8; }
+    /* 44px targets: these two get tapped straight after reading an answer, often
+       one-handed, and a mis-tap writes the wrong thing into the progress log. */
+    .grading { display: flex; gap: 10px; margin: 8px 0; }
+    .grading button { flex: 1; min-height: 44px; font-size: 15px; }
+    #gotIt { border-color: #2E7D32; color: #2E7D32; }
+    #missedIt { border-color: #C62828; color: #C62828; }
+    .missed-item { border-top: 1px dashed color-mix(in srgb, CanvasText 15%, transparent);
+      padding: 8px 0; }
+
+    /* The floating PracticeActivity popup is capped at 520x640dp — a quiz bar
+       and a summary card turn it into a scrolling mess for what is meant to be
+       a glanceable "here's a question" prompt. PracticeActivity adds .mini. */
+    body.mini .quizbar,
+    body.mini #quizSummary { display: none !important; }
+    body.mini { padding: 12px; }
   </style>
 </head>
 <body>
   <div class="bar">
     <select id="topic"></select>
     <button class="primary" id="newQ">New question</button>
+  </div>
+  <div class="quizbar">
+    <select id="quizCount">
+      <option value="5">Quiz: 5 questions</option>
+      <option value="10">Quiz: 10 questions</option>
+      <option value="20">Quiz: 20 questions</option>
+    </select>
+    <button id="startQuiz">▶ Start quiz</button>
+    <span id="quizProgress" class="hidden"></span>
   </div>
   <div class="card">
     <div class="src" id="src"></div>
@@ -60,10 +87,18 @@
     <button id="showAnswer" disabled>Show answer</button>
     <button id="copyQ" disabled>Copy LaTeX</button>
   </div>
+  <div class="grading hidden" id="grading">
+    <button id="gotIt">✓ Got it</button>
+    <button id="missedIt">✗ Missed it</button>
+  </div>
+  <div class="card hidden" id="quizSummary"></div>
   <script src="katex/katex.min.js"></script>
   <script src="practice-skills.js"></script>
   <script src="practice-data.js"></script>
   <script src="practice-viz.js"></script>
+  <script src="practice-prof.js"></script>
+  <script src="practice-store.js"></script>
   <script src="practice.js"></script>
+  <script src="practice-quiz.js"></script>
 </body>
 </html>

@@ -45,7 +45,7 @@ PC differences vs the tablet app:
   (no text layer) can't be searched — the app detects this and warns you on upload.
 - **Quick-action menu** — right-click the bubble for: ask about screen, silent
   snapshot, new practice problem, web search, search my textbooks, toggle
-  watch/mute, and the offline tools below.
+  watch/mute, my progress, and the offline tools below.
 - **Offline mini-tools** (zero tokens, work without a session):
   - *Practice Studio* — full parity with the tablet app, offline and free. A
     generated question (33 templates across 17 topics, auto-drawn diagrams —
@@ -63,6 +63,21 @@ PC differences vs the tablet app:
     generates the same kind of question set as a printable page — numbered
     questions with blank working space, then an answer key — via your system
     print dialog (choose "Microsoft Print to PDF" to save a file instead).
+    Grading isn't quiz-only: every question offers Got it / Missed it once the
+    answer is shown, and each mark feeds the progress screen below.
+  - *My progress* — a bar per skill across **47 skills in 10 areas**, folded up
+    into an area bar you can expand. **Focus next** names three skills to work
+    on and *why* each ("Shaky at 22%", "you had this at 80% but haven't
+    practised in 19 days", "Quadratics first would make this easier"), with a
+    Practise button that jumps the practice window straight to that skill.
+    **Due for review** catches what's decayed. A skippable **12-question
+    placement check** seeds it on a fresh install, since otherwise every bar
+    reads zero and the recommendation would be arbitrary.
+    Implementation: `renderer/practice-prof.js` folds an append-only attempt log
+    (`proficiency.json` in userData, via `prof:all` / `prof:append` /
+    `prof:reset`) into mastery on every read — nothing derived is ever stored,
+    so bars can't drift while the app is shut and two windows practising at once
+    can at worst lose one attempt rather than clobber a record.
   - *Unit & constant converter* — length/mass/force/energy/pressure/power/angle/
     time/temperature conversions + a click-to-copy physical-constants table.
   - *Focus timer* — Pomodoro-style, with a session goal; remaining time shows on

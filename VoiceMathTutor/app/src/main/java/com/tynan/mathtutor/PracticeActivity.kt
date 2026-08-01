@@ -37,6 +37,12 @@ class PracticeActivity : ComponentActivity() {
             )
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView, url: String?) {
+                    // This popup shares practice.html with the full-screen studio,
+                    // but it's capped at 520x640dp — the quiz bar and summary card
+                    // would turn a glanceable prompt into a scrolling mess. The
+                    // page's `.mini` rules hide them; grading stays, since marking
+                    // a tutor-pushed question is exactly what this popup is for.
+                    view.evaluateJavascript("document.body.classList.add('mini')", null)
                     val topic = SecureKeyStore(this@PracticeActivity).loadSettings().currentTopic
                     view.evaluateJavascript("setPreferredTopic(${JSONObject.quote(topic)})", null)
                     injectPayload(view, intent)

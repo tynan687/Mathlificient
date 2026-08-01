@@ -12,6 +12,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.tynan.mathtutor.FormulaSheetActivity
 import com.tynan.mathtutor.PracticeSpaceActivity
+import com.tynan.mathtutor.ProgressActivity
 import com.tynan.mathtutor.R
 import com.tynan.mathtutor.TimerActivity
 import com.tynan.mathtutor.overlay.MenuItem
@@ -84,6 +85,7 @@ class BubbleService : Service() {
             listOf(
                 MenuItem("formulas", "🧮", "Formula sheet"),
                 MenuItem("practice", "✏️", "Practice"),
+                MenuItem("progress", "📊", "My progress"),
                 MenuItem("timer", "⏱", "Focus timer"),
                 MenuItem("ambient", "🌧", "Ambient sound"),
                 MenuItem("hide", "✕", "Hide bubble"),
@@ -92,6 +94,7 @@ class BubbleService : Service() {
             when (id) {
                 "formulas" -> openActivity(FormulaSheetActivity::class.java)
                 "practice" -> openActivity(PracticeSpaceActivity::class.java)
+                "progress" -> openActivity(ProgressActivity::class.java)
                 "timer" -> openActivity(TimerActivity::class.java)
                 "ambient" -> openActivity(TimerActivity::class.java, scrollToAmbient = true)
                 "hide" -> stopSelf()

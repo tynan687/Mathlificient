@@ -12,6 +12,7 @@ import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.tynan.mathtutor.memory.Proficiency
 
 /**
  * The 182-formula interactive sheet — same data file and KaTeX assets as the
@@ -54,8 +55,50 @@ class FormulaSheetActivity : ComponentActivity() {
         }
     }
 
-    /** Shared JS bridge for the formula sheet and practice pages. */
+    /**
+     * Shared JS bridge for the formula sheet, practice and progress pages —
+     * every WebView activity installs this same class, so a method added here
+     * is available everywhere.
+     *
+     * Note these run on the WebView's JavaBridge thread, not the UI thread:
+     * file work is fine as-is, anything touching views needs runOnUiThread.
+     */
     class Bridge(private val activity: ComponentActivity) {
+
+        private val proficiency by lazy { Proficiency(activity) }
+
+        // ---- Proficiency (see memory/Proficiency.kt — no maths on this side) ----
+
+        @JavascriptInterface
+        fun profAll(): String = proficiency.readAll()
+
+        @JavascriptInterface
+        fun profAppend(attemptJson: String) = proficiency.append(attemptJson)
+
+        @JavascriptInterface
+        fun profReset() = proficiency.reset()
+
+        /** "Practise this" from the progress screen. */
+        @JavascriptInterface
+        fun openSkill(skillId: String) {
+            activity.runOnUiThread {
+                activity.startActivity(
+                    Intent(activity, PracticeSpaceActivity::class.java)
+                        .putExtra("focusSkill", skillId)
+                )
+            }
+        }
+
+        /** The 12-question placement check that seeds a fresh progress screen. */
+        @JavascriptInterface
+        fun openPlacement() {
+            activity.runOnUiThread {
+                activity.startActivity(
+                    Intent(activity, PracticeSpaceActivity::class.java)
+                        .putExtra("placement", true)
+                )
+            }
+        }
         @JavascriptInterface
         fun copyText(text: String) {
             activity.runOnUiThread {

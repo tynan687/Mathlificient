@@ -32,7 +32,7 @@ function migrateLegacyUserData() {
 
   const items = [
     'apikey.bin', 'settings.json', 'spend.json', 'study_log.json',
-    'tutor_memory.json', 'worked_examples.json', 'pdfs',
+    'tutor_memory.json', 'worked_examples.json', 'proficiency.json', 'pdfs',
   ];
   try {
     fs.mkdirSync(current, { recursive: true });
@@ -217,6 +217,7 @@ const TOOL_SIZES = {
   timer: [420, 560],
   formulas: [560, 720],
   practice: [760, 960],
+  progress: [620, 820],
   ambient: [380, 360],
 };
 
@@ -224,6 +225,7 @@ const TOOL_SIZES = {
 // it get shrunk into an unusable sliver.
 const TOOL_MIN_SIZES = {
   practice: [560, 680],
+  progress: [420, 520],
 };
 
 function openTool(name) {
@@ -246,15 +248,24 @@ function openTool(name) {
   return win;
 }
 
-// A tutor-generated practice question: open the practice window and hand it over.
-ipcMain.on('practice:push', (_e, payload) => {
+/** Open the practice window and send it something once it's ready to listen. */
+function sendToPractice(channel, payload) {
   const win = openTool('practice');
   if (win.webContents.isLoading()) {
-    win.webContents.once('did-finish-load', () => win.webContents.send('practice:new', payload));
+    win.webContents.once('did-finish-load', () => win.webContents.send(channel, payload));
   } else {
-    win.webContents.send('practice:new', payload);
+    win.webContents.send(channel, payload);
   }
-});
+  win.show();
+  win.focus();
+}
+
+// A tutor-generated practice question: open the practice window and hand it over.
+ipcMain.on('practice:push', (_e, payload) => sendToPractice('practice:new', payload));
+
+// "Practise this" / "Take the placement check", from the progress window.
+ipcMain.on('practice:skill', (_e, skillId) => sendToPractice('practice:skill', skillId));
+ipcMain.on('practice:placement', () => sendToPractice('practice:placement'));
 
 // A generated worksheet (N questions + answer key) to print or save as PDF.
 ipcMain.on('worksheet:open', (_e, payload) => {
@@ -343,6 +354,36 @@ ipcMain.handle('studylog:append', (_e, entry) => {
   const log = readJson('study_log.json', { sessions: [] });
   log.sessions.push(entry);
   writeJson('study_log.json', log);
+  return true;
+});
+
+// ---- IPC: proficiency ------------------------------------------------------------
+//
+// An append-only log of attempts; the mastery maths lives in the renderer
+// (renderer/practice-prof.js) and is recomputed on read. Nothing is derived
+// here, so two windows practising at once can at worst lose a single attempt
+// rather than clobber a whole record.
+
+const EMPTY_PROF = () => ({ version: 1, attempts: [] });
+
+/** Keep the file bounded — 5000 attempts is years of practice, and mastery is
+ *  dominated by the recent tail anyway. */
+const PROF_MAX_ATTEMPTS = 5000;
+
+ipcMain.handle('prof:all', () => readJson('proficiency.json', EMPTY_PROF()));
+ipcMain.handle('prof:append', (_e, attempt) => {
+  if (!attempt || !attempt.skill) return false;
+  const log = readJson('proficiency.json', EMPTY_PROF());
+  if (!Array.isArray(log.attempts)) log.attempts = [];
+  log.attempts.push(attempt);
+  if (log.attempts.length > PROF_MAX_ATTEMPTS) {
+    log.attempts = log.attempts.slice(-PROF_MAX_ATTEMPTS);
+  }
+  writeJson('proficiency.json', log);
+  return true;
+});
+ipcMain.handle('prof:reset', () => {
+  writeJson('proficiency.json', EMPTY_PROF());
   return true;
 });
 
@@ -645,6 +686,7 @@ ipcMain.on('menu:action', (_e, action) => {
     case 'converter': openTool('converter'); break;
     case 'timer': openTool('timer'); break;
     case 'formulas': openTool('formulas'); break;
+    case 'progress': openTool('progress'); break;
     case 'ambient': openTool('ambient'); break;
     case 'chat': openChat(); break;
     default: break;

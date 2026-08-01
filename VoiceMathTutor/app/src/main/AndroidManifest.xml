@@ -57,6 +57,11 @@
             android:label="Practice Studio"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
 
+        <activity
+            android:name=".ProgressActivity"
+            android:exported="true"
+            android:label="My Progress" />
+
         <service
             android:name=".timer.AmbientService"
             android:exported="false"

@@ -106,6 +106,9 @@ class MainActivity : ComponentActivity() {
                     onOpenPractice = {
                         startActivity(Intent(this, PracticeSpaceActivity::class.java))
                     },
+                    onOpenProgress = {
+                        startActivity(Intent(this, ProgressActivity::class.java))
+                    },
                     onToggleBubble = { toggleStudyBubble() },
                     bubbleShowing = bubbleShowing,
                 )

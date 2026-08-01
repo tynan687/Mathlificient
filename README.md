@@ -6,7 +6,8 @@ Most of it works **completely offline and free** — no account, no sign-up, no 
 
 - **Practice Studio** — unlimited generated questions across 33 topics (algebra, quadratics, trig, calculus, vectors, matrices, statistics, partial fractions and more), each with step-by-step worked solutions and a diagram drawn from the actual numbers in your question: the real parabola with its roots marked, the triangle to scale, asymptotes, Argand diagrams, bar charts.
 - **Work it out by hand** — a drawing canvas sits under every question. On Android that's the S Pen (with palm rejection, hold-the-button to erase, and pinch-to-zoom for more room). On Windows it's your mouse, or a graphics tablet if you have one.
-- **Quiz mode and printable worksheets** (Windows) — run a scored set of 5/10/20 questions with a review of what you missed, or print a worksheet with working space and a separate answer key.
+- **Quiz mode** — run a scored set of 5/10/20 questions with a review of what you missed. On Windows you can also print a worksheet with working space and a separate answer key.
+- **Progress tracking that tells you what to study next** — mark each question ✓ Got it / ✗ Missed it and the app builds a picture of where you're strong and where you're not, across 47 named skills in 10 areas. A **Focus next** list names three things to work on *and why* ("Shaky at 22%", "You had this at 80% but haven't practised in 19 days", "Quadratics first would make this easier"). A twelve-question placement check gets you started from scratch in about ten minutes.
 - **Formula sheet** — 182 formulas across 15 topic groups, 82 of them interactive solvers: type your values in, get the answer plus LaTeX you can paste into Word or Samsung Notes.
 - **Focus timer** (Pomodoro) and **ambient background noise** (rain, brown, pink, fan), all generated on-device.
 
@@ -59,7 +60,20 @@ Open **Practice Studio** — on Android from the main screen or the bubble menu,
 
 **Drawing:** on Android, rest your palm on the screen freely — once the app has seen the S Pen it ignores finger and palm touches. Hold the pen's side button and rub to erase, or tap the **⌫** tool. Pinch with two fingers to zoom out for more space; a **⤾ 1:1** button appears to snap back. On Windows, draw with the mouse or a pen tablet (pressure and the pen's eraser end both work), and use the scroll wheel to zoom.
 
-**Quiz mode (Windows):** pick a question count, work through them one at a time, and mark yourself **✓ Got it** / **✗ Missed it** after each answer. You get a score and a list of the ones you missed at the end. **🖨 Worksheet** generates a printable page instead — questions with blank working space, then an answer key.
+**Quiz mode:** pick a question count, work through them one at a time, and mark yourself **✓ Got it** / **✗ Missed it** after each answer. You get a score and a list of the ones you missed at the end. On Windows, **🖨 Worksheet** generates a printable page instead — questions with blank working space, then an answer key.
+
+### My progress
+
+Open **📊 Progress** — on Android from the main screen or the bubble menu, on Windows from the π bubble's menu.
+
+Everything you mark, in a quiz or just while practising, feeds a bar per skill.
+
+- **Focus next** picks three things and tells you why each one: which are shaky, which you had once and have let go stale, and which would be easier if you shored something up first. **Practise** on any of them jumps straight into questions on that skill.
+- **Due for review** catches topics you'd learned and haven't touched in a while. Bars fade the longer you leave a topic alone, so this fills up on its own.
+- **Every topic** opens into per-skill bars. A faded bar means too few attempts to be sure of the number yet — not a low score.
+- Fresh install with no history? Take the **twelve-question placement check** — one question from each area, about ten minutes, and the recommendations have something real to work from.
+
+It's all self-marked, so it's only as accurate as you are — the app weights self-marking below anything it can grade itself, and says so on the screen. Nothing is uploaded; it's a file on your own device, and there's a Reset button.
 
 ### The study bubble (Android, no API key needed)
 
@@ -86,7 +100,7 @@ other apps".
 
 ## Privacy
 
-Everything personal stays on your device: the API key (encrypted), the tutor's memory, your study log and spend history. Screenshots and audio go only to OpenAI's API, under your own key, and only when you're running a live session. No accounts, no server, no analytics, and nothing is shared between the Android and Windows versions.
+Everything personal stays on your device: the API key (encrypted), the tutor's memory, your study log, your progress record and spend history. Screenshots and audio go only to OpenAI's API, under your own key, and only when you're running a live session. No accounts, no server, no analytics, and nothing is shared between the Android and Windows versions.
 
 ---
 
@@ -107,6 +121,14 @@ cd VoiceMathTutorPC && npm install && npm run dist
 ```
 
 Full details, including the keystore setup and a known electron-builder snag on Windows, are in [`VoiceMathTutor/DISTRIBUTION.md`](VoiceMathTutor/DISTRIBUTION.md) and [`VoiceMathTutorPC/README.md`](VoiceMathTutorPC/README.md).
+
+**Shared engine files.** The question generators, skill graph, proficiency maths and practice/progress pages exist as byte-identical copies in both trees, because the Android app runs them in a WebView and the Windows app runs them in Electron. They are *not* symlinked — the paths don't line up (`practice.js` sits in `renderer/tools/` on Windows and flat in `assets/formulas/` on Android). Edit the copy under `VoiceMathTutorPC/renderer/`, then:
+
+```bash
+node tools/sync-shared.js
+```
+
+`node tools/sync-shared.js --check` fails if the two trees have drifted, and prints which files are divergent on purpose (the HTML pages differ per platform, by design — see the notes in that script).
 
 ---
 

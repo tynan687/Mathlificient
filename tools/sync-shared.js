@@ -29,8 +29,12 @@ const PAIRS = [
   ['practice-data.js', 'practice-data.js'],
   ['practice-viz.js', 'practice-viz.js'],
   ['practice-skills.js', 'practice-skills.js'],
+  ['practice-prof.js', 'practice-prof.js'],
+  ['practice-store.js', 'practice-store.js'],
+  ['practice-quiz.js', 'practice-quiz.js'],
   ['formulas-data.js', 'formulas-data.js'],
   ['tools/practice.js', 'practice.js'],
+  ['tools/progress.js', 'progress.js'],
 ];
 
 /**
@@ -40,9 +44,11 @@ const DIVERGENT = [
   ['tools/formulas.js', 'formulas.js',
     'Android has the lazy-render/phone work; PC uses navigator.clipboard. Reconcile deliberately, never by copy.'],
   ['tools/practice.html', 'practice.html',
-    'PC has quiz + ink toolbars; Android is a subset with touch sizing and different asset paths.'],
+    'PC has the ink toolbars and worksheet button; Android has touch sizing, the .mini popup rules and different asset paths.'],
   ['tools/formulas.html', 'formulas.html',
     'Android has the sticky header, group chips and safe-area insets.'],
+  ['tools/progress.html', 'progress.html',
+    'Same structure, but Android uses 44px targets and asset-relative script paths.'],
 ];
 
 const sha = (p) => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');

@@ -73,6 +73,8 @@ class PracticeSpaceActivity : ComponentActivity() {
         val settings = keyStore.loadSettings()
         ThemeController.set(settings.appTheme)
         val payload = intent.getStringExtra("payload")
+        val focusSkill = intent.getStringExtra("focusSkill")
+        val placement = intent.getBooleanExtra("placement", false)
 
         setContent {
             val themeKey by ThemeController.current.collectAsState()
@@ -81,6 +83,8 @@ class PracticeSpaceActivity : ComponentActivity() {
                     Studio(
                         topic = settings.currentTopic,
                         payload = payload,
+                        focusSkill = focusSkill,
+                        placement = placement,
                         initialBg = settings.studioBgColor,
                         onBgChange = { argb ->
                             keyStore.saveSettings(keyStore.loadSettings().copy(studioBgColor = argb))
@@ -122,6 +126,8 @@ private fun Color.toHex(): String = String.format("#%06X", 0xFFFFFF and toArgb()
 private fun Studio(
     topic: String,
     payload: String?,
+    focusSkill: String?,
+    placement: Boolean,
     initialBg: Int,
     onBgChange: (Int) -> Unit,
 ) {
@@ -211,6 +217,15 @@ private fun Studio(
                             )
                             payload?.let {
                                 view.evaluateJavascript("showPractice(${JSONObject.quote(it)})", null)
+                            }
+                            // Arrivals from the progress screen: a skill to drill,
+                            // or the placement check.
+                            if (placement) {
+                                view.evaluateJavascript("startPlacement()", null)
+                            } else if (!focusSkill.isNullOrEmpty()) {
+                                view.evaluateJavascript(
+                                    "setFocusSkill(${JSONObject.quote(focusSkill)})", null
+                                )
                             }
                             paintWeb(view, bg) // whole page matches the paper colour
                         }
