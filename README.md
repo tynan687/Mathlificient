@@ -158,6 +158,14 @@ Add `--sample` to print one example question per template, or `--runs 50` for a 
 
 ---
 
+## For engineers
+
+If you're picking this project up rather than using it, start with
+[**HANDOVER.md**](HANDOVER.md) — the shared-engine architecture, the conventions for adding
+question generators safely, how verification works, and the traps that have already cost time.
+
+---
+
 ## Licence
 
 [MIT](LICENSE) — use it, change it, share it.
