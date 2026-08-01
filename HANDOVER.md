@@ -309,6 +309,26 @@ cd VoiceMathTutor
 cd VoiceMathTutorPC && npm install && npm run dist
 ```
 
+### What lives on the dev machine, not in the repo
+
+A clone alone does not build or test. On the original machine these are already in place; on a
+new one they are the setup list.
+
+| Path | What it is | If it's missing |
+|---|---|---|
+| `%LOCALAPPDATA%\vmt-build\node_modules` | Electron, KaTeX, pdf.js | No JS runtime and no tests — there is no system `node` |
+| `%LOCALAPPDATA%\vmt-build\renderer` | The PC pages the harnesses load | PC suites cannot run (§5) |
+| `%LOCALAPPDATA%\vmt-tools\gradle-8.9` | Gradle | No Android build — there is no `gradlew` in this repo |
+| `C:\Program Files\Android\Android Studio1\jbr` | The JDK, for `JAVA_HOME` | No Android build. Note the **`1`** — the plain "Android Studio" folder is a broken install |
+| `VoiceMathTutor/keystore.properties` | Signing config (gitignored); points at the keystore below | Release build falls back to unsigned; debug is unaffected |
+| `%LOCALAPPDATA%\vmt-tools\keys\mathlificient-release.jks` | The release signing key | **Signed updates to the published app become impossible** |
+
+Everything above the last two rows is a re-download. The keystore is not: Android identifies an
+app by its signature, so a lost `.jks` or a forgotten passphrase means the published
+`com.tynan.mathtutor` can never be updated again — only replaced by a new listing that existing
+users would have to find and reinstall by hand. **Back up the `.jks` and its passphrase off this
+machine before anything else.** Neither is in the repo and neither should be.
+
 - Release signing activates only if `VoiceMathTutor/keystore.properties` exists (gitignored).
   Without it a clone still builds. **The passphrase is not recoverable — losing it breaks all
   future signed updates.**
