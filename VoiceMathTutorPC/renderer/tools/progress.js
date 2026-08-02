@@ -17,6 +17,8 @@ const el = {
   focus: document.getElementById('focus'),
   review: document.getElementById('review'),
   reviewWrap: document.getElementById('reviewWrap'),
+  slips: document.getElementById('slips'),
+  slipsWrap: document.getElementById('slipsWrap'),
   areas: document.getElementById('areas'),
   empty: document.getElementById('empty'),
 };
@@ -90,6 +92,54 @@ function agoText(days) {
 }
 
 /** "Practise this" — hands the skill to the practice surface on either platform. */
+/**
+ * Two-step confirm on any control: first press arms it, a second within the
+ * window fires. `window.confirm` is not an option — an Android WebView with no
+ * WebChromeClient suppresses JS dialogs and confirm() just returns false, so the
+ * control would silently do nothing on the phone.
+ *
+ * Each control keeps its own timer, so arming one never arms another.
+ */
+function armButton(node, restingText, armedText, onFire) {
+  let armed = 0;
+  node.addEventListener('click', async (e) => {
+    e.stopPropagation(); // inside a <details>, a bubbled click would fold it up
+    if (Date.now() - armed > 6000) {
+      armed = Date.now();
+      node.textContent = armedText;
+      node.classList.add('armed');
+      setTimeout(() => {
+        if (Date.now() - armed >= 6000) {
+          node.textContent = restingText;
+          node.classList.remove('armed');
+        }
+      }, 6100);
+      return;
+    }
+    armed = 0;
+    node.textContent = restingText;
+    node.classList.remove('armed');
+    await onFire();
+    render();
+  });
+  return node;
+}
+
+/**
+ * Forget one skill. A div rather than a button because applyPaper repaints every
+ * button with `background:transparent!important` from Kotlin, which would erase
+ * the armed state exactly when the student needs to see it.
+ */
+function forgetButton(skillId) {
+  const b = make('div', 'forget', 'Forget');
+  b.setAttribute('role', 'button');
+  b.setAttribute('tabindex', '0');
+  b.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); }
+  });
+  return armButton(b, 'Forget', 'Tap again to forget', () => Store.profResetSkill(skillId));
+}
+
 function practiceButton(skillId, label) {
   const b = make('button', 'go', label || 'Practise');
   b.addEventListener('click', () => Store.openSkill(skillId));
@@ -114,6 +164,7 @@ async function render() {
 
   renderFocus(state, usable);
   renderReview(state, usable);
+  renderSlips(log);
   renderAreas(state, usable);
   el.empty.classList.toggle('hidden', total > 0);
 }
@@ -172,6 +223,42 @@ function renderReview(state, usable) {
   }
 }
 
+/**
+ * The mistakes you actually keep making, named.
+ *
+ * Only wrong multiple-choice picks and wrong symbol-quiz picks carry a slip — a
+ * self-marked "missed it" records that you got it wrong but not WHY, and there is
+ * nothing honest to put here for it. So a student who never uses multiple choice
+ * sees an empty panel; when that is the reason, say so once rather than leaving
+ * a feature they cannot find.
+ */
+function renderSlips(log) {
+  if (!el.slipsWrap || !el.slips) return; // markup not present — no-op
+  const slips = typeof topSlips === 'function' ? topSlips(log) : [];
+  const attempts = (log && log.attempts) || [];
+  const anyGraded = attempts.some((a) => a.mode === 'mcq');
+  const worthExplaining = !slips.length && attempts.length >= 8 && !anyGraded;
+
+  el.slipsWrap.classList.toggle('hidden', !slips.length && !worthExplaining);
+  el.slips.innerHTML = '';
+
+  if (worthExplaining) {
+    el.slips.appendChild(make('div', 'note',
+      'Switch a question to multiple choice and a wrong pick tells me which mistake '
+      + 'you made — after a couple of repeats they show up here.'));
+    return;
+  }
+  for (const slip of slips) {
+    const card = make('div', 'pick');
+    const top = make('div', 'pick-top');
+    top.appendChild(make('div', 'pick-name', `You keep ${slip.label}`));
+    top.appendChild(make('div', 'slip-count', `${slip.count}×`));
+    card.appendChild(top);
+    if (slip.hint) card.appendChild(make('div', 'pick-why', slip.hint));
+    el.slips.appendChild(card);
+  }
+}
+
 function renderAreas(state, usable) {
   el.areas.innerHTML = '';
   const has = usable ? new Set(usable) : null;
@@ -211,6 +298,9 @@ function renderAreas(state, usable) {
       } else {
         row.appendChild(make('div', 'bar-sub soon', 'Questions coming soon'));
       }
+      // Only offered where there is something to forget — a Forget on a skill
+      // with no history is a button that cannot do anything.
+      if (state.skills[skill.id]) row.appendChild(forgetButton(skill.id));
       const blurbEl = make('div', 'bar-blurb', skill.blurb);
       row.insertBefore(blurbEl, row.querySelector('.track'));
       block.appendChild(row);
@@ -250,6 +340,55 @@ resetBtn.addEventListener('click', async () => {
   await Store.profReset();
   render();
 });
+
+/**
+ * Export the attempt log.
+ *
+ * Two formats on purpose. JSON is the file verbatim, so it can be put back —
+ * which matters more than it looks: the log is rewritten whole on every attempt
+ * with no backup, so this is the only copy a student can keep. CSV is for reading
+ * in a spreadsheet and is deliberately lossy, with skill ids resolved to names.
+ */
+function toCsv(log) {
+  const name = (id) => (typeof SKILL_BY_ID !== 'undefined' && SKILL_BY_ID[id]
+    ? SKILL_BY_ID[id].name : id);
+  const esc = (v) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows = [['when', 'skill', 'skill id', 'question', 'score', 'graded', 'where', 'options', 'seconds', 'slip']];
+  for (const a of (log && log.attempts) || []) {
+    if (!a) continue;
+    rows.push([
+      a.t ? new Date(a.t).toISOString() : '', name(a.skill), a.skill, a.tmpl || '',
+      a.score, a.mode || '', a.flow || 'practice', a.k || '',
+      a.ms != null ? (a.ms / 1000).toFixed(1) : '', a.miss || '',
+    ].map(esc));
+  }
+  return rows.map((r) => r.join(',')).join('\n');
+}
+
+async function exportLog(kind) {
+  const log = await Store.profAll();
+  const stamp = new Date().toISOString().slice(0, 10);
+  const isJson = kind === 'json';
+  const body = isJson ? JSON.stringify(log, null, 2) : toCsv(log);
+  const file = `mathlificient-progress-${stamp}.${isJson ? 'json' : 'csv'}`;
+  const mime = isJson ? 'application/json' : 'text/csv';
+  if (isElectron) return window.tutor.invoke('prof:export', { file, body });
+  if (hasBridge && typeof Android.shareText === 'function') {
+    Android.shareText(file, mime, body);
+    return true;
+  }
+  // No host: the clipboard is better than nothing, and the worksheet window
+  // already sets the precedent that "save" can mean "hand it to the OS".
+  try { await navigator.clipboard.writeText(body); return true; } catch { return false; }
+}
+
+for (const kind of ['json', 'csv']) {
+  const btn = document.getElementById(`export-${kind}`);
+  if (btn) btn.addEventListener('click', () => exportLog(kind));
+}
 
 document.getElementById('refresh').addEventListener('click', render);
 

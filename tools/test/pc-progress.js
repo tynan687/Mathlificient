@@ -58,6 +58,12 @@ app.whenReady().then(async () => {
     fs.writeFileSync(PROF, JSON.stringify({ version: 1, attempts: [] }));
     return true;
   });
+  ipcMain.handle('prof:resetSkill', (_e, skillId) => {
+    const log = readProf();
+    log.attempts = log.attempts.filter((a) => a && a.skill !== skillId);
+    fs.writeFileSync(PROF, JSON.stringify(log, null, 2));
+    return true;
+  });
 
   // ---- 1. Free practice: grade a question ---------------------------------------
   const practice = await open('renderer/tools/practice.html', 760, 960);

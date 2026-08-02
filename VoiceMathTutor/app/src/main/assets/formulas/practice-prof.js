@@ -25,7 +25,12 @@ const SOLID = 0.60;
 // would mean a multiple-choice question answered inside a quiz got logged as
 // self-marked, which is exactly the sort of quiet mis-weighting that makes a
 // progress bar untrustworthy.
-const WEIGHT = { mcq: 1.0, self: 0.8 };
+// `tutor` is a verdict the app worked out itself, by comparing what the student
+// said against the stored answer (markAnswer in practice-mcq.js). That is as
+// objective as a picked option, so it carries full weight — but it has no guess
+// floor, so a tutor attempt must never carry `k` or chanceAdjusted would discount
+// something that was never a choice between options.
+const WEIGHT = { mcq: 1.0, self: 0.8, tutor: 1.0 };
 
 const DAY_MS = 86400000;
 
@@ -272,9 +277,78 @@ function topMiss(s) {
   entries.sort((a, b) => b[1] - a[1]);
   const [why, count] = entries[0];
   if (count < 2) return null; // one slip is noise, not a pattern
+  const label = slipLabel(why, null);
+  return label ? `you keep ${label.label}.` : null;
+}
+
+/**
+ * Turn a recorded `miss` into something a student can read, or null.
+ *
+ * Two namespaces meet here. A bare key is a MISCONCEPTIONS entry, whose `label`
+ * completes "you keep …". A `sym:` key is a symbol the student picked by
+ * mistake, and `meantId` — which the attempt carries in `tmpl` — is the one they
+ * should have picked, so the pair can be named exactly.
+ *
+ * Returns null rather than leaking a raw key: an unexplained slip is better than
+ * "you keep disc-sgn".
+ */
+function slipLabel(why, meantId) {
+  if (typeof why !== 'string') return null;
+  if (why.startsWith('sym:')) {
+    if (typeof SYMBOL_BY_ID === 'undefined') return null;
+    const picked = SYMBOL_BY_ID[why.slice(4)];
+    if (!picked) return null;
+    const meant = meantId ? SYMBOL_BY_ID[meantId] : null;
+    return meant
+      ? {
+        label: `reading ${meant.name} as ${picked.name}`,
+        hint: `${meant.name} is said “${meant.say}”. ${picked.name} is said “${picked.say}”.`,
+      }
+      : { label: `reaching for ${picked.name}`, hint: picked.meaning };
+  }
   if (typeof MISCONCEPTIONS === 'undefined') return null;
-  const entry = MISCONCEPTIONS[why];
-  return entry && entry.label ? `you keep ${entry.label}.` : null;
+  const m = MISCONCEPTIONS[why];
+  return m && m.label ? { label: m.label, hint: m.hint } : null;
+}
+
+/**
+ * The slips a student is actually making, across every skill.
+ *
+ * Folded from the RAW LOG rather than from the per-skill `miss` maps, for two
+ * reasons. The maps are a lifetime tally with no notion of time, so a slip fixed
+ * in March would still top the list in August; and they key on the misconception
+ * alone, which throws away the `tmpl` that says which symbol was *meant*.
+ */
+function topSlips(log, opts) {
+  const o = opts || {};
+  const limit = o.limit || 3;
+  const since = (o.now || Date.now()) - (o.days || 45) * DAY_MS;
+  const minCount = o.minCount || 2; // one slip is noise, same rule as topMiss
+
+  const tally = {};
+  for (const a of (log && log.attempts) || []) {
+    if (!a || !a.miss || a.score >= 0.5) continue;
+    if (a.t && a.t < since) continue;
+    // A symbol confusion is a pair, so it tallies per pair. A misconception means
+    // the same thing whatever template produced it, so it tallies on the key.
+    const isSym = a.miss.indexOf('sym:') === 0;
+    const key = isSym ? `${a.miss}|${a.tmpl || ''}` : a.miss;
+    const e = tally[key] || (tally[key] = {
+      key, why: a.miss, meant: isSym ? a.tmpl : null, count: 0, skills: [],
+    });
+    e.count += 1;
+    if (a.skill && e.skills.indexOf(a.skill) < 0) e.skills.push(a.skill);
+  }
+
+  return Object.values(tally)
+    .filter((e) => e.count >= minCount)
+    .sort((x, y) => y.count - x.count || x.why.localeCompare(y.why))
+    .map((e) => {
+      const l = slipLabel(e.why, e.meant);
+      return l ? { ...e, label: l.label, hint: l.hint } : null;
+    })
+    .filter(Boolean)
+    .slice(0, limit);
 }
 
 /** Skills whose recall has decayed but which were once learned. */
@@ -318,5 +392,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     PROF_VERSION, SHAKY, SOLID, WEIGHT, computeProficiency, recommend, dueForReview,
     attemptFrom, chanceAdjusted, placementPlan, readinessOf, evidenceOf, blankSkill,
+    topSlips, slipLabel,
   };
 }

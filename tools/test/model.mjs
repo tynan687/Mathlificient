@@ -53,6 +53,24 @@ const at = (skill, score, mode, daysAgo) => ({
   ok('self-marking moves the bar less than MCQ', self < mcq, `${self.toFixed(2)} < ${mcq.toFixed(2)}`);
   const plc = P.computeProficiency(log([at('quadratics', 1, 'placement')])).skills.quadratics.p;
   ok('placement is weighted as self-marking (it is)', Math.abs(plc - self) < 1e-9);
+
+  // A tutor verdict is the app's own comparison against the stored answer, so it
+  // is as objective as a picked option and carries the same weight.
+  const tut = P.computeProficiency(log([at('quadratics', 1, 'tutor')])).skills.quadratics.p;
+  ok('a tutor verdict counts as much as MCQ', Math.abs(tut - mcq) < 1e-9,
+    `${tut.toFixed(2)} vs ${mcq.toFixed(2)}`);
+  ok('  ...and more than self-marking', tut > self);
+  // It has no guess floor, so it must never be discounted for one. A tutor
+  // attempt carrying `k` would be a bug at the call site; prove the maths would
+  // punish it, so the guard in the caller is not the only thing holding.
+  const wrongTutor = P.computeProficiency(log([at('quadratics', 0, 'tutor')])).skills.quadratics.p;
+  const wrongMcqK4 = P.computeProficiency(
+    log([{ ...at('quadratics', 0, 'mcq'), k: 4 }])).skills.quadratics.p;
+  ok('  ...and a wrong tutor verdict is not discounted like a wrong guess',
+    wrongTutor === 0 && wrongMcqK4 === 0);
+  ok('  ...which the raw adjustment shows',
+    P.chanceAdjusted({ score: 0, mode: 'tutor' }) === 0
+    && P.chanceAdjusted({ score: 0, mode: 'mcq', k: 4 }) < 0);
 }
 {
   const p = P.computeProficiency(log([at('quadratics', 1, 'mcq')]));

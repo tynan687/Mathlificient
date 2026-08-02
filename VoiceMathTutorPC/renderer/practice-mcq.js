@@ -106,6 +106,112 @@ function equivalentAnswers(candidate, answer, ordered) {
   return numbersIn(answer).length > 1 && sameNumbers(candidate, answer);
 }
 
+/** Every number in reading order — unlike numbersIn, which sorts them. */
+function numbersInOrder(s) {
+  return (baseNormal(s).match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+}
+
+const NUM_WORDS = {
+  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
+  nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+  sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30,
+  forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+};
+
+/**
+ * Turn spoken numbers into digits so a transcript can be compared with LaTeX:
+ * "x equals minus twenty three" becomes "x equals -23".
+ *
+ * This exists because without it almost every spoken answer returns `unsure` —
+ * the transcript has no digits in it at all — and every `unsure` costs an API
+ * call. It handles the range a maths answer actually lands in: units, teens,
+ * tens, "hundred" as a multiplier, decimals said as "point five", and a leading
+ * "minus" or "negative". Anything past that is left alone for `markAnswer` to
+ * escalate, which is the correct outcome for something we cannot read.
+ */
+function digitiseSpokenNumbers(text) {
+  const tokens = String(text).split(/\b/);
+  const out = [];
+  let acc = null;        // the number being assembled
+  let negate = false;
+  const flush = () => {
+    if (acc != null) out.push(String(negate ? -acc : acc));
+    acc = null;
+    negate = false;
+  };
+  for (const tok of tokens) {
+    const w = tok.trim().toLowerCase();
+    if (!w) { if (acc == null) out.push(tok); continue; }
+    if (w === 'minus' || w === 'negative') { flush(); negate = true; continue; }
+    if (w === 'hundred' && acc != null) { acc *= 100; continue; }
+    if (w === 'and' && acc != null) continue;   // "a hundred and five"
+    if (Object.prototype.hasOwnProperty.call(NUM_WORDS, w)) {
+      const v = NUM_WORDS[w];
+      // 20 + 3 composes; 3 then 4 does not — flush and start again.
+      if (acc == null) acc = v;
+      else if (acc % 10 === 0 && v < 10) acc += v;
+      else { flush(); acc = v; }
+      continue;
+    }
+    if (w === 'point' && acc != null) {
+      // "three point five" — collect the digits that follow as decimals.
+      out.push(String(negate ? -acc : acc));
+      acc = null; negate = false;
+      out.push('.');
+      continue;
+    }
+    flush();
+    if (negate) { out.push('-'); negate = false; }
+    out.push(tok);
+  }
+  flush();
+  if (negate) out.push('-');
+  return out.join('');
+}
+
+/**
+ * Mark a free-text or spoken answer against the stored one, offline and for
+ * nothing. This is what lets the voice tutor say whether you were right without
+ * ever being told what right was, and it is the default path — only `unsure`
+ * costs an API call.
+ *
+ * Deliberately NOT a speech-to-LaTeX parser. Comparing the numbers each side
+ * actually contains is what makes "x equals two, y equals three" line up with
+ * `x = 2, \ y = 3` without pretending to understand English.
+ *
+ * Three rules earn their place:
+ *
+ *   * `equivalentAnswers` is called with `ordered: true`. The unordered branch
+ *     treats the same numbers in any order as the same answer — correct for the
+ *     two roots of a quadratic, badly wrong here, where it would pass
+ *     "x = 3, y = 2" as "x = 2, y = 3".
+ *   * numbers are compared IN ORDER for the same reason.
+ *   * a different COUNT of numbers returns `unsure`, not `wrong`. "0.5" against
+ *     \frac{1}{2} is one number against two: the two are written differently
+ *     rather than disagreeing, and claiming a student got that wrong is worse
+ *     than admitting we cannot tell.
+ */
+function markAnswer(heard, answer) {
+  // A transcript says "two", not "2", and without this every spoken answer
+  // returns unsure and costs an API call.
+  const said = digitiseSpokenNumbers(String(heard == null ? '' : heard)).trim();
+  const truth = String(answer == null ? '' : answer).trim();
+  if (!said) return { verdict: 'unsure', why: 'nothing heard' };
+  if (!truth) return { verdict: 'unsure', why: 'no stored answer' };
+
+  if (normalLatex(said) === normalLatex(truth)) return { verdict: 'right', why: 'said it exactly' };
+  if (equivalentAnswers(said, truth, true)) return { verdict: 'right', why: 'same answer, written differently' };
+
+  const a = numbersInOrder(said);
+  const b = numbersInOrder(truth);
+  if (!a.length || !b.length) return { verdict: 'unsure', why: 'no numbers to compare' };
+  if (a.length !== b.length) return { verdict: 'unsure', why: 'counted a different number of values' };
+  const same = a.every((n, i) => Math.abs(n - b[i]) < 1e-9);
+  return same
+    ? { verdict: 'right', why: 'every value matches, in order' }
+    : { verdict: 'wrong', why: 'the values do not match' };
+}
+
 /**
  * Assemble one question's options, or null if it can't be done honestly.
  *
@@ -268,6 +374,7 @@ if (mcqNextEl) {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    MCQ_OPTIONS, buildChoices, normalLatex, numbersIn, shapeOf, equivalentAnswers,
+    MCQ_OPTIONS, buildChoices, normalLatex, numbersIn, numbersInOrder, shapeOf,
+    equivalentAnswers, markAnswer,
   };
 }

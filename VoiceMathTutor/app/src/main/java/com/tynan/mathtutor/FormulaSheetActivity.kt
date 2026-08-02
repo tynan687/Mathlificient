@@ -12,9 +12,11 @@ import android.webkit.WebView
 import android.widget.Toast
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
+import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.tynan.mathtutor.memory.Proficiency
+import java.io.File
 import java.util.Locale
 
 /**
@@ -81,6 +83,9 @@ class FormulaSheetActivity : ComponentActivity() {
         @JavascriptInterface
         fun profReset() = proficiency.reset()
 
+        @JavascriptInterface
+        fun profResetSkill(skillId: String) = proficiency.resetSkill(skillId)
+
         /** "Practise this" from the progress screen. */
         @JavascriptInterface
         fun openSkill(skillId: String) {
@@ -102,6 +107,35 @@ class FormulaSheetActivity : ComponentActivity() {
                 )
             }
         }
+        /**
+         * Hand a text file to the share sheet.
+         *
+         * Not copyText: that puts the whole log on the clipboard and shows a Toast
+         * about pasting into Word, which is wrong for a data file the student
+         * wants to keep. Same FileProvider route as shareImage.
+         */
+        @JavascriptInterface
+        fun shareText(name: String, mime: String, body: String) {
+            activity.runOnUiThread {
+                try {
+                    val dir = File(activity.cacheDir, "shared").apply { mkdirs() }
+                    val file = File(dir, name)
+                    file.writeText(body)
+                    val uri = FileProvider.getUriForFile(
+                        activity, "com.tynan.mathtutor.fileprovider", file
+                    )
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = mime
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    activity.startActivity(Intent.createChooser(intent, "Save your progress"))
+                } catch (e: Exception) {
+                    Toast.makeText(activity, "Could not export: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
         @JavascriptInterface
         fun copyText(text: String) {
             activity.runOnUiThread {

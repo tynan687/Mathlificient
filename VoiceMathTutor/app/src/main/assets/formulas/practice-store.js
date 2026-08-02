@@ -55,6 +55,24 @@ const Store = (() => {
       memory = EMPTY();
     },
 
+    /**
+     * Forget one skill's history, leaving the rest alone.
+     *
+     * A filter rather than a read-modify-write from this side: sending the whole
+     * log back across the bridge would reintroduce exactly the clobber the
+     * append-only design exists to avoid.
+     */
+    async profResetSkill(skillId) {
+      if (!skillId) return;
+      try {
+        if (isElectron) { await window.tutor.invoke('prof:resetSkill', skillId); return; }
+        if (hasBridge && typeof Android.profResetSkill === 'function') {
+          Android.profResetSkill(skillId); return;
+        }
+      } catch { /* fall through to memory */ }
+      memory.attempts = memory.attempts.filter((a) => a && a.skill !== skillId);
+    },
+
     /** Jump to the practice page focused on a skill. No-op where unsupported. */
     openSkill(skillId) {
       try {

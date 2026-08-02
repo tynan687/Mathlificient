@@ -169,7 +169,12 @@
     printWorksheetBtn.addEventListener('click', () => {
       if (typeof window.tutor === 'undefined') return; // PC-only feature
       const count = Number(quizCountEl.value);
-      window.tutor.send('worksheet:open', { questions: generateQuestionSet(count) });
+      // The worksheet window is a separate BrowserWindow with its own file://
+      // localStorage bucket, so it cannot read the answering mode itself — send it.
+      window.tutor.send('worksheet:open', {
+        questions: generateQuestionSet(count),
+        mode: typeof answerMode !== 'undefined' ? answerMode : 'self',
+      });
     });
   }
 })();

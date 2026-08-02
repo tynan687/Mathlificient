@@ -66,6 +66,29 @@ class Proficiency(context: Context) {
         synchronized(lock) { file.writeText(EMPTY) }
     }
 
+    /**
+     * Drop every attempt for one skill and keep the rest.
+     *
+     * Still no maths here — this is a predicate on a field the JS side wrote, the
+     * same way [append] validates one. Doing it on this side rather than handing
+     * the whole log back for the WebView to rewrite keeps the append-only
+     * guarantee: two writers can still only lose an attempt, never a record.
+     */
+    fun resetSkill(skillId: String) {
+        if (skillId.isEmpty()) return
+        synchronized(lock) {
+            val array = loadArray()
+            val kept = JSONArray()
+            for (i in 0 until array.length()) {
+                val item = array.optJSONObject(i) ?: continue
+                if (item.optString("skill") != skillId) kept.put(item)
+            }
+            file.writeText(
+                JSONObject().put("version", 1).put("attempts", kept).toString()
+            )
+        }
+    }
+
     private fun loadArray(): JSONArray {
         if (!file.exists()) return JSONArray()
         return try {

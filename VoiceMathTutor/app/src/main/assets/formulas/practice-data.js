@@ -380,9 +380,9 @@ const PRACTICE = [
         // gather, not one line: at 360dp a prompt beside a cases block overflows
         // the phone, and KaTeX will not wrap. Stacking keeps the width to the
         // widest single line. Every question in this group is built this way.
-        question: '\\begin{gather} \\text{Solve simultaneously} \\\\ \\begin{cases}'
+        question: '\\begin{gathered} \\text{Solve simultaneously} \\\\ \\begin{cases}'
           + `${PR.lead(a1)}${PR.xt(b1, 'y')} = ${c1} \\\\ ${PR.lead(a2)}${PR.xt(b2, 'y')} = ${c2}`
-          + '\\end{cases} \\end{gather}',
+          + '\\end{cases} \\end{gathered}',
         steps: eliminationSteps(w, 'x', 'y'),
         answer: `x = ${x0}, \\ y = ${y0}`,
         // Two lines crossing at the solution - the picture that makes "solving a
@@ -439,9 +439,9 @@ const PRACTICE = [
         || (xNoDiv === y0 && mm * xNoDiv + kk === x0)
       );
       return {
-        question: '\\begin{gather} \\text{Solve simultaneously} \\\\ \\begin{cases}'
+        question: '\\begin{gathered} \\text{Solve simultaneously} \\\\ \\begin{cases}'
           + `y = ${PR.lead(mm)}${PR.ct(kk)} \\\\ ${PR.lead(a)}${PR.xt(b, 'y')} = ${c}`
-          + '\\end{cases} \\end{gather}',
+          + '\\end{cases} \\end{gathered}',
         steps: [
           `\\text{Substitute } y = ${PR.lead(mm)}${PR.ct(kk)} \\text{ into (2):}`,
           `${PR.lead(a)} ${PR.s(b)}(${PR.lead(mm)}${PR.ct(kk)}) = ${c}`,
@@ -484,10 +484,10 @@ const PRACTICE = [
       // the sentence is wrong, and nothing downstream would ever catch it.
       const qty = (q, word) => `${q} ${word}${q === 1 ? '' : 's'}`;
       return {
-        question: '\\begin{gather} \\text{A bolt costs } b, \\text{ a nut } n. \\\\ '
+        question: '\\begin{gathered} \\text{A bolt costs } b, \\text{ a nut } n. \\\\ '
           + `\\text{${qty(a1, 'bolt')} and ${qty(b1, 'nut')} cost ${c1} dollars.} \\\\ `
           + `\\text{${qty(a2, 'bolt')} and ${qty(b2, 'nut')} cost ${c2} dollars.} \\\\ `
-          + '\\text{Find } b \\text{ and } n. \\end{gather}',
+          + '\\text{Find } b \\text{ and } n. \\end{gathered}',
         steps: eliminationSteps(w, 'b', 'n'),
         answer: `b = ${x0}, \\ n = ${y0}`,
         w,
@@ -1287,11 +1287,11 @@ const PRACTICE = [
         || zAdd === z0 || zConst === z0 || yBad === y0
       );
       return {
-        question: '\\begin{gather} \\text{Solve} \\\\ \\begin{cases}'
+        question: '\\begin{gathered} \\text{Solve} \\\\ \\begin{cases}'
           + `x + y + z = ${s1} \\\\ `
           + `${PR.lead(a2)}${PR.xt(b2, 'y')}${PR.xt(c2, 'z')} = ${s2} \\\\ `
           + `${PR.lead(a3)}${PR.xt(b3, 'y')}${PR.xt(c3, 'z')} = ${s3}`
-          + '\\end{cases} \\end{gather}',
+          + '\\end{cases} \\end{gathered}',
         steps: [
           `\\text{(2)} - ${a2}\\text{(1)}: \\ ${PR.lead(B2, 'y')}${PR.xt(C2, 'z')} = ${S2}`,
           `\\text{(3)} - ${a3}\\text{(1)}: \\ ${PR.lead(B3, 'y')}${PR.xt(C3, 'z')} = ${S3}`,
@@ -1343,9 +1343,9 @@ const PRACTICE = [
         || tx === x0 || ty === y0 || (tx === y0 && ty === x0)
       );
       return {
-        question: "\\begin{gather} \\text{Use Cramer's rule to solve} \\\\ \\begin{cases}"
+        question: "\\begin{gathered} \\text{Use Cramer's rule} \\\\ \\begin{cases}"
           + `${PR.lead(a)}${PR.xt(b, 'y')} = ${e} \\\\ ${PR.lead(c)}${PR.xt(d, 'y')} = ${f}`
-          + '\\end{cases} \\end{gather}',
+          + '\\end{cases} \\end{gathered}',
         steps: [
           `\\det A = \\begin{vmatrix} ${a} & ${b} \\\\ ${c} & ${d} \\end{vmatrix}`
             + ` = ${a}${PR.par(d)} - ${PR.par(b)}${PR.par(c)} = ${det}`,
@@ -1401,9 +1401,9 @@ const PRACTICE = [
         || (noSwapX === y0 && noSwapY === x0) || (orderX === y0 && orderY === x0)
       );
       return {
-        question: '\\begin{gather} \\text{Solve } A\\mathbf{x} = \\mathbf{b} \\text{ for} \\\\ '
+        question: '\\begin{gathered} \\text{Solve } A\\mathbf{x} = \\mathbf{b} \\text{ for} \\\\ '
           + `A = \\begin{pmatrix} ${a} & ${b} \\\\ ${c} & ${d} \\end{pmatrix},`
-          + `\\ \\mathbf{b} = \\begin{pmatrix} ${e} \\\\ ${f} \\end{pmatrix} \\end{gather}`,
+          + `\\ \\mathbf{b} = \\begin{pmatrix} ${e} \\\\ ${f} \\end{pmatrix} \\end{gathered}`,
         steps: [
           `\\det A = ${a}${PR.par(d)} - ${PR.par(b)}${PR.par(c)} = ${det}`,
           `A^{-1} = \\frac{1}{${det}}\\begin{pmatrix} ${d} & ${-b} \\\\ ${-c} & ${a} \\end{pmatrix}`,
@@ -1455,10 +1455,10 @@ const PRACTICE = [
         || e * d === f * b
       );
       return {
-        question: '\\begin{gather} \\text{For which } k \\text{ does this system} \\\\ '
+        question: '\\begin{gathered} \\text{For which } k \\text{ does this system} \\\\ '
           + '\\text{have no unique solution?} \\\\ \\begin{cases}'
           + `kx${PR.xt(b, 'y')} = ${e} \\\\ ${PR.lead(c)}${PR.xt(d, 'y')} = ${f}`
-          + '\\end{cases} \\end{gather}',
+          + '\\end{cases} \\end{gathered}',
         steps: [
           '\\text{No unique solution when } \\det A = 0.',
           `\\det \\begin{vmatrix} k & ${b} \\\\ ${c} & ${d} \\end{vmatrix}`

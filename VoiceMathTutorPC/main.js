@@ -387,6 +387,33 @@ ipcMain.handle('prof:reset', () => {
   writeJson('proficiency.json', EMPTY_PROF());
   return true;
 });
+/**
+ * Save an export where the student asks. The renderer builds the bytes — this
+ * only picks a destination, so the two platforms produce the identical file.
+ */
+ipcMain.handle('prof:export', async (_e, payload) => {
+  const { file, body } = payload || {};
+  if (!file || typeof body !== 'string') return false;
+  const res = await dialog.showSaveDialog({
+    defaultPath: file,
+    filters: file.endsWith('.csv')
+      ? [{ name: 'CSV', extensions: ['csv'] }]
+      : [{ name: 'JSON', extensions: ['json'] }],
+  });
+  if (res.canceled || !res.filePath) return false;
+  fs.writeFileSync(res.filePath, body, 'utf8');
+  return true;
+});
+
+/** Forget one skill, keep the rest. A filter, so no mastery is derived here either. */
+ipcMain.handle('prof:resetSkill', (_e, skillId) => {
+  if (!skillId) return false;
+  const log = readJson('proficiency.json', EMPTY_PROF());
+  if (!Array.isArray(log.attempts)) return false;
+  log.attempts = log.attempts.filter((a) => a && a.skill !== skillId);
+  writeJson('proficiency.json', log);
+  return true;
+});
 
 const dayKey = (offset = 0) => {
   const d = new Date();

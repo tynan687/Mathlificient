@@ -30,10 +30,19 @@ window.Android = {
     fs.writeFileSync(FILE, JSON.stringify(log));
   },
   profReset() { fs.writeFileSync(FILE, EMPTY); },
+  profResetSkill(skillId) {
+    if (!skillId) return;
+    let log;
+    try { log = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch { return; }
+    if (!Array.isArray(log.attempts)) return;
+    log.attempts = log.attempts.filter((a) => a && a.skill !== skillId);
+    fs.writeFileSync(FILE, JSON.stringify(log));
+  },
   openSkill(id) { window.__androidCalls.push(['openSkill', id]); },
   openPlacement() { window.__androidCalls.push(['openPlacement']); },
   speak(text) { window.__androidCalls.push(['speak', text]); },
   copyText(t) { window.__androidCalls.push(['copyText', t]); },
+  shareText(name, mime, body) { window.__androidCalls.push(['shareText', name, mime, body.length]); },
   closeWindow() { window.__androidCalls.push(['closeWindow']); },
 };
 

@@ -19,6 +19,13 @@
     .qnum { font-weight: 700; margin-right: 6px; }
     .qtext { display: inline-block; }
     .workspace { border: 1px solid #bbb; border-radius: 8px; height: 110px; margin-top: 8px; }
+    /* Multiple choice. Two columns on paper: four options in one column wastes
+       half the page, and four across is too narrow for a fraction. */
+    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px;
+      margin: 10px 0 0 18px; }
+    .option { display: flex; align-items: baseline; gap: 7px; padding: 3px 0; }
+    .olabel { font-weight: 700; min-width: 20px; }
+    .akey { font-weight: 700; margin-right: 4px; }
     .answerkey { page-break-before: always; }
     .arow { padding: 4px 0; }
     .hint { opacity: 0.6; font-size: 13px; }

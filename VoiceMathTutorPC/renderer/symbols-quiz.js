@@ -228,10 +228,15 @@ const SymbolsQuiz = (() => {
         : 'Not that one.';
 
     if (current.sym && typeof Store !== 'undefined' && typeof attemptFrom === 'function') {
+      // Record WHICH symbol was picked, namespaced so it cannot collide with a
+      // MISCONCEPTIONS key. Both halves of the confusion end up in the attempt:
+      // the wrong one here, the right one in `tmpl` — which is what lets the
+      // progress screen say "reading ∫ as ∮" rather than just "wrong again".
+      const picked = !right && chosen && chosen.why ? `sym:${chosen.why}` : null;
       Store.profAppend(attemptFrom(
         skillForCategory(current.sym.category), current.sym.id,
         right ? 1 : 0, 'mcq', Date.now() - shownAt,
-        { k, flow: 'symbols' },
+        { k, flow: 'symbols', miss: picked },
       ));
     }
     el('symQuizNext').classList.remove('hidden');

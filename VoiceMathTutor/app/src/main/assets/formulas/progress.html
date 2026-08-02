@@ -47,6 +47,16 @@
     .pick-top { display: flex; align-items: center; gap: 10px; }
     .pick-name { font-weight: 600; flex: 1; }
     .pick-why { font-size: 13.5px; opacity: 0.8; margin-top: 4px; line-height: 1.45; }
+    /* How many times you've made this slip. Not a button — applyPaper repaints
+       every button and would flatten it on dark paper. */
+    .slip-count { font-size: 12.5px; font-weight: 700; opacity: 0.55;
+      white-space: nowrap; }
+    /* Forget one skill. A div, not a button: applyPaper repaints buttons with
+       !important and would erase the armed state. 44px, it is a touch target. */
+    .forget { font-size: 13px; min-height: 44px; padding: 4px 12px; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-self: end; white-space: nowrap;
+      color: #C62828; border: 1px solid color-mix(in srgb, #C62828 45%, transparent); }
+    .forget.armed { background: #C62828; color: #fff; border-color: #C62828; }
     .pick-path { font-size: 13px; margin-top: 8px; opacity: 0.85; }
     .path-label { opacity: 0.65; }
     /* Inline-block so the tap area is a full line tall, not just the glyphs. */
@@ -104,6 +114,11 @@
     <div id="review"></div>
   </div>
 
+  <div id="slipsWrap" class="hidden">
+    <h2>Your most common slips</h2>
+    <div id="slips"></div>
+  </div>
+
   <h2>Every topic</h2>
   <div id="areas"></div>
   <div class="hint hidden" id="empty">Answer a few practice questions and mark them
@@ -117,11 +132,16 @@
   </div>
   <div class="footer">
     <button id="refresh">↻ Refresh</button>
+    <button id="export-json">Export backup</button>
+    <button id="export-csv">Export spreadsheet</button>
     <button id="reset">Reset all progress</button>
   </div>
 
   <script src="practice-skills.js"></script>
   <script src="practice-data.js"></script>
+  <!-- For the slips panel: a symbol confusion is recorded as a pair of ids, and
+       naming them needs the symbol data. -->
+  <script src="symbols-data.js"></script>
   <script src="practice-prof.js"></script>
   <script src="practice-store.js"></script>
   <script src="progress.js"></script>
