@@ -204,6 +204,10 @@ function renderAreas(state, usable) {
       if (!has || has.has(skill.id)) {
         row.appendChild(practiceButton(skill.id));
         row.classList.add('has-go');
+      } else if (skill.area === 'notation') {
+        // These DO have questions, just not in the practice pool — they are drilled
+        // from the symbols screen's "Test me" tab, so "coming soon" would be a lie.
+        row.appendChild(make('div', 'bar-sub soon', 'Practise in Symbols → Test me'));
       } else {
         row.appendChild(make('div', 'bar-sub soon', 'Questions coming soon'));
       }

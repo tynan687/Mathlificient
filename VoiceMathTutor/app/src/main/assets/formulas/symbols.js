@@ -22,8 +22,10 @@ const el = {
   empty: document.getElementById('empty'),
   tabBrowse: document.getElementById('tabBrowse'),
   tabRead: document.getElementById('tabRead'),
+  tabQuiz: document.getElementById('tabQuiz'),
   browse: document.getElementById('browse'),
   read: document.getElementById('read'),
+  quiz: document.getElementById('quiz'),
   readings: document.getElementById('readings'),
 };
 
@@ -161,6 +163,15 @@ function symbolCard(sym) {
   exWrap.appendChild(line);
   body.appendChild(exWrap);
 
+  // The picture belongs with the example, not after the cross-references — it is
+  // explaining the same thing the example is. Drawn on open, not now: the body is
+  // .hidden until then and a canvas with no layout renders at the wrong size.
+  if (sym.viz && typeof renderVisual === 'function') {
+    const wrap = make('div', 'sym-viz');
+    wrap.appendChild(make('canvas', 'sym-canvas'));
+    body.appendChild(wrap);
+  }
+
   const confusables = confusablesOf(sym.id);
   if (confusables.length) {
     const cf = make('div', 'confusable');
@@ -200,7 +211,31 @@ function toggleCard(card, body) {
   card.classList.toggle('open', opening);
   openCard = opening ? card : null;
   // The card's own example and confusables were deferred; they're needed now.
-  if (opening) typesetWithin(card);
+  if (opening) { typesetWithin(card); drawCard(card); }
+}
+
+/**
+ * Diagram colours. Mirrors practice.js: the Practice Studio's paper if Kotlin has
+ * pushed one, otherwise whatever the page is actually painted.
+ */
+let paperColors = null;
+function vizColors() {
+  if (paperColors) return paperColors;
+  const cs = getComputedStyle(document.body);
+  return { bg: cs.backgroundColor, fg: cs.color, accent: '#4F7DF7' };
+}
+
+/** Draw an open card's diagram, if it has one. */
+function drawCard(card) {
+  if (!card || typeof renderVisual !== 'function') return;
+  const canvas = card.querySelector('.sym-canvas');
+  const sym = SYMBOL_BY_ID[card.dataset.id];
+  if (!canvas || !sym || !sym.viz) return;
+  // One frame later: the body lost `.hidden` a moment ago, so the canvas has no
+  // layout yet and renderVisual would read 0 and fall back to its 600x280 default.
+  requestAnimationFrame(() => {
+    try { renderVisual(canvas, sym.viz, vizColors()); } catch { /* the words still work */ }
+  });
 }
 
 function render() {
@@ -210,14 +245,23 @@ function render() {
 
   el.list.innerHTML = '';
   openCard = null;
-  let lastCategory = null;
+  // Group by category rather than watching for the category to change as we walk
+  // the list. SYMBOLS is not sorted by category — a handful of entries sit at the
+  // end under a category declared much earlier — so the walking version emitted a
+  // second heading for each of them, and that gets worse with every entry added.
+  const order = SYMBOL_CATEGORIES.map((c) => c.id);
+  const groups = new Map();
   for (const sym of found) {
-    if (sym.category !== lastCategory && !activeCategory) {
-      lastCategory = sym.category;
-      const cat = SYMBOL_CATEGORY_BY_ID[sym.category];
-      el.list.appendChild(make('h2', 'cat', cat ? cat.name : sym.category));
+    if (!groups.has(sym.category)) groups.set(sym.category, []);
+    groups.get(sym.category).push(sym);
+  }
+  const cats = [...groups.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  for (const catId of cats) {
+    if (!activeCategory) {
+      const cat = SYMBOL_CATEGORY_BY_ID[catId];
+      el.list.appendChild(make('h2', 'cat', cat ? cat.name : catId));
     }
-    el.list.appendChild(symbolCard(sym));
+    for (const sym of groups.get(catId)) el.list.appendChild(symbolCard(sym));
   }
   el.count.textContent = found.length === SYMBOLS.length
     ? `${SYMBOLS.length} symbols`
@@ -289,12 +333,16 @@ function showReading(id) {
 function showTab(which) {
   const browsing = which === 'browse';
   el.browse.classList.toggle('hidden', !browsing);
-  el.read.classList.toggle('hidden', browsing);
+  el.read.classList.toggle('hidden', which !== 'read');
   el.tabBrowse.classList.toggle('on', browsing);
-  el.tabRead.classList.toggle('on', !browsing);
-  // The category chips and the "n of 100" count only describe the browse list.
-  // Leaving them up while reading is worse than clutter — the count keeps
-  // reporting a filter that is no longer doing anything.
+  el.tabRead.classList.toggle('on', which === 'read');
+  // The quiz tab is optional markup — the page still works on a build that
+  // predates it, the same way practice-quiz.js no-ops without its bar.
+  if (el.quiz) el.quiz.classList.toggle('hidden', which !== 'quiz');
+  if (el.tabQuiz) el.tabQuiz.classList.toggle('on', which === 'quiz');
+  // The category chips and the count only describe the browse list. Leaving them
+  // up elsewhere is worse than clutter — the count keeps reporting a filter that
+  // is no longer doing anything.
   el.chips.classList.toggle('hidden', !browsing);
   el.count.classList.toggle('hidden', !browsing);
   window.scrollTo(0, 0);
@@ -302,6 +350,7 @@ function showTab(which) {
 
 el.tabBrowse.addEventListener('click', () => showTab('browse'));
 el.tabRead.addEventListener('click', () => showTab('read'));
+if (el.tabQuiz) el.tabQuiz.addEventListener('click', () => showTab('quiz'));
 el.search.addEventListener('input', render);
 
 const closeBtn = document.getElementById('close');
@@ -314,6 +363,18 @@ if (closeBtn) {
 
 /** Paint to match the Practice Studio's paper colour (Android). No-op on PC. */
 window.applyPaper = (bg, fg) => {
+  // Diagram colours follow the paper, same rule as practice.js: a brighter accent
+  // once the paper is dark enough that the standard blue stops reading.
+  const hex = String(bg).replace('#', '');
+  const lum = hex.length === 6
+    ? (0.299 * parseInt(hex.slice(0, 2), 16)
+      + 0.587 * parseInt(hex.slice(2, 4), 16)
+      + 0.114 * parseInt(hex.slice(4, 6), 16)) / 255
+    : 1;
+  paperColors = { bg, fg, accent: lum < 0.4 ? '#7DA7FF' : '#4F7DF7' };
+  // An already-open card was drawn against the old paper and would keep a white
+  // rectangle sitting in the middle of a dark page.
+  if (openCard) drawCard(openCard);
   let s = document.getElementById('paperTheme');
   if (!s) {
     s = document.createElement('style');

@@ -59,7 +59,10 @@ app.whenReady().then(async () => {
     viewport: window.innerWidth,
   }))()`, true));
   ok('the Android page picks the bridge backend', r.backend === 'android', r.backend);
-  ok('the skill graph loaded', r.hasSkills === 47, String(r.hasSkills));
+  // Exact on purpose: this doubles as a census, so adding a skill has to be a
+  // deliberate act with the placement composition re-read (see model.mjs). Bump
+  // the number, don't loosen the check.
+  ok('the skill graph loaded', r.hasSkills === 64, String(r.hasSkills));
   ok('practice-prof.js loaded', r.hasProf === true);
   ok('quiz markup shipped to Android', r.hasQuiz === true);
   ok('grading buttons shipped', r.hasGrading === true);

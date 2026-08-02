@@ -19,6 +19,11 @@ const PR = {
   lead: (n, v = 'x') => (n === 1 ? v : n === -1 ? `-${v}` : `${n}${v}`),
   // A signed constant that vanishes when zero (so no "+ 0" tails).
   ct: (n) => (n === 0 ? '' : ` ${n < 0 ? `- ${Math.abs(n)}` : `+ ${n}`}`),
+  gcd(p, q) { p = Math.abs(p); q = Math.abs(q); while (q) { const r = p % q; p = q; q = r; } return p; },
+  // The least each equation must be scaled by to make a coefficient match, so the
+  // elimination working reads the way it is taught — scale by the smallest amount
+  // that works, not blindly by the other coefficient.
+  lcm(p, q) { return Math.abs(p * q) / this.gcd(p, q); },
 };
 
 /**
@@ -171,6 +176,26 @@ const MISCONCEPTIONS = {
   'growth-forgot-n0': { label: 'leaving out the starting value', hint: 'It is ln of the RATIO, so the starting value has to be divided out first.' },
   'growth-no-log': { label: 'not taking a log at all', hint: 'To bring k down out of the exponent you take a natural log of both sides.' },
 
+  // Simultaneous equations and linear systems
+  //
+  // The x/y swap is the one that matters here, and it is the reason every
+  // multi-value template in this group sets `mcqOrdered: true` — without it the
+  // framework reads the swap as the answer reordered and throws it away, which
+  // deletes the single most common mistake in the topic.
+  'sim-swap-vars': { label: 'attaching the values to the wrong letters', hint: 'Every number is right — they are on the wrong variables. The one you eliminated first is the one you solved for last.' },
+  'sim-elim-sign': { label: 'adding the equations when the signs already matched', hint: 'You add to cancel when the signs are opposite, and subtract when they match. Adding here doubled the term instead of removing it.' },
+  'sim-no-scale': { label: 'adding the equations without matching a coefficient first', hint: 'Nothing cancels until one variable has the same sized coefficient in both equations. Multiply one equation through first.' },
+  'cramer-col': { label: 'replacing the wrong column with the constants', hint: 'For x you replace the x column, for y the y column. Exactly one column changes each time.' },
+  'cramer-no-det': { label: 'forgetting to divide by the determinant', hint: "Cramer's rule gives a fraction — the replaced determinant sits over det A, not on its own." },
+  'inv-order': { label: 'multiplying the two matrices the wrong way round', hint: 'Matrix multiplication does not commute. AX = B gives X = A⁻¹B, with the inverse on the LEFT.' },
+  'inv-no-recip': { label: 'leaving out the 1 ÷ det factor', hint: 'The inverse is 1/det times the swapped-and-negated matrix. Rearranging the entries is only half of it.' },
+  'inv-no-swap': { label: 'not swapping the leading diagonal in the inverse', hint: 'The inverse swaps a and d, and negates b and c. Leaving a and d where they were is the commonest inverse slip.' },
+  'det-sign': { label: 'getting the sign wrong in ad − bc', hint: 'The determinant subtracts: ad − bc. Adding bc instead flips the answer.' },
+  // Not "det = 0 means no solutions" — that student still computes the right k.
+  // The slip that changes the number is looking at the coefficient of x instead
+  // of the determinant, which lands on zero.
+  'det-zero-coeff': { label: 'setting the coefficient to zero instead of the determinant', hint: 'It is the determinant that has to be zero, not the coefficient of x. Set ad − bc = 0 and solve for k from there.' },
+
   // Complex numbers, vectors, sequences, statistics
   'complex-real-sign': { label: 'adding bd instead of subtracting it', hint: 'i² = −1, so the bd term comes off the real part.' },
   'complex-swap': { label: 'swapping the real and imaginary parts', hint: 'The real part has no i attached to it.' },
@@ -205,6 +230,76 @@ const SIN_EXACT = {
 const SIN_EXACT_VALUES = [
   '\\tfrac{\\sqrt{3}}{2}', '\\tfrac{\\sqrt{2}}{2}', '\\tfrac{1}{2}', '1', '0',
 ];
+
+/**
+ * A 2×2 system with an integer solution, plus the wrong values a student
+ * actually reaches. Shared by the two elimination templates below: the
+ * arithmetic is the same whether the equations are handed over or have to be
+ * built out of a word problem, and keeping two copies of the guard list invited
+ * them to drift apart.
+ *
+ * Every exclusion here protects a named distractor. Do not relax one without
+ * reading which:
+ *
+ *   x0 !== y0, both non-zero  the `sim-swap-vars` option IS the answer otherwise
+ *   a1 !== a2, |b1| !== |b2|  a coefficient that already matches makes
+ *                             `sim-no-scale` the correct method
+ *   det !== 0                 there has to BE a unique solution
+ *   finite, distinct wrongs   an option that is non-finite or lands on the
+ *                             answer gets thrown away and the template falls
+ *                             back to self-marking
+ */
+function pick2x2(positive) {
+  let x0, y0, a1, b1, a2, b2, c1, c2, m, k1, k2, yAdd, yRaw;
+  do {
+    // `positive` is for the word problem, where the unknowns are prices: a
+    // negative answer there is not a harder question, it is a nonsensical one.
+    x0 = positive ? PR.int(1, 9) : PR.nz(-6, 7);
+    y0 = positive ? PR.int(1, 9) : PR.nz(-6, 7);
+    a1 = PR.int(2, 4);
+    a2 = PR.int(2, 5);
+    b1 = positive ? PR.int(1, 5) : PR.nz(-5, 5);
+    b2 = positive ? PR.int(1, 5) : PR.nz(-5, 5);
+    m = PR.lcm(a1, a2); k1 = m / a1; k2 = m / a2;
+    c1 = a1 * x0 + b1 * y0;
+    c2 = a2 * x0 + b2 * y0;
+    // Adding the scaled equations when the x terms already match, instead of
+    // subtracting: the y term doubles rather than cancelling.
+    yAdd = (c1 * k1 + c2 * k2) / (b1 * k1 + b2 * k2);
+    // Subtracting the equations as they stand, ignoring the x term left behind.
+    yRaw = (c1 - c2) / (b1 - b2);
+  } while (
+    x0 === y0
+    || a1 === a2 || Math.abs(b1) === Math.abs(b2)
+    || a1 * b2 - a2 * b1 === 0
+    || b1 * k1 + b2 * k2 === 0 || b1 === b2
+    || yAdd === y0 || yRaw === y0
+  );
+  return { x0, y0, a1, b1, a2, b2, c1, c2, m, k1, k2, yAdd, yRaw };
+}
+
+/** The elimination working, as the steps both 2×2 templates show. */
+function eliminationSteps(w, xv, yv) {
+  const { a1, b1, a2, b2, c1, c2, m, k1, k2, x0, y0 } = w;
+  const yCoeff = b1 * k1 - b2 * k2;
+  const yConst = c1 * k1 - c2 * k2;
+  const steps = [
+    `\\text{(1) } ${PR.lead(a1, xv)}${PR.xt(b1, yv)} = ${c1}`
+    + `\\quad \\text{(2) } ${PR.lead(a2, xv)}${PR.xt(b2, yv)} = ${c2}`,
+  ];
+  if (k1 > 1) {
+    steps.push(`(1) \\times ${k1}: \\ ${PR.lead(m, xv)}${PR.xt(b1 * k1, yv)} = ${c1 * k1}`);
+  }
+  if (k2 > 1) {
+    steps.push(`(2) \\times ${k2}: \\ ${PR.lead(m, xv)}${PR.xt(b2 * k2, yv)} = ${c2 * k2}`);
+  }
+  steps.push(
+    `\\text{Subtract to remove } ${xv}: \\ ${PR.lead(yCoeff, yv)} = ${yConst}`,
+    `${yv} = \\frac{${yConst}}{${yCoeff}} = ${y0}`,
+    `\\text{Into (1): } ${PR.lead(a1, xv)} ${PR.s(b1 * y0)} = ${c1}, \\text{ so } ${xv} = ${x0}`,
+  );
+  return steps;
+}
 
 const PRACTICE = [
   {
@@ -267,6 +362,144 @@ const PRACTICE = [
         { latex: `x = ${PR.r((d + b) / (a - c), 2)}`, why: 'move-sign' },
         { latex: `x = ${PR.r((d - b) / (a + c), 2)}`, why: 'divide-early' },
         { latex: `x = ${d - b}`, why: 'no-divide' },
+      ];
+    },
+  },
+  {
+    id: 'sim-elimination', skill: 'simultaneous-equations', topic: 'Simultaneous equations',
+    keywords: ['simultaneous', 'elimination', 'system', 'two unknowns'],
+    // Position carries meaning: "x = 2, y = 3" and "x = 3, y = 2" are different
+    // answers, and mixing the two up is the commonest slip in the whole topic.
+    // Without this flag the framework reads the swap as the answer reordered and
+    // drops it - see mcqOrdered in practice-mcq.js.
+    mcqOrdered: true,
+    generate() {
+      const w = pick2x2(false);
+      const { x0, y0, a1, b1, a2, b2, c1, c2 } = w;
+      return {
+        // gather, not one line: at 360dp a prompt beside a cases block overflows
+        // the phone, and KaTeX will not wrap. Stacking keeps the width to the
+        // widest single line. Every question in this group is built this way.
+        question: '\\begin{gather} \\text{Solve simultaneously} \\\\ \\begin{cases}'
+          + `${PR.lead(a1)}${PR.xt(b1, 'y')} = ${c1} \\\\ ${PR.lead(a2)}${PR.xt(b2, 'y')} = ${c2}`
+          + '\\end{cases} \\end{gather}',
+        steps: eliminationSteps(w, 'x', 'y'),
+        answer: `x = ${x0}, \\ y = ${y0}`,
+        // Two lines crossing at the solution - the picture that makes "solving a
+        // system" mean something. Both b coefficients are non-zero by
+        // construction, which is what lets each equation be drawn as y = f(x).
+        viz: {
+          type: 'poly',
+          coeffs: [c1 / b1, -a1 / b1],
+          extra: [{ coeffs: [c2 / b2, -a2 / b2] }],
+          vertex: [x0, y0],
+        },
+        w,
+      };
+    },
+    distractors({ x0, y0, a1, b1, c1, yAdd, yRaw }) {
+      const xFrom = (y) => PR.r((c1 - b1 * y) / a1, 2);
+      return [
+        { latex: `x = ${y0}, \\ y = ${x0}`, why: 'sim-swap-vars' },
+        { latex: `x = ${PR.r(xFrom(yAdd), 2)}, \\ y = ${PR.r(yAdd, 2)}`, why: 'sim-elim-sign' },
+        { latex: `x = ${PR.r(xFrom(yRaw), 2)}, \\ y = ${PR.r(yRaw, 2)}`, why: 'sim-no-scale' },
+        { latex: `x = ${c1 - b1 * y0}, \\ y = ${y0}`, why: 'no-divide' },
+      ];
+    },
+  },
+  {
+    id: 'sim-substitution', skill: 'simultaneous-equations', topic: 'Simultaneous equations',
+    keywords: ['simultaneous', 'substitution', 'system', 'two unknowns'],
+    mcqOrdered: true, // same reason as sim-elimination
+    generate() {
+      let x0, y0, mm, kk, a, b, c, denom, xNoDist, xSign, xNoDiv;
+      do {
+        x0 = PR.nz(-6, 7);
+        mm = PR.nz(-4, 4);
+        kk = PR.nz(-8, 8);
+        y0 = mm * x0 + kk;
+        a = PR.nz(-5, 6);
+        // |b| = 1 would print "1(2x - 1)" in the working, and at b = 1 the
+        // `composite-no-distribute` option is the correct answer anyway.
+        b = PR.choice([-5, -4, -3, -2, 2, 3, 4, 5]);
+        denom = a + b * mm;
+        c = a * x0 + b * y0;
+        xNoDist = (c - kk) / denom;   // multiplied b through mx but not through k
+        xSign = (c + b * kk) / denom; // moved bk across without changing its sign
+        xNoDiv = c - b * kk;          // never divided by the collected coefficient
+      } while (
+        // Non-zero and distinct, or `sim-swap-vars` is the answer.
+        x0 === y0 || y0 === 0 || denom === 0
+        // At |denom| = 1 there is no final division, so `no-divide` is correct.
+        || Math.abs(denom) === 1
+        || xNoDist === x0 || xSign === x0
+        // Two options landing on the same x land on the same option, which costs
+        // the question a distractor and drops the student to self-marking.
+        || xNoDist === xNoDiv || xSign === xNoDiv
+        || (xNoDiv === y0 && mm * xNoDiv + kk === x0)
+      );
+      return {
+        question: '\\begin{gather} \\text{Solve simultaneously} \\\\ \\begin{cases}'
+          + `y = ${PR.lead(mm)}${PR.ct(kk)} \\\\ ${PR.lead(a)}${PR.xt(b, 'y')} = ${c}`
+          + '\\end{cases} \\end{gather}',
+        steps: [
+          `\\text{Substitute } y = ${PR.lead(mm)}${PR.ct(kk)} \\text{ into (2):}`,
+          `${PR.lead(a)} ${PR.s(b)}(${PR.lead(mm)}${PR.ct(kk)}) = ${c}`,
+          `${PR.lead(a)}${PR.xt(b * mm)} ${PR.s(b * kk)} = ${c}`,
+          `${PR.lead(denom)} = ${c} ${PR.s(-b * kk)} = ${c - b * kk}`,
+          `x = \\frac{${c - b * kk}}{${denom}} = ${x0}`,
+          `\\text{Then } y = ${mm * x0}${PR.ct(kk)} = ${y0}`,
+        ],
+        answer: `x = ${x0}, \\ y = ${y0}`,
+        viz: {
+          type: 'poly',
+          coeffs: [kk, mm],
+          extra: [{ coeffs: [c / b, -a / b] }],
+          vertex: [x0, y0],
+        },
+        w: { x0, y0, mm, kk, a, b, c, denom, xNoDist, xSign },
+      };
+    },
+    distractors({ x0, y0, mm, kk, b, c, denom, xNoDist, xSign }) {
+      const yFrom = (x) => PR.r(mm * x + kk, 2);
+      return [
+        { latex: `x = ${y0}, \\ y = ${x0}`, why: 'sim-swap-vars' },
+        { latex: `x = ${PR.r(xNoDist, 2)}, \\ y = ${yFrom(xNoDist)}`, why: 'composite-no-distribute' },
+        { latex: `x = ${PR.r(xSign, 2)}, \\ y = ${yFrom(xSign)}`, why: 'move-sign' },
+        { latex: `x = ${c - b * kk}, \\ y = ${yFrom(c - b * kk)}`, why: 'no-divide' },
+      ];
+    },
+  },
+  {
+    id: 'sim-word', skill: 'simultaneous-equations', topic: 'Simultaneous equations',
+    keywords: ['simultaneous', 'word problem', 'system', 'two unknowns'],
+    // The arithmetic is sim-elimination's. What this template tests is turning
+    // sentences into two equations, which is where the marks are actually lost -
+    // so the working starts by stating the system it built.
+    mcqOrdered: true,
+    generate() {
+      const w = pick2x2(true);
+      const { x0, y0, a1, b1, a2, b2, c1, c2 } = w;
+      // "1 nuts" is the same class of artifact as "1x": the maths is right and
+      // the sentence is wrong, and nothing downstream would ever catch it.
+      const qty = (q, word) => `${q} ${word}${q === 1 ? '' : 's'}`;
+      return {
+        question: '\\begin{gather} \\text{A bolt costs } b, \\text{ a nut } n. \\\\ '
+          + `\\text{${qty(a1, 'bolt')} and ${qty(b1, 'nut')} cost ${c1} dollars.} \\\\ `
+          + `\\text{${qty(a2, 'bolt')} and ${qty(b2, 'nut')} cost ${c2} dollars.} \\\\ `
+          + '\\text{Find } b \\text{ and } n. \\end{gather}',
+        steps: eliminationSteps(w, 'b', 'n'),
+        answer: `b = ${x0}, \\ n = ${y0}`,
+        w,
+      };
+    },
+    distractors({ x0, y0, a1, b1, c1, yAdd, yRaw }) {
+      const xFrom = (y) => PR.r((c1 - b1 * y) / a1, 2);
+      return [
+        { latex: `b = ${y0}, \\ n = ${x0}`, why: 'sim-swap-vars' },
+        { latex: `b = ${PR.r(xFrom(yAdd), 2)}, \\ n = ${PR.r(yAdd, 2)}`, why: 'sim-elim-sign' },
+        { latex: `b = ${PR.r(xFrom(yRaw), 2)}, \\ n = ${PR.r(yRaw, 2)}`, why: 'sim-no-scale' },
+        { latex: `b = ${c1 - b1 * y0}, \\ n = ${y0}`, why: 'no-divide' },
       ];
     },
   },
@@ -1014,6 +1247,242 @@ const PRACTICE = [
         ],
         answer: `\\det A = ${det}`,
       };
+    },
+  },
+  {
+    id: 'sim-3x3', skill: 'linear-systems', topic: 'Linear systems',
+    keywords: ['linear system', 'three unknowns', 'elimination', 'gaussian'],
+    mcqOrdered: true, // three values in fixed places - see sim-elimination
+    // No viz: three planes meeting at a point is not a picture a 600x280 canvas
+    // makes clearer than the working does.
+    generate() {
+      let x0, y0, z0, a2, b2, c2, a3, b3, c3, s1, s2, s3;
+      let B2, C2, S2, B3, C3, S3, zCoeff, zConst, zAdd, yBad;
+      do {
+        // Distinct: any two equal and the "wrong letters" option is the answer.
+        x0 = PR.nz(-5, 6); y0 = PR.nz(-5, 6); z0 = PR.nz(-5, 6);
+        // Row 1 is x + y + z so the two eliminations are subtractions of a
+        // multiple of it — the shape every textbook starts from.
+        a2 = PR.int(2, 4); b2 = PR.nz(-3, 3); c2 = PR.nz(-3, 3);
+        a3 = PR.int(2, 4); b3 = PR.nz(-3, 3); c3 = PR.nz(-3, 3);
+        s1 = x0 + y0 + z0;
+        s2 = a2 * x0 + b2 * y0 + c2 * z0;
+        s3 = a3 * x0 + b3 * y0 + c3 * z0;
+        // (2) - a2(1) and (3) - a3(1), leaving two equations in y and z.
+        B2 = b2 - a2; C2 = c2 - a2; S2 = s2 - a2 * s1;
+        B3 = b3 - a3; C3 = c3 - a3; S3 = s3 - a3 * s1;
+        zCoeff = C2 * B3 - C3 * B2;
+        zConst = S2 * B3 - S3 * B2;
+        zAdd = (S2 * B3 + S3 * B2) / (C2 * B3 + C3 * B2);
+        // Correct z, then the sign of the C2 z term dropped on the way back.
+        // Deliberately a NEAR miss: in three variables the back-substitution
+        // amplifies everything, and a distractor an order of magnitude out is
+        // one the student eliminates on sight instead of doing the maths.
+        yBad = (S2 + C2 * z0) / B2;
+      } while (
+        x0 === y0 || y0 === z0 || x0 === z0
+        || zCoeff === 0 || B2 === 0 || B3 === 0
+        // Every distractor below has to be finite and off the answer.
+        || C2 * B3 + C3 * B2 === 0
+        || zAdd === z0 || zConst === z0 || yBad === y0
+      );
+      return {
+        question: '\\begin{gather} \\text{Solve} \\\\ \\begin{cases}'
+          + `x + y + z = ${s1} \\\\ `
+          + `${PR.lead(a2)}${PR.xt(b2, 'y')}${PR.xt(c2, 'z')} = ${s2} \\\\ `
+          + `${PR.lead(a3)}${PR.xt(b3, 'y')}${PR.xt(c3, 'z')} = ${s3}`
+          + '\\end{cases} \\end{gather}',
+        steps: [
+          `\\text{(2)} - ${a2}\\text{(1)}: \\ ${PR.lead(B2, 'y')}${PR.xt(C2, 'z')} = ${S2}`,
+          `\\text{(3)} - ${a3}\\text{(1)}: \\ ${PR.lead(B3, 'y')}${PR.xt(C3, 'z')} = ${S3}`,
+          `\\text{Eliminate } y: \\ ${PR.lead(zCoeff, 'z')} = ${zConst}`,
+          `z = \\frac{${zConst}}{${zCoeff}} = ${z0}`,
+          `\\text{Then } ${PR.lead(B2, 'y')} ${PR.s(C2 * z0)} = ${S2} \\Rightarrow y = ${y0}`,
+          `\\text{Into (1): } x = ${s1} ${PR.s(-y0)} ${PR.s(-z0)} = ${x0}`,
+        ],
+        answer: `x = ${x0}, \\ y = ${y0}, \\ z = ${z0}`,
+        w: { x0, y0, z0, B2, C2, S2, zCoeff, zConst, zAdd, yBad, s1 },
+      };
+    },
+    distractors({ x0, y0, z0, B2, C2, S2, zConst, zAdd, yBad, s1 }) {
+      // Carry each wrong z through the same back-substitution the student would.
+      const from = (z) => {
+        const y = (S2 - C2 * z) / B2;
+        return { y: PR.r(y, 2), x: PR.r(s1 - y - z, 2) };
+      };
+      const a = from(zAdd); const n = from(zConst);
+      return [
+        { latex: `x = ${z0}, \\ y = ${x0}, \\ z = ${y0}`, why: 'sim-swap-vars' },
+        { latex: `x = ${PR.r(s1 - yBad - z0, 2)}, \\ y = ${PR.r(yBad, 2)}, \\ z = ${z0}`, why: 'move-sign' },
+        { latex: `x = ${a.x}, \\ y = ${a.y}, \\ z = ${PR.r(zAdd, 2)}`, why: 'sim-elim-sign' },
+        { latex: `x = ${n.x}, \\ y = ${n.y}, \\ z = ${zConst}`, why: 'no-divide' },
+      ];
+    },
+  },
+  {
+    id: 'sim-cramer', skill: 'linear-systems', topic: 'Linear systems',
+    keywords: ['cramer', 'determinant', 'linear system', 'two unknowns'],
+    mcqOrdered: true, // same reason as sim-elimination
+    generate() {
+      let x0, y0, a, b, c, d, e, f, det, Dx, Dy, tx, ty;
+      do {
+        x0 = PR.nz(-6, 7); y0 = PR.nz(-6, 7);
+        a = PR.nz(-4, 5); b = PR.nz(-4, 5); c = PR.nz(-4, 5); d = PR.nz(-4, 5);
+        det = a * d - b * c;
+        e = a * x0 + b * y0;
+        f = c * x0 + d * y0;
+        Dx = e * d - b * f;
+        Dy = a * f - e * c;
+        // Rows instead of columns when building the replaced determinant.
+        tx = (e * d - c * f) / det;
+        ty = (a * f - e * b) / det;
+      } while (
+        x0 === y0 || det === 0
+        // At |det| = 1 the division does nothing, so `cramer-no-det` is correct.
+        || Math.abs(det) === 1
+        || tx === x0 || ty === y0 || (tx === y0 && ty === x0)
+      );
+      return {
+        question: "\\begin{gather} \\text{Use Cramer's rule to solve} \\\\ \\begin{cases}"
+          + `${PR.lead(a)}${PR.xt(b, 'y')} = ${e} \\\\ ${PR.lead(c)}${PR.xt(d, 'y')} = ${f}`
+          + '\\end{cases} \\end{gather}',
+        steps: [
+          `\\det A = \\begin{vmatrix} ${a} & ${b} \\\\ ${c} & ${d} \\end{vmatrix}`
+            + ` = ${a}${PR.par(d)} - ${PR.par(b)}${PR.par(c)} = ${det}`,
+          // The explanation gets its own line: at 360dp a sentence beside a
+          // determinant overflows the phone, and KaTeX will not wrap.
+          '\\text{Swap the constants into the } x \\text{ column:}',
+          `D_x = \\begin{vmatrix} ${e} & ${b} \\\\ ${f} & ${d} \\end{vmatrix} = ${Dx}`,
+          `D_y = \\begin{vmatrix} ${a} & ${e} \\\\ ${c} & ${f} \\end{vmatrix} = ${Dy}`,
+          `x = \\frac{${Dx}}{${det}} = ${x0}, \\quad y = \\frac{${Dy}}{${det}} = ${y0}`,
+        ],
+        answer: `x = ${x0}, \\ y = ${y0}`,
+        viz: {
+          type: 'poly',
+          coeffs: [e / b, -a / b],
+          extra: [{ coeffs: [f / d, -c / d] }],
+          vertex: [x0, y0],
+        },
+        w: { x0, y0, Dx, Dy, tx, ty },
+      };
+    },
+    distractors({ x0, y0, Dx, Dy, tx, ty }) {
+      return [
+        { latex: `x = ${y0}, \\ y = ${x0}`, why: 'cramer-col' },
+        { latex: `x = ${Dx}, \\ y = ${Dy}`, why: 'cramer-no-det' },
+        { latex: `x = ${-x0}, \\ y = ${-y0}`, why: 'det-sign' },
+        { latex: `x = ${PR.r(tx, 2)}, \\ y = ${PR.r(ty, 2)}`, why: 'cramer-col' },
+      ];
+    },
+  },
+  {
+    id: 'sim-matrix-solve', skill: 'linear-systems', topic: 'Linear systems',
+    keywords: ['matrix', 'inverse', 'linear system', 'AX = B'],
+    mcqOrdered: true, // same reason as sim-elimination
+    generate() {
+      let x0, y0, a, b, c, d, e, f, det, noSwapX, noSwapY, orderX, orderY;
+      do {
+        x0 = PR.nz(-6, 7); y0 = PR.nz(-6, 7);
+        a = PR.nz(-4, 5); b = PR.nz(-4, 5); c = PR.nz(-4, 5); d = PR.nz(-4, 5);
+        det = a * d - b * c;
+        e = a * x0 + b * y0;
+        f = c * x0 + d * y0;
+        // Left a and d where they were instead of swapping them.
+        noSwapX = (a * e - b * f) / det;
+        noSwapY = (-c * e + d * f) / det;
+        // Forced B A^-1 rather than A^-1 B: the inverse ends up transposed.
+        orderX = (d * e - c * f) / det;
+        orderY = (-b * e + a * f) / det;
+      } while (
+        x0 === y0 || det === 0
+        // At |det| = 1 the 1/det factor does nothing, so `inv-no-recip` is right.
+        || Math.abs(det) === 1
+        || noSwapX === x0 || orderX === x0
+        || (noSwapX === y0 && noSwapY === x0) || (orderX === y0 && orderY === x0)
+      );
+      return {
+        question: '\\begin{gather} \\text{Solve } A\\mathbf{x} = \\mathbf{b} \\text{ for} \\\\ '
+          + `A = \\begin{pmatrix} ${a} & ${b} \\\\ ${c} & ${d} \\end{pmatrix},`
+          + `\\ \\mathbf{b} = \\begin{pmatrix} ${e} \\\\ ${f} \\end{pmatrix} \\end{gather}`,
+        steps: [
+          `\\det A = ${a}${PR.par(d)} - ${PR.par(b)}${PR.par(c)} = ${det}`,
+          `A^{-1} = \\frac{1}{${det}}\\begin{pmatrix} ${d} & ${-b} \\\\ ${-c} & ${a} \\end{pmatrix}`,
+          '\\mathbf{x} = A^{-1}\\mathbf{b} \\quad \\text{(inverse on the LEFT)}',
+          `\\mathbf{x} = \\frac{1}{${det}}\\begin{pmatrix} ${d}${PR.par(e)} ${PR.s(-b * f)} \\\\`
+            + ` ${-c}${PR.par(e)} ${PR.s(a * f)} \\end{pmatrix}`
+            + ` = \\begin{pmatrix} ${x0} \\\\ ${y0} \\end{pmatrix}`,
+        ],
+        answer: `x = ${x0}, \\ y = ${y0}`,
+        viz: {
+          type: 'poly',
+          coeffs: [e / b, -a / b],
+          extra: [{ coeffs: [f / d, -c / d] }],
+          vertex: [x0, y0],
+        },
+        w: { x0, y0, det, noSwapX, noSwapY, orderX, orderY },
+      };
+    },
+    distractors({ x0, y0, det, noSwapX, noSwapY, orderX, orderY }) {
+      return [
+        { latex: `x = ${PR.r(noSwapX, 2)}, \\ y = ${PR.r(noSwapY, 2)}`, why: 'inv-no-swap' },
+        { latex: `x = ${det * x0}, \\ y = ${det * y0}`, why: 'inv-no-recip' },
+        { latex: `x = ${PR.r(orderX, 2)}, \\ y = ${PR.r(orderY, 2)}`, why: 'inv-order' },
+        { latex: `x = ${y0}, \\ y = ${x0}`, why: 'sim-swap-vars' },
+      ];
+    },
+  },
+  {
+    id: 'sim-consistency', skill: 'linear-systems', topic: 'Linear systems',
+    keywords: ['consistency', 'determinant', 'singular', 'linear system'],
+    // Single-valued, so the reordering guard must stay ON: there is nothing here
+    // that a reordering could legitimately mean. No mcqOrdered.
+    generate() {
+      let b, d, mm, c, k0, e, f;
+      do {
+        b = PR.nz(-5, 5);
+        // d >= 2 so there IS a division to forget - at d = 1 the `no-divide`
+        // option is the answer.
+        d = PR.int(2, 5);
+        mm = PR.nz(-4, 4);
+        c = mm * d;          // keeps k0 = bc/d a whole number
+        k0 = b * mm;
+        e = PR.nz(-9, 9);
+        f = PR.nz(-9, 9);
+      } while (
+        k0 === 0 || Math.abs(k0) === Math.abs(b * c)
+        // Parallel, not identical: at e/b === f/d the answer is "infinitely
+        // many" rather than "none", and the question stops having one answer.
+        || e * d === f * b
+      );
+      return {
+        question: '\\begin{gather} \\text{For which } k \\text{ does this system} \\\\ '
+          + '\\text{have no unique solution?} \\\\ \\begin{cases}'
+          + `kx${PR.xt(b, 'y')} = ${e} \\\\ ${PR.lead(c)}${PR.xt(d, 'y')} = ${f}`
+          + '\\end{cases} \\end{gather}',
+        steps: [
+          '\\text{No unique solution when } \\det A = 0.',
+          `\\det \\begin{vmatrix} k & ${b} \\\\ ${c} & ${d} \\end{vmatrix}`
+            + ` = ${d}k - ${PR.par(b)}${PR.par(c)} = 0`,
+          `${d}k = ${b * c}`,
+          `k = \\frac{${b * c}}{${d}} = ${k0}`,
+        ],
+        answer: `k = ${k0}`,
+        // Both lines at k = k0: the point is that they never meet.
+        viz: {
+          type: 'poly',
+          coeffs: [e / b, -k0 / b],
+          extra: [{ coeffs: [f / d, -c / d] }],
+        },
+        w: { b, c, d, k0 },
+      };
+    },
+    distractors({ b, c, d, k0 }) {
+      return [
+        { latex: `k = ${b * c}`, why: 'no-divide' },
+        { latex: `k = ${-k0}`, why: 'det-sign' },
+        { latex: 'k = 0', why: 'det-zero-coeff' },
+        { latex: `k = ${-b * c}`, why: 'det-sign' },
+      ];
     },
   },
   {
@@ -2718,6 +3187,13 @@ const PRACTICE = [
 const PRACTICE_FORMULAS = {
   'linear-eq': ['ax + b = c \\;\\Rightarrow\\; x = \\dfrac{c - b}{a}'],
   'linear-both-sides': ['\\text{Collect } x \\text{ terms one side, numbers the other}'],
+  'sim-elimination': ['\\text{Scale one equation until a coefficient matches, then subtract}'],
+  'sim-substitution': ['\\text{Put the } y = mx + c \\text{ equation into the other one, brackets and all}'],
+  'sim-word': ['\\text{Two unknowns need two equations — one from each sentence}'],
+  'sim-3x3': ['\\text{Remove the same variable from two pairs, then solve the } 2\\times 2'],
+  'sim-cramer': ['x = \\dfrac{D_x}{D}, \\quad y = \\dfrac{D_y}{D}, \\quad D = ad - bc'],
+  'sim-matrix-solve': ['\\mathbf{x} = A^{-1}\\mathbf{b}, \\quad A^{-1} = \\dfrac{1}{ad - bc}\\begin{pmatrix} d & -b \\\\ -c & a \\end{pmatrix}'],
+  'sim-consistency': ['\\text{No unique solution when } \\det A = 0'],
   'quad-factorise': ['x^2 + bx + c = (x + p)(x + q), \\quad p + q = b,\\; pq = c'],
   'quad-formula': ['x = \\dfrac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}'],
   'expand-binomial': ['(a + b)(c + d) = ac + ad + bc + bd'],

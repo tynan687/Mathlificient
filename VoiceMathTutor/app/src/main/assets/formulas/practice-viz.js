@@ -15,6 +15,20 @@ function renderVisual(canvas, viz, colors) {
   const bg = colors.bg || '#ffffff';
   const fg = colors.fg || '#1a1a1a';
   const accent = colors.accent || '#4F7DF7';
+  // A second series colour for the symbol diagrams, DERIVED rather than passed.
+  // applyPaper is called from Kotlin with exactly two arguments
+  // (PracticeSpaceActivity.paintWeb), so widening that signature would need a
+  // native rebuild and a shared-file sync to land in lockstep — an APK running
+  // against an older asset bundle would mis-theme silently. Rotating the accent's
+  // channels keeps it in the same luminance family, so it stays readable on
+  // whatever paper the accent was picked for.
+  const accent2 = colors.accent2 || (() => {
+    const m = /^#?([0-9a-fA-F]{6})$/.exec(String(accent).trim());
+    if (!m) return '#F77D4F';
+    const n = parseInt(m[1], 16);
+    const rot = ((n & 0x0000ff) << 16) | (n & 0x00ff00) | ((n & 0xff0000) >> 16);
+    return `#${rot.toString(16).padStart(6, '0')}`;
+  })();
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
   ctx.font = '11px system-ui, sans-serif';
@@ -426,18 +440,407 @@ function renderVisual(canvas, viz, colors) {
     }
   }
 
+  // ---- symbol diagrams -----------------------------------------------------------
+  //
+  /**
+   * A caption with the paper painted behind it. The symbol diagrams fill their
+   * canvas edge to edge, so an unbacked caption lands on top of an arrow or a
+   * curve about half the time.
+   */
+  function caption(text, x, y, color) {
+    if (!text) return;
+    const w = ctx.measureText(text).width;
+    ctx.fillStyle = bg; ctx.globalAlpha = 0.88;
+    ctx.fillRect(x - 4, y - 10, w + 8, 14);
+    reset();
+    ctx.fillStyle = color || fg; ctx.globalAlpha = 0.8;
+    ctx.fillText(text, x, y);
+    reset();
+  }
+
+  //
+  // The eight types below serve the symbols reference rather than a practice
+  // question: they explain what a piece of notation MEANS. Six are compositions
+  // of the primitives above; only contourpath, vectorfield and surfaceslice draw
+  // anything genuinely new.
+
+  /**
+   * A number line with open or closed endpoints and a shaded span.
+   *
+   * Serves `< ≤ ∈ [a,b) |x|` — and in particular the thing students miss, that
+   * |x − 3| < 2 IS an interval rather than a separate kind of object.
+   */
+  function drawNumberline() {
+    const lo = viz.lo != null ? viz.lo : -6;
+    const hi = viz.hi != null ? viz.hi : 6;
+    const p = makePlot(lo, hi, -1, 1);
+    const yl = p.py(0);
+
+    // A null end means the span runs off that side, so no endpoint dot is drawn.
+    const a = viz.from != null ? viz.from : lo;
+    const b = viz.to != null ? viz.to : hi;
+    if (b > a) {
+      ctx.fillStyle = accent; ctx.globalAlpha = 0.22;
+      ctx.fillRect(p.px(a), yl - 11, p.px(b) - p.px(a), 22);
+      reset();
+    }
+
+    ctx.strokeStyle = fade(0.5); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(p.px(lo), yl); ctx.lineTo(p.px(hi), yl); ctx.stroke(); reset();
+
+    const step = niceStep(hi - lo);
+    for (let x = Math.ceil(lo / step) * step; x <= hi + 1e-9; x += step) {
+      ctx.strokeStyle = fade(0.4); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(p.px(x), yl - 5); ctx.lineTo(p.px(x), yl + 5); ctx.stroke(); reset();
+      ctx.fillStyle = fg; ctx.globalAlpha = 0.6;
+      ctx.fillText(trim(x), p.px(x) - 6, yl + 22); reset();
+    }
+
+    if (b > a) {
+      ctx.strokeStyle = accent; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(p.px(a), yl); ctx.lineTo(p.px(b), yl); ctx.stroke();
+    }
+    if (viz.from != null) { if (viz.openFrom) p.openDot(a, 0, accent); else p.dot(a, 0, accent); }
+    if (viz.to != null) { if (viz.openTo) p.openDot(b, 0, accent); else p.dot(b, 0, accent); }
+    if (viz.point != null) {
+      p.dot(viz.point, 0, accent2, 5);
+      p.label(viz.point, 0, trim(viz.point), accent2, -5, -14);
+    }
+    if (viz.label) {
+      ctx.fillStyle = accent;
+      ctx.fillText(viz.label, p.px((a + b) / 2) - viz.label.length * 3, yl - 26);
+    }
+  }
+
+  /**
+   * Two or three overlapping circles with one region shaded — `∪ ∩ ⊂ ∅`, and
+   * `P(A ∩ B)`. Regions are shaded by clipping, then every outline is stroked on
+   * top, the same order drawArea uses so the shading never hides a boundary.
+   */
+  function drawSetdiagram() {
+    const labels = viz.labels || ['A', 'B'];
+    const layout = viz.layout || 'overlap';
+    const R = Math.min(W, H) * 0.26;
+    const cy = H / 2;
+    const gap = layout === 'disjoint' ? R * 1.25 : layout === 'subset' ? 0 : R * 0.62;
+    const circles = layout === 'subset'
+      ? [[W / 2, cy, R], [W / 2 + R * 0.28, cy, R * 0.45]]
+      : [[W / 2 - gap, cy, R], [W / 2 + gap, cy, R]];
+    if (labels.length > 2 && layout === 'overlap') {
+      circles.push([W / 2, cy - R * 0.72, R]);
+    }
+    const path = (c) => { ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, 7); };
+
+    const shadeAll = (list) => {
+      ctx.fillStyle = accent; ctx.globalAlpha = 0.28;
+      ctx.beginPath();
+      // One path, one fill: overlapping arcs in a single fill never double up the
+      // alpha, which is what makes a union read as one flat region.
+      for (const c of list) { ctx.moveTo(c[0] + c[2], c[1]); ctx.arc(c[0], c[1], c[2], 0, 7); }
+      ctx.fill(); reset();
+    };
+    const shadeClipped = (list, cut) => {
+      ctx.save();
+      for (const c of list) { path(c); ctx.clip(); }
+      ctx.fillStyle = accent; ctx.globalAlpha = 0.28; ctx.fillRect(0, 0, W, H);
+      ctx.restore(); reset();
+      // Painting the cut-out back in `bg` is how a set difference is drawn without
+      // compositing modes, which would punch a hole in the paper instead.
+      if (cut) { ctx.globalAlpha = 1; ctx.fillStyle = bg; path(cut); ctx.fill(); }
+    };
+
+    if (viz.shade === 'union') shadeAll(circles.slice(0, 2));
+    else if (viz.shade === 'intersection') shadeClipped(circles.slice(0, 2));
+    else if (viz.shade === 'left') shadeClipped([circles[0]], circles[1]);
+    else if (viz.shade === 'right') shadeClipped([circles[1]], circles[0]);
+    else if (viz.shade === 'subset') shadeClipped([circles[1]]);
+    else if (viz.shade === 'all') shadeAll(circles);
+
+    ctx.lineWidth = 2;
+    circles.forEach((c, i) => {
+      ctx.strokeStyle = i === 1 ? accent2 : fg;
+      path(c); ctx.stroke();
+      ctx.fillStyle = i === 1 ? accent2 : fg;
+      const lx = layout === 'subset' && i === 1 ? c[0] : c[0] + (i === 0 ? -c[2] * 0.62 : c[2] * 0.62);
+      ctx.fillText(labels[i] || '', lx - 4, i === 2 ? c[1] - c[2] * 0.55 : c[1] - c[2] * 0.66);
+    });
+    caption(viz.caption, W / 2 - (viz.caption || '').length * 3, H - 12, accent);
+  }
+
+  /**
+   * Rectangles under a curve, narrowing left to right — the `Σ → ∫` connection,
+   * which is the entire reason the integral sign is a stretched S.
+   */
+  function drawRiemann() {
+    const coeffs = viz.coeffs || [1, 0, 0.35];
+    const fn = (x) => polyEval(coeffs, x);
+    const a = viz.a != null ? viz.a : 0;
+    const b = viz.b != null ? viz.b : 5;
+    const n = viz.n || 9;
+    const [ymin, ymax] = yRangeFromSamples([fn], a, b, [0]);
+    const p = makePlot(a - (b - a) * 0.12, b + (b - a) * 0.12, ymin, ymax);
+
+    // Widths shrink geometrically so the eye reads "and in the limit…" — a
+    // non-uniform partition is still a Riemann sum, and it tells the story that
+    // n equal boxes cannot.
+    const ratio = viz.taper === false ? 1 : 0.82;
+    let total = 0;
+    const widths = [];
+    for (let i = 0; i < n; i++) { const w = Math.pow(ratio, i); widths.push(w); total += w; }
+    let x = a;
+    ctx.strokeStyle = fade(0.55); ctx.lineWidth = 1;
+    for (let i = 0; i < n; i++) {
+      const w = (widths[i] / total) * (b - a);
+      const h = fn(x + w / 2);
+      ctx.fillStyle = accent; ctx.globalAlpha = 0.22;
+      ctx.fillRect(p.px(x), p.py(h), p.px(x + w) - p.px(x), p.py(0) - p.py(h));
+      reset();
+      ctx.strokeStyle = fade(0.5);
+      ctx.strokeRect(p.px(x), p.py(h), p.px(x + w) - p.px(x), p.py(0) - p.py(h));
+      reset();
+      x += w;
+    }
+    p.axes(niceStep(b - a), niceStep(ymax - ymin));
+    p.curve(fn, accent2, 2.5);
+  }
+
+  /**
+   * A two-level probability tree — `P(A|B)`, and why "given" means you stop
+   * looking at the whole tree and read one branch's children.
+   */
+  function drawTree() {
+    const branches = viz.branches || [];
+    const x0 = 40;
+    const x1 = W * 0.42;
+    const x2 = W * 0.76;
+    const rootY = H / 2;
+    ctx.lineWidth = 2;
+    branches.forEach((br, i) => {
+      const y1 = H * (i === 0 ? 0.28 : 0.72);
+      const live = viz.given == null || viz.given === i;
+      ctx.strokeStyle = live ? accent : fg;
+      ctx.globalAlpha = live ? 1 : 0.25;
+      ctx.beginPath(); ctx.moveTo(x0, rootY); ctx.lineTo(x1, y1); ctx.stroke();
+      ctx.fillStyle = live ? accent : fg;
+      ctx.fillText(String(br.p != null ? br.p : ''), (x0 + x1) / 2 - 8, (rootY + y1) / 2 - 6);
+      ctx.fillText(String(br.label || ''), x1 + 6, y1 + 4);
+      reset();
+
+      (br.children || []).forEach((ch, j) => {
+        const y2 = y1 + (j === 0 ? -H * 0.16 : H * 0.16);
+        ctx.strokeStyle = live ? accent2 : fg;
+        ctx.globalAlpha = live ? 1 : 0.18;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x1 + 22, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.fillStyle = live ? accent2 : fg;
+        ctx.fillText(String(ch.p != null ? ch.p : ''), (x1 + x2) / 2 + 4, (y1 + y2) / 2 - 6);
+        ctx.fillText(String(ch.label || ''), x2 + 6, y2 + 4);
+        reset();
+      });
+    });
+    ctx.fillStyle = fg;
+    ctx.beginPath(); ctx.arc(x0, rootY, 4, 0, 7); ctx.fill();
+    caption(viz.caption, 12, 18, accent);
+  }
+
+  /**
+   * Terms as blocks that accumulate — `Σ` beside `Π`, so the difference between
+   * adding a list and multiplying one is a shape rather than a sentence.
+   */
+  function drawStack() {
+    const values = viz.values || [1, 2, 3, 4];
+    const product = viz.mode === 'product';
+    const running = [];
+    let acc = product ? 1 : 0;
+    for (const v of values) { acc = product ? acc * v : acc + v; running.push(acc); }
+    const top = Math.max(...running, ...values) * 1.2;
+    const p = makePlot(-0.7, values.length + 0.6, 0, top);
+    const bw = (p.px(1) - p.px(0)) * 0.6;
+
+    values.forEach((v, i) => {
+      ctx.fillStyle = accent; ctx.globalAlpha = 0.75;
+      ctx.fillRect(p.px(i) - bw / 2, p.py(v), bw, p.py(0) - p.py(v));
+      reset();
+      ctx.fillStyle = fg; ctx.globalAlpha = 0.7;
+      ctx.fillText(trim(v), p.px(i) - 5, p.py(0) + 15); reset();
+    });
+    // The running total, one bar clear of the terms.
+    const rx = values.length;
+    ctx.fillStyle = accent2; ctx.globalAlpha = 0.9;
+    ctx.fillRect(p.px(rx) - bw / 2, p.py(acc), bw, p.py(0) - p.py(acc));
+    reset();
+    ctx.fillStyle = accent2;
+    ctx.fillText(`${product ? '×' : '+'} = ${trim(acc)}`, p.px(rx) - bw, p.py(acc) - 8);
+    ctx.strokeStyle = fade(0.4); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(p.px(-0.7), p.py(0)); ctx.lineTo(p.px(rx + 0.6), p.py(0)); ctx.stroke();
+    reset();
+  }
+
+  /** A closed loop with direction arrows on it — `∮`, an integral that comes back. */
+  function drawContourpath() {
+    const cx = W / 2, cy = H / 2;
+    const rx = Math.min(W, H) * 0.3, ry = Math.min(W, H) * 0.24;
+    // A faint field behind, so the loop is visibly a path THROUGH something.
+    ctx.strokeStyle = fade(0.14); ctx.lineWidth = 1;
+    for (let gx = 30; gx < W - 20; gx += 26) {
+      ctx.beginPath(); ctx.moveTo(gx, 18); ctx.lineTo(gx, H - 18); ctx.stroke();
+    }
+    for (let gy = 24; gy < H - 18; gy += 26) {
+      ctx.beginPath(); ctx.moveTo(24, gy); ctx.lineTo(W - 20, gy); ctx.stroke();
+    }
+    reset();
+    // A lobed loop rather than an ellipse — an ellipse reads as "a circle", and
+    // the point of the contour integral is that the shape does not matter.
+    const at = (t) => {
+      const r = 1 + 0.18 * Math.cos(3 * t);
+      return [cx + rx * r * Math.cos(t), cy + ry * r * Math.sin(t)];
+    };
+    ctx.strokeStyle = accent; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 240; i++) {
+      const [x, y] = at((i / 240) * Math.PI * 2);
+      if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    }
+    ctx.closePath(); ctx.stroke();
+    // Direction arrows, tangent to the loop.
+    for (let k = 0; k < 4; k++) {
+      const t = (k / 4) * Math.PI * 2 + 0.35;
+      const [x1, y1] = at(t - 0.06);
+      const [x2, y2] = at(t + 0.06);
+      drawArrow(x1, y1, x2, y2, accent2, 2);
+    }
+    caption(viz.caption, 14, 18);
+  }
+
+  /** Named scalar fields, so a viz spec stays declarative data. */
+  const FIELDS = {
+    bowl: (x, y) => (x * x + y * y) / 4,
+    hill: (x, y) => -(x * x + y * y) / 4,
+    saddle: (x, y) => (x * x - y * y) / 4,
+    ramp: (x, y) => x + 0.4 * y,
+  };
+
+  /**
+   * Arrows on a grid, longest where the surface climbs fastest — `∇`, which is
+   * the direction of steepest ascent and nothing more mysterious than that.
+   */
+  function drawVectorfield() {
+    const f = FIELDS[viz.field] || FIELDS.bowl;
+    const m = viz.extent || 3;
+    const p = makePlot(-m, m, -m, m);
+    p.axes(niceStep(2 * m), niceStep(2 * m));
+    const h = 1e-3;
+    const n = viz.density || 6;
+    let longest = 0;
+    const arrows = [];
+    // Inset the sample grid: an arrow rooted on the boundary points outward and
+    // its head lands outside the plot, so the edge column reads as headless lines.
+    const g = m * 0.8;
+    for (let i = 0; i <= n; i++) {
+      for (let j = 0; j <= n; j++) {
+        const x = -g + (i / n) * 2 * g;
+        const y = -g + (j / n) * 2 * g;
+        const gx = (f(x + h, y) - f(x - h, y)) / (2 * h);
+        const gy = (f(x, y + h) - f(x, y - h)) / (2 * h);
+        const len = Math.hypot(gx, gy);
+        if (len > longest) longest = len;
+        arrows.push([x, y, gx, gy, len]);
+      }
+    }
+    const scale = (m * 0.26) / (longest || 1);
+    for (const [x, y, gx, gy, len] of arrows) {
+      if (len < 1e-6) continue;
+      ctx.globalAlpha = 0.35 + 0.65 * (len / longest);
+      drawArrow(p.px(x), p.py(y), p.px(x + gx * scale), p.py(y + gy * scale), accent, 1.8);
+      reset();
+    }
+    caption(viz.caption, 14, 18);
+  }
+
+  /**
+   * A surface with one variable's slice picked out — `∂`, the "hold the others
+   * still and differentiate along this one line" idea.
+   */
+  function drawSurfaceslice() {
+    // A waterfall of slices, NOT a projected mesh.
+    //
+    // An axonometric wireframe of these surfaces folds through itself: with
+    // z ∝ (x−y)(x+y), the screen height of a whole ridge stops depending on depth
+    // at x − y = 4·ky/kz, so that ridge collapses to a single point and the
+    // picture reads as a fan of crossing lines. Painter's algorithm does not save
+    // it either, because a folded surface has no valid back-to-front order by
+    // centroid. One curve per fixed y, stepped up and to the right, says "hold y
+    // still and vary x" more directly anyway — which is the whole idea of ∂.
+    const f = FIELDS[viz.field] || FIELDS.saddle;
+    const m = viz.extent || 2.4;
+    const rows = viz.rows || 7;
+    const yHold = viz.at != null ? viz.at : 0;
+
+    const ys = [];
+    for (let j = 0; j < rows; j++) ys.push(-m + (j / (rows - 1)) * 2 * m);
+    // Snap to a drawn curve, so the highlight never lands between two of them.
+    let hold = 0;
+    ys.forEach((y, j) => { if (Math.abs(y - yHold) < Math.abs(ys[hold] - yHold)) hold = j; });
+
+    let zlo = Infinity, zhi = -Infinity;
+    for (const y of ys) {
+      for (let i = 0; i <= 40; i++) {
+        const z = f(-m + (i / 40) * 2 * m, y);
+        if (z < zlo) zlo = z;
+        if (z > zhi) zhi = z;
+      }
+    }
+    const stepX = W * 0.05, stepY = H * 0.05;
+    const sx = (W - 76 - stepX * (rows - 1)) / (2 * m);
+    const sz = (H - 66 - stepY * (rows - 1)) / ((zhi - zlo) || 1);
+    const baseX = 40, baseY = H - 26;
+
+    ys.forEach((y, j) => {
+      const hot = j === hold;
+      ctx.strokeStyle = hot ? accent : fg;
+      ctx.globalAlpha = hot ? 1 : 0.28;
+      ctx.lineWidth = hot ? 3 : 1.4;
+      ctx.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const x = -m + (i / 60) * 2 * m;
+        const X = baseX + j * stepX + (x + m) * sx;
+        const Y = baseY - j * stepY - (f(x, y) - zlo) * sz;
+        if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y);
+      }
+      ctx.stroke();
+      reset();
+    });
+
+    // Label only the held slice — seven labels is clutter, and one is the point.
+    // Anchored to the curve's own left end, not to its baseline: a marker sitting
+    // at the baseline reads as belonging to whichever slice happens to be near it.
+    const lx = baseX + hold * stepX;
+    const ly = baseY - hold * stepY - (f(-m, ys[hold]) - zlo) * sz;
+    ctx.fillStyle = accent;
+    ctx.beginPath(); ctx.arc(lx, ly, 4, 0, 7); ctx.fill();
+    ctx.fillStyle = accent2;
+    ctx.fillText(viz.holdLabel || `y = ${trim(ys[hold])} held still`, lx - 4, ly - 10);
+    caption(viz.caption, 14, 18);
+  }
+
   const draw = {
     poly: drawPoly, rational: drawRational, area: drawArea, sine: drawSine,
     unitcircle: drawUnitCircle, triangle: drawTriangle, vectors: drawVectors,
     argand: drawArgand, bars: drawBars, dots: drawDots,
     points: drawPoints, circle: drawCircle,
+    numberline: drawNumberline, setdiagram: drawSetdiagram, riemann: drawRiemann,
+    tree: drawTree, stack: drawStack, contourpath: drawContourpath,
+    vectorfield: drawVectorfield, surfaceslice: drawSurfaceslice,
   }[viz.type];
   if (draw) draw();
 }
 
-// Renderer-supported types, used by tools/check-practice.js to validate specs.
+// Renderer-supported types, used by tools/check-practice.js and
+// tools/check-symbols.js to validate specs.
 const VIZ_TYPES = ['poly', 'rational', 'area', 'sine', 'unitcircle', 'triangle',
-  'vectors', 'argand', 'bars', 'dots', 'points', 'circle'];
+  'vectors', 'argand', 'bars', 'dots', 'points', 'circle',
+  'numberline', 'setdiagram', 'riemann', 'tree', 'stack', 'contourpath',
+  'vectorfield', 'surfaceslice'];
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { renderVisual, VIZ_TYPES };

@@ -31,6 +31,11 @@ const SKILLS = [
   { id: 'linear-equations', area: 'algebra', level: 1, name: 'Linear equations', prereqs: [],
     blurb: 'Solve for x, including terms on both sides.',
     aliases: ['linear equation', 'linear', 'solve for x', 'both sides'] },
+  { id: 'simultaneous-equations', area: 'algebra', level: 1, name: 'Simultaneous equations',
+    prereqs: ['linear-equations'],
+    blurb: 'Solve two equations in two unknowns.',
+    aliases: ['simultaneous', 'simultaneous equations', 'system of equations', 'systems of equations',
+      'elimination', 'substitution', 'two unknowns', 'two variables'] },
   { id: 'indices-surds', area: 'algebra', level: 1, name: 'Indices & surds', prereqs: [],
     blurb: 'Index laws, negative and fractional powers.',
     aliases: ['indices', 'index law', 'exponent', 'surd', 'powers'] },
@@ -180,9 +185,17 @@ const SKILLS = [
     prereqs: ['coordinate-geometry', 'trig-ratios'],
     blurb: 'Magnitude, dot product and the angle between.',
     aliases: ['vector', 'dot product', 'cross product', 'magnitude', 'unit vector'] },
+  // Matrix arithmetic only. Solving systems moved to `linear-systems` below when
+  // that skill got its own templates — two skills claiming it left the student
+  // with no way to tell which bar the practice was moving.
   { id: 'matrices', area: 'linalg', level: 3, name: 'Matrices', prereqs: ['linear-equations'],
-    blurb: 'Determinant, inverse and solving systems.',
+    blurb: 'Determinant, inverse and matrix arithmetic.',
     aliases: ['matrix', 'matrices', 'determinant', 'inverse matrix'] },
+  { id: 'linear-systems', area: 'linalg', level: 3, name: 'Linear systems',
+    prereqs: ['simultaneous-equations', 'matrices'],
+    blurb: 'Three unknowns, matrix form, Cramer and consistency.',
+    aliases: ['linear system', 'linear systems', 'gaussian elimination', 'gauss', 'row reduction',
+      'augmented matrix', 'cramer', "cramer's rule", 'three unknowns', 'three variables'] },
 
   // ---- Complex numbers --------------------------------------------------------------
   { id: 'complex-numbers', area: 'complex', level: 2, name: 'Complex numbers',
@@ -204,6 +217,57 @@ const SKILLS = [
   { id: 'distributions', area: 'stats', level: 2, name: 'Distributions', prereqs: ['probability'],
     blurb: 'Binomial and normal distributions.',
     aliases: ['binomial', 'normal distribution', 'z score', 'distribution'] },
+
+  // ---- Notation & symbols -------------------------------------------------------------
+  // One skill per symbol category, so the symbols quiz feeds the SAME bars as
+  // practice rather than a parallel progress system. `prereqs: []` throughout —
+  // reading notation is not gated on being able to do the maths, and quite often
+  // it is the other way round.
+  { id: 'sym-relations', area: 'notation', level: 1, name: 'Reading: equals & inequalities', prereqs: [],
+    blurb: 'Equals, identity, approximation and the inequality signs.',
+    aliases: ['equals sign', 'inequality signs', 'reading relations'] },
+  { id: 'sym-arithmetic', area: 'notation', level: 1, name: 'Reading: arithmetic signs', prereqs: [],
+    blurb: 'Times, divide, fractions, brackets and per cent.',
+    aliases: ['arithmetic symbols', 'reading arithmetic'] },
+  { id: 'sym-powers', area: 'notation', level: 1, name: 'Reading: powers & roots', prereqs: [],
+    blurb: 'Indices, roots, absolute value and factorial.',
+    aliases: ['index notation', 'root sign', 'reading powers'] },
+  { id: 'sym-sets', area: 'notation', level: 1, name: 'Reading: set notation', prereqs: [],
+    blurb: 'Element of, subset, union, intersection and the number systems.',
+    aliases: ['set notation', 'set symbols', 'reading sets'] },
+  { id: 'sym-logic', area: 'notation', level: 2, name: 'Reading: logic symbols', prereqs: [],
+    blurb: 'Implies, if and only if, for all, there exists.',
+    aliases: ['logic symbols', 'proof notation', 'reading logic'] },
+  { id: 'sym-intervals', area: 'notation', level: 1, name: 'Reading: intervals & infinity', prereqs: [],
+    blurb: 'Bracket versus parenthesis, and what infinity is doing there.',
+    aliases: ['interval notation', 'reading intervals'] },
+  { id: 'sym-functions', area: 'notation', level: 1, name: 'Reading: function notation', prereqs: [],
+    blurb: 'f(x), inverses, composition, limits and arrows.',
+    aliases: ['function notation', 'reading functions'] },
+  { id: 'sym-series', area: 'notation', level: 2, name: 'Reading: sums & products', prereqs: [],
+    blurb: 'Sigma, pi, subscripts and where the limits go.',
+    aliases: ['sigma notation', 'summation notation', 'reading series'] },
+  { id: 'sym-calculus', area: 'notation', level: 1, name: 'Reading: calculus notation', prereqs: [],
+    blurb: 'Derivatives, integrals, dx and the constant of integration.',
+    aliases: ['calculus notation', 'derivative notation', 'integral notation'] },
+  { id: 'sym-trig', area: 'notation', level: 1, name: 'Reading: angles', prereqs: [],
+    blurb: 'Theta, degrees, radians and the inverse trig functions.',
+    aliases: ['angle notation', 'reading angles'] },
+  { id: 'sym-linalg', area: 'notation', level: 2, name: 'Reading: vectors & matrices', prereqs: [],
+    blurb: 'Vector arrows, magnitude, determinants and the hat.',
+    aliases: ['vector notation', 'matrix notation', 'reading vectors'] },
+  { id: 'sym-stats', area: 'notation', level: 1, name: 'Reading: probability notation', prereqs: [],
+    blurb: 'P(A), the given bar, means and standard deviations.',
+    aliases: ['probability notation', 'statistics notation', 'reading probability'] },
+  { id: 'sym-vectorcalc', area: 'notation', level: 3, name: 'Reading: vector calculus', prereqs: [],
+    blurb: 'Grad, div, curl, and the multiple integral signs.',
+    aliases: ['div grad curl', 'vector calculus notation', 'nabla'] },
+  { id: 'sym-engnotation', area: 'notation', level: 3, name: 'Reading: engineering notation', prereqs: [],
+    blurb: 'j versus i, transforms, norms, decibels and big O.',
+    aliases: ['engineering notation', 'signals notation', 'phasor notation'] },
+  { id: 'sym-greek', area: 'notation', level: 1, name: 'Reading: Greek letters', prereqs: [],
+    blurb: 'The Greek letters you actually meet, and what each usually stands for.',
+    aliases: ['greek letters', 'greek alphabet', 'reading greek'] },
 ];
 
 // ---- Lookups -------------------------------------------------------------------------

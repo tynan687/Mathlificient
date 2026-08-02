@@ -45,7 +45,8 @@ app.whenReady().then(async () => {
     noHScroll: document.body.scrollWidth <= window.innerWidth + 1,
     bodyW: document.body.scrollWidth, viewport: window.innerWidth,
   }))()`));
-  ok('the symbols page loads on a phone', r.symbols === 100 && r.cards === 100,
+  // Exact on purpose — a census, so adding entries is a deliberate act. Bump it.
+  ok('the symbols page loads on a phone', r.symbols === 159 && r.cards === 159,
     `${r.cards} cards`);
   ok('  ...with the readings', r.readings === 20, String(r.readings));
   ok('  ...typesetting lazily', r.rendered > 0 && r.rendered < 60,

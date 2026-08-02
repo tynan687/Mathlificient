@@ -597,6 +597,53 @@ const FORMULAS = [
     },
   },
   { id: 'mat-transpose', group: 'Matrices', name: 'Transpose & identity', latex: '(A^T)_{ij} = A_{ji}, \\quad AI = IA = A' },
+  {
+    id: 'matrix-solve', group: 'Matrices', name: 'Solve a system as AX = B',
+    latex: '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}'
+      + '\\begin{pmatrix} x \\\\ y \\end{pmatrix} = \\begin{pmatrix} e \\\\ f \\end{pmatrix}'
+      + ' \\ \\Rightarrow\\ \\mathbf{x} = A^{-1}\\mathbf{b}',
+    vars: ['a', 'b', 'c', 'd', 'e', 'f'].map((k) => ({ key: k, label: k })),
+    solve: ({ a, b, c, d, e, f }) => {
+      const det = a * d - b * c;
+      // Same guard as inv-2x2: a singular matrix has no inverse, so there is no
+      // unique solution to report rather than an Infinity to display.
+      return det === 0 ? [{ label: 'Error', value: 'singular (det = 0), no unique solution' }]
+        : [{ label: 'x', value: round((d * e - b * f) / det) },
+          { label: 'y', value: round((a * f - c * e) / det) }];
+    },
+  },
+  {
+    id: 'cramer-3x3', group: 'Matrices', name: "Cramer's rule (3×3 system)",
+    latex: '\\begin{pmatrix} a & b & c \\\\ d & e & f \\\\ g & h & i \\end{pmatrix}'
+      + '\\begin{pmatrix} x \\\\ y \\\\ z \\end{pmatrix} = \\begin{pmatrix} p \\\\ q \\\\ r \\end{pmatrix}'
+      + ', \\quad x = \\frac{\\det A_x}{\\det A}',
+    vars: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'p', 'q', 'r']
+      .map((k) => ({ key: k, label: k })),
+    solve: ({ a, b, c, d, e, f, g, h, i, p, q, r }) => {
+      const det3 = (m11, m12, m13, m21, m22, m23, m31, m32, m33) =>
+        m11 * (m22 * m33 - m23 * m32)
+        - m12 * (m21 * m33 - m23 * m31)
+        + m13 * (m21 * m32 - m22 * m31);
+      const D = det3(a, b, c, d, e, f, g, h, i);
+      if (D === 0) return [{ label: 'Error', value: 'no unique solution (det = 0)' }];
+      return [
+        { label: 'x', value: round(det3(p, b, c, q, e, f, r, h, i) / D) },
+        { label: 'y', value: round(det3(a, p, c, d, q, f, g, r, i) / D) },
+        { label: 'z', value: round(det3(a, b, p, d, e, q, g, h, r) / D) },
+      ];
+    },
+  },
+  {
+    id: 'gauss-elim', group: 'Matrices', name: 'Augmented matrix & row operations',
+    latex: '\\left(\\begin{array}{cc|c} a & b & e \\\\ c & d & f \\end{array}\\right)'
+      + ' \\quad R_i \\leftrightarrow R_j, \\ \\ R_i \\to kR_i \\ (k \\ne 0),'
+      + ' \\ \\ R_i \\to R_i + kR_j',
+  },
+  {
+    id: 'system-consistency', group: 'Matrices', name: 'When a system has a solution',
+    latex: '\\det A \\ne 0 \\Rightarrow \\text{one solution}; \\quad'
+      + ' \\det A = 0 \\Rightarrow \\text{none, or infinitely many}',
+  },
 
   // ===== Statistics & probability =====
   {

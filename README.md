@@ -4,13 +4,13 @@ A maths tutor for HSC students and undergrad engineering units, for **Android ta
 
 Most of it works **completely offline and free** — no account, no sign-up, no API key:
 
-- **Practice Studio** — unlimited generated questions across 66 topics (algebra, quadratics, coordinate geometry, circles, functions, trigonometry, differentiation, integration, differential equations, vectors, matrices, statistics, partial fractions and more), each with step-by-step worked solutions and a diagram drawn from the actual numbers in your question: the real parabola with its roots marked, the triangle to scale, your two points with the midpoint between them, the circle at its actual centre and radius, the area you're integrating shaded in, asymptotes, Argand diagrams, bar charts.
+- **Practice Studio** — unlimited generated questions across 73 topics (algebra, quadratics, simultaneous equations, coordinate geometry, circles, functions, trigonometry, differentiation, integration, differential equations, vectors, matrices, linear systems, statistics, partial fractions and more), each with step-by-step worked solutions and a diagram drawn from the actual numbers in your question: the real parabola with its roots marked, the triangle to scale, your two points with the midpoint between them, the circle at its actual centre and radius, the area you're integrating shaded in, asymptotes, Argand diagrams, bar charts.
 - **Work it out by hand** — a drawing canvas sits under every question. On Android that's the S Pen (with palm rejection, hold-the-button to erase, and pinch-to-zoom for more room). On Windows it's your mouse, or a graphics tablet if you have one.
 - **Quiz mode** — run a scored set of 5/10/20 questions with a review of what you missed. On Windows you can also print a worksheet with working space and a separate answer key.
 - **Multiple choice that actually teaches** — switch any question to four options, and the three wrong ones are real mistakes, not filler: `b² + 4ac`, dividing by *n* instead of *n − 1*, forgetting to multiply by the inside of the bracket. Pick one and it tells you exactly which slip you made. Repeat the same slip and your progress screen starts saying so.
-- **Progress tracking that tells you what to study next** — mark each question ✓ Got it / ✗ Missed it and the app builds a picture of where you're strong and where you're not, across 47 named skills in 10 areas. A **Focus next** list names three things to work on *and why* ("Shaky at 22%", "You had this at 80% but haven't practised in 19 days", "Quadratics first would make this easier"). A twelve-question placement check gets you started from scratch in about ten minutes.
-- **Formula sheet** — 182 formulas across 15 topic groups, 82 of them interactive solvers: type your values in, get the answer plus LaTeX you can paste into Word or Samsung Notes.
-- **Symbols, and how to read them out loud** — 100 symbols with what each one means, how you actually say it, and what it gets mixed up with (∈ and ε, ∂ and δ, `f⁻¹` and "one over f"). Plus 20 whole expressions broken into the fragments you say, in the order you say them — because knowing every symbol separately still leaves you stuck on a line you can't read.
+- **Progress tracking that tells you what to study next** — mark each question ✓ Got it / ✗ Missed it and the app builds a picture of where you're strong and where you're not, across 64 named skills in 10 areas. A **Focus next** list names three things to work on *and why* ("Shaky at 22%", "You had this at 80% but haven't practised in 19 days", "Quadratics first would make this easier"). A twelve-question placement check gets you started from scratch in about ten minutes.
+- **Formula sheet** — 189 formulas across 15 topic groups, 84 of them interactive solvers: type your values in, get the answer plus LaTeX you can paste into Word or Samsung Notes.
+- **Symbols, and how to read them out loud** — 159 symbols with what each one means, how you actually say it, and what it gets mixed up with (∈ and ε, ∂ and δ, `f⁻¹` and "one over f"), including the first-year engineering set and the *i* versus *j* trap nobody warns you about. 79 come with a diagram. Plus 20 whole expressions broken into the fragments you say, in the order you say them — because knowing every symbol separately still leaves you stuck on a line you can't read. **Test me** quizzes you four ways round, and the scores feed the same progress bars as practice.
 - **Focus timer** (Pomodoro) and **ambient background noise** (rain, brown, pink, fan), all generated on-device.
 
 **Optional: live voice tutoring.** Bring your own [OpenAI API key](https://platform.openai.com/api-keys) and a floating bubble will listen, watch your screen or your handwriting, and talk you through problems Socratically — nudging rather than handing over answers. Roughly **A$2–6 per hour** of actual conversation, with a hard budget cap built in. Everything above still works without it.
@@ -96,7 +96,7 @@ other apps".
 
 Open **Symbols** — on Android from the main screen or the bubble menu, on Windows from the π bubble's menu.
 
-**What it means** lists 100 symbols in 13 groups, searchable. You can search the name, what it does, how it sounds, *or* the LaTeX you copied out of a PDF — `\partial`, "curly d" and "partial" all find the same entry. Tap one for what it means, an example, how to say that example, and what it's easily confused with. Those cross-links go both ways, so you get the warning from whichever side you arrived on.
+**What it means** lists 159 symbols in 15 groups, searchable. You can search the name, what it does, how it sounds, *or* the LaTeX you copied out of a PDF — `\partial`, "curly d" and "partial" all find the same entry. Tap one for what it means, an example, how to say that example, and what it's easily confused with. Those cross-links go both ways, so you get the warning from whichever side you arrived on.
 
 **How to read it** takes 20 real expressions and breaks each into the pieces you actually say, in the order you say them — including the bits that aren't left-to-right, like saying "the integral from nought to three" before you say what's being integrated. Where the grouping is the hard part, it says so: everything under a square-root bar is one chunk, the fraction bar is said last as "all over".
 
@@ -104,7 +104,7 @@ Where your device supports it there's a speaker button, but the written line is 
 
 ### Formula sheet
 
-185 formulas, searchable. 82 of them are live solvers — click one, type your values, press Solve, then copy the result or the LaTeX. Handles the awkward cases properly (complex quadratic roots as a ± b*i*, singular matrices, divide-by-zero).
+189 formulas, searchable. 84 of them are live solvers — click one, type your values, press Solve, then copy the result or the LaTeX. Handles the awkward cases properly (complex quadratic roots as a ± b*i*, singular matrices, divide-by-zero).
 
 ### Live voice tutoring (needs your own API key)
 

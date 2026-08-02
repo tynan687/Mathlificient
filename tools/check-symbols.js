@@ -18,6 +18,10 @@ const {
   SYMBOLS, SYMBOL_CATEGORIES, SYMBOL_BY_ID, READINGS,
   symbolsInCategory, searchSymbols, confusablesOf, readingsUsing,
 } = require(path.join(R, 'symbols-data.js'));
+// renderVisual itself needs a DOM, but VIZ_TYPES is just a list — requiring the
+// module under Node to read it is safe, and it means a symbol pointing at a
+// renderer that does not exist fails here rather than showing a blank panel.
+const { VIZ_TYPES } = require(path.join(R, 'practice-viz.js'));
 
 let fail = 0;
 const ok = (cond, label, extra) => {
@@ -32,14 +36,19 @@ ok(new Set(ids).size === ids.length, 'symbol ids are unique',
 const catIds = new Set(SYMBOL_CATEGORIES.map((c) => c.id));
 for (const s of SYMBOLS) {
   ok(catIds.has(s.category), `${s.id} sits in a real category`, s.category);
-  ok(s.level === 1 || s.level === 2, `${s.id} has a level of 1 or 2`, String(s.level));
+  // 3 is first-year engineering, matching practice-skills.js's 1/2/3 convention.
+  ok([1, 2, 3].includes(s.level), `${s.id} has a level of 1, 2 or 3`, String(s.level));
   for (const field of ['glyph', 'name', 'meaning', 'say', 'example', 'exampleSay']) {
     ok(typeof s[field] === 'string' && s[field].trim().length > 0,
       `${s.id} has a non-empty ${field}`);
   }
   ok(s.meaning.length > 25, `${s.id}'s meaning says something`, s.meaning);
   ok(/[.!]$/.test(s.meaning), `${s.id}'s meaning ends in a full stop`, s.meaning.slice(-30));
+  if (s.viz) {
+    ok(VIZ_TYPES.includes(s.viz.type), `${s.id}'s diagram names a real renderer`, s.viz.type);
+  }
 }
+const withViz = SYMBOLS.filter((s) => s.viz).length;
 
 // ---- Spoken lines must be speakable ------------------------------------------------
 // They are read aloud by a synthesiser, so a stray backslash becomes noise.
@@ -116,9 +125,10 @@ if (process.argv.includes('--list')) {
   }
 }
 
-const lvl1 = SYMBOLS.filter((s) => s.level === 1).length;
+const byLevel = [1, 2, 3].map((n) => SYMBOLS.filter((s) => s.level === n).length);
 console.log(`\n${SYMBOLS.length} symbols across ${SYMBOL_CATEGORIES.length} categories `
-  + `(${lvl1} core, ${SYMBOLS.length - lvl1} extension)`);
+  + `(${byLevel[0]} core, ${byLevel[1]} extension, ${byLevel[2]} engineering)`);
+console.log(`${withViz} carry a diagram`);
 console.log(`${READINGS.length} worked readings, using ${used.size} of them`);
 console.log(fail ? `\n${fail} FAILURE(S)` : '\nALL PASS');
 process.exit(fail ? 1 : 0);

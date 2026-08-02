@@ -60,6 +60,34 @@
     .sym-example { margin-top: 10px; padding: 10px 12px; border-radius: 10px;
       background: color-mix(in srgb, CanvasText 4%, transparent); }
     .ex-tex { overflow-x: auto; }
+    /* The diagram. Fixed height because renderVisual sizes itself from the
+       element's layout, so the canvas has to have one before it draws. */
+    .sym-viz { margin-top: 10px; }
+    .sym-canvas { display: block; width: 100%; height: 180px; }
+    /* Test me. The options are <div>s, not <button>s, for the same reason the
+       practice grid is: applyPaper injects `select,button{...!important}` from
+       Kotlin and would repaint the right/wrong states back to plain. */
+    .sq-bar { display: flex; gap: 8px; align-items: center; margin: 10px 0; }
+    .sq-bar select, .sq-bar button { padding: 8px 12px; border-radius: 9px;
+      border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+      background: transparent; color: inherit; font-size: 14px; }
+    #symQuizProgress { font-size: 13px; opacity: 0.7; }
+    .sq-glyph { text-align: center; padding: 14px 0; }
+    .sq-ask { font-size: 15px; line-height: 1.5; padding: 6px 0 12px; }
+    #symQuizOptions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .sq-option { padding: 12px; border-radius: 10px; cursor: pointer;
+      border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+      display: flex; align-items: center; justify-content: center; text-align: center; }
+    .sq-option .sq-text { font-size: 13.5px; line-height: 1.45; }
+    .sq-option.locked { cursor: default; }
+    .sq-option.correct { outline: 2px solid #2E7D32; background: #2E7D3222; }
+    .sq-option.wrong { outline: 2px solid #C62828; background: #C6282822; }
+    .sq-feedback { margin-top: 10px; font-size: 14px; }
+    .sq-feedback.good { color: #2E7D32; }
+    .sq-feedback.bad { color: #C62828; }
+    #symQuizNext { margin-top: 10px; padding: 9px 14px; border-radius: 9px;
+      border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+      background: transparent; color: inherit; font-size: 14px; }
     .ex-say { display: flex; align-items: center; gap: 8px; margin-top: 6px;
       font-size: 13.5px; opacity: 0.85; }
     .ex-say-text { flex: 1; }
@@ -119,6 +147,7 @@
     <div class="tabs">
       <button class="tab on" id="tabBrowse">What it means</button>
       <button class="tab" id="tabRead">How to read it</button>
+      <button class="tab" id="tabQuiz">Test me</button>
     </div>
     <div class="chips" id="chips"></div>
   </header>
@@ -135,10 +164,36 @@
         together and what order you say them in. Tap any line to hear it.</div>
       <div id="readings"></div>
     </div>
+    <div id="quiz" class="hidden">
+      <div class="hint">Four ways round: what it means, which symbol it is, how you
+        say the whole line, and spotting one by its spoken name. Scores feed the
+        same progress bars as practice.</div>
+      <div class="sq-bar">
+        <select id="symQuizCount">
+          <option value="10">10 questions</option>
+          <option value="20">20 questions</option>
+          <option value="5">5 questions</option>
+        </select>
+        <button id="startSymQuiz">▶ Start</button>
+        <span id="symQuizProgress"></span>
+      </div>
+      <div id="symQuiz" class="hidden">
+        <div id="symQuizPrompt"></div>
+        <div id="symQuizOptions"></div>
+        <div id="symQuizFeedback" class="sq-feedback hidden"></div>
+        <button id="symQuizNext" class="hidden">Next →</button>
+      </div>
+    </div>
   </main>
 
   <script src="../../node_modules/katex/dist/katex.min.js"></script>
   <script src="../symbols-data.js"></script>
+  <script src="../practice-viz.js"></script>
+  <script src="../practice-skills.js"></script>
+  <script src="../practice-prof.js"></script>
+  <script src="../practice-store.js"></script>
+  <script src="../practice-mcq.js"></script>
+  <script src="../symbols-quiz.js"></script>
   <script src="symbols.js"></script>
 </body>
 </html>

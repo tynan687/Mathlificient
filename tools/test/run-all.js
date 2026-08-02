@@ -28,6 +28,8 @@ const SUITES = [
     what: 'generators + distractors, ~2000 runs each' },
   { name: 'symbols-data', cmd: ['tools/check-symbols.js'], node: true,
     what: 'symbol entries + cross-references' },
+  { name: 'symbols-quiz', cmd: ['tools/check-symbols-quiz.js'], node: true,
+    what: 'symbol quiz: four modes, honest options' },
   { name: 'sync', cmd: ['tools/sync-shared.js', '--check'], node: true,
     what: 'PC/Android shared files match' },
   { name: 'viz', file: 'viz.js', what: 'every diagram actually draws' },

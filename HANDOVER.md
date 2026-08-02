@@ -20,11 +20,11 @@ core claim and it constrains most decisions:
 
 | Surface | What it is |
 |---|---|
-| **Practice** | 66 question generators. Every question is generated fresh with real step-by-step working and, for 37 of them, a diagram drawn from that question's actual numbers. |
-| **Multiple choice** | 65 of the 66 offer four options built from *named misconceptions*. A wrong pick says which mistake you made. |
-| **Progress** | A mastery bar per skill across 47 skills in 10 areas, a "focus next" list with a reason for each pick, a due-for-review queue, and a 12-question placement check. |
-| **Symbols** | 100 symbols with meaning, spoken form and confusions, plus 20 expressions broken into the fragments you actually say. |
-| **Formula sheet** | 185 formulas, 82 of them live solvers. |
+| **Practice** | 73 question generators. Every question is generated fresh with real step-by-step working and, for 42 of them, a diagram drawn from that question's actual numbers. |
+| **Multiple choice** | 72 of the 73 offer four options built from *named misconceptions*. A wrong pick says which mistake you made. |
+| **Progress** | A mastery bar per skill across 64 skills in 10 areas, a "focus next" list with a reason for each pick, a due-for-review queue, and a 12-question placement check. |
+| **Symbols** | 159 symbols with meaning, spoken form and confusions, 79 of them with a diagram, plus 20 expressions broken into the fragments you actually say — and a four-mode quiz that feeds the same bars as practice. |
+| **Formula sheet** | 189 formulas, 84 of them live solvers. |
 | **Live voice tutoring** *(optional)* | Bring-your-own OpenAI key, WebRTC realtime session, screen-aware. Everything above works without it. |
 
 ---
@@ -80,14 +80,15 @@ if (typeof module !== 'undefined' && module.exports) { module.exports = { ... };
 
 ```
 VoiceMathTutorPC/renderer/          source of truth for shared files
-  practice-data.js       66 generators + PRACTICE_FORMULAS + MISCONCEPTIONS
-  practice-skills.js     47 skills / 10 areas, prereqs, aliases  (stable ids — do not rename)
+  practice-data.js       73 generators + PRACTICE_FORMULAS + MISCONCEPTIONS
+  practice-skills.js     64 skills / 10 areas, prereqs, aliases  (stable ids — do not rename)
   practice-prof.js       the mastery model
   practice-store.js      storage shim: Electron IPC | Android bridge | in-memory
   practice-mcq.js        option building, LaTeX comparison, the option grid
   practice-quiz.js       quiz + placement flow
   practice-viz.js        12 canvas diagram types
-  symbols-data.js        100 symbols + 20 readings
+  symbols-data.js        159 symbols + 20 readings
+  symbols-quiz.js        the four-mode symbol quiz, over practice-mcq's buildChoices
   practice-ink.js        PC-only pen/mouse canvas (Android has a native InkCanvasView)
   tools/{practice,progress,symbols}.{html,js}
 VoiceMathTutor/app/src/main/assets/formulas/    the Android copies (flat)
@@ -240,7 +241,7 @@ attach to the tablet, is in [tools/test/README.md](tools/test/README.md).
 
 | Layer | Suite | Covers |
 |---|---|---|
-| Generators + distractors | `tools/check-practice.js` | ~130k generations across 66 templates |
+| Generators + distractors | `tools/check-practice.js` | ~130k generations across 73 templates |
 | Symbols data | `tools/check-symbols.js` | ids, cross-references both ways, no LaTeX in spoken lines |
 | Shared-file drift | `tools/sync-shared.js --check` | PC and Android copies identical, same `<script>` sets |
 | Mastery model | `tools/test/model.mjs`, `skills.mjs` | decay, recovery, area rollup, guessing correction (Monte Carlo) |
@@ -404,11 +405,13 @@ Planned as eight phases; five are merged and hardware-verified.
 | 3 — coordinate geometry + trigonometry (17 templates) | ✅ |
 | 4 — calculus + differential equations (16 templates) | ✅ |
 | 5 — symbols: browse + read | ✅ |
-| 6 — symbol diagrams | ⬜ |
-| 7 — symbol quiz + engineering notation | ⬜ |
+| 6 — symbol diagrams | ✅ 8 new `practice-viz.js` types, 79 entries carry one |
+| 7 — symbol quiz + engineering notation | ✅ 59 level-3 entries, 15 `sym-*` skills, 4 quiz modes |
 | 8 — polish | ⬜ (cuttable) |
 
-**Skills with content: 39 / 47.** Still empty: `polynomials`, `inequalities`, `conics`,
+**Skills with content: 56 / 64** — the 15 `sym-*` skills are drilled from the symbols
+screen's "Test me" tab rather than the practice pool, so they show on the progress bars but
+never in placement. Still empty: `polynomials`, `inequalities`, `conics`,
 `numerical-methods`, `de-basics`, `de-particular`, `series-taylor`, `probability`.
 
 ### Known gaps, stated plainly
@@ -519,7 +522,7 @@ year; then the "spot the symbol" mode, which is the weakest of the four.
 
 Neither of these. **Put it in front of a student and watch the progress screen** with them.
 
-Everything below the UI is verified — 66 templates over ~130k generations, the mastery model
+Everything below the UI is verified — 73 templates over ~130k generations, the mastery model
 under Monte Carlo, 74 assertions on real hardware. What is *not* verified is the only claim the
 product actually makes: that "focus next" names the three things a student would themselves say
 they are worst at. That is checkable in an afternoon with one willing HSC student and a

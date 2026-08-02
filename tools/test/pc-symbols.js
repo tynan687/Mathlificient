@@ -51,7 +51,8 @@ app.whenReady().then(async () => {
   ok('every symbol has a card', r.cards === r.symbols, `${r.cards}/${r.symbols}`);
   ok('grouped under category headings', r.categories >= 10, String(r.categories));
   ok('with a chip per category', r.chips >= 11, String(r.chips));
-  ok('the count is shown', /100 symbols/.test(r.count), r.count);
+  // Exact on purpose — a census, so adding entries is a deliberate act. Bump it.
+  ok('the count is shown', /159 symbols/.test(r.count), r.count);
   // The whole point of the lazy path: only what's near the viewport is typeset.
   ok('KaTeX is deferred, not run on all ~300 expressions at load',
     r.rendered > 0 && r.rendered < 60, `${r.rendered} rendered, ${r.pending} still pending`);
@@ -135,7 +136,7 @@ app.whenReady().then(async () => {
   ok('a category chip filters the list', r.n >= 8 && r.n < 30, String(r.n));
   ok('  ...marks itself active', r.on === 'Calculus', r.on);
   ok('  ...drops the category headings when only one is shown', r.headings === 0);
-  ok('  ...and updates the count', /of 100/.test(r.count), r.count);
+  ok('  ...and updates the count', /of 159/.test(r.count), r.count);
   await js(`document.querySelectorAll('.chip')[0].click()`);
   await sleep(150);
 

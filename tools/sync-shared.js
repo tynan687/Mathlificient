@@ -35,6 +35,7 @@ const PAIRS = [
   ['practice-mcq.js', 'practice-mcq.js'],
   ['formulas-data.js', 'formulas-data.js'],
   ['symbols-data.js', 'symbols-data.js'],
+  ['symbols-quiz.js', 'symbols-quiz.js'],
   ['tools/practice.js', 'practice.js'],
   ['tools/progress.js', 'progress.js'],
   ['tools/symbols.js', 'symbols.js'],
