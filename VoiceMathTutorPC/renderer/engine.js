@@ -295,6 +295,7 @@ function handleEvent(event) {
         else if (item.name === 'search_textbooks') handleSearchTextbooks(item);
         else if (item.name === 'show_working') handleShowWorking(item);
         else if (item.name === 'show_practice') handleShowPractice(item);
+        else if (item.name === 'check_my_answer') handleCheckAnswer(item);
       }
       break;
     }
@@ -398,6 +399,39 @@ function handleShowPractice(item) {
   send({
     type: 'conversation.item.create',
     item: { type: 'function_call_output', call_id: item.call_id, output: '{"shown":true}' },
+  });
+  pendingToolResponse = true;
+}
+
+/**
+ * The model wants to know whether the student got it right. The practice page
+ * marks it and returns a verdict; the answer itself never crosses this boundary.
+ */
+async function handleCheckAnswer(item) {
+  let args = {};
+  try { args = JSON.parse(item.arguments || '{}'); } catch { /* ignore */ }
+  let result;
+  try {
+    result = await window.tutor.invoke('practice:check', { heard: args.heard || '' });
+  } catch (err) {
+    result = { verdict: 'unsure', reason: err.message };
+  }
+  // Send the working WITH the verdict, not on a second request. The moment the
+  // model learns they got it wrong is the moment it needs to see where — asking
+  // for the image separately costs a round trip and a turn of conversation.
+  if (result && result.workingToSee) {
+    try {
+      const b64 = await window.tutor.invoke('practice:working');
+      if (b64) send(imageItemEvent(b64));
+    } catch { /* the verdict alone is still useful */ }
+  }
+  send({
+    type: 'conversation.item.create',
+    item: {
+      type: 'function_call_output',
+      call_id: item.call_id,
+      output: JSON.stringify(result || { verdict: 'unsure' }),
+    },
   });
   pendingToolResponse = true;
 }

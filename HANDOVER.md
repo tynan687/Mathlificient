@@ -25,7 +25,8 @@ core claim and it constrains most decisions:
 | **Progress** | A mastery bar per skill across 64 skills in 10 areas, a "focus next" list with a reason for each pick, a due-for-review queue, and a 12-question placement check. |
 | **Symbols** | 159 symbols with meaning, spoken form and confusions, 79 of them with a diagram, plus 20 expressions broken into the fragments you actually say — and a four-mode quiz that feeds the same bars as practice. |
 | **Formula sheet** | 189 formulas, 84 of them live solvers. |
-| **Live voice tutoring** *(optional)* | Bring-your-own OpenAI key, WebRTC realtime session, screen-aware. Everything above works without it. |
+| **Live voice tutoring** *(optional)* | Bring-your-own OpenAI key, WebRTC realtime session, screen-aware. It can mark an answer — see below — and looks at your handwritten working when you get one wrong. Everything above works without it. |
+| **Marking, without a key** | `markAnswer` in `practice-mcq.js` compares what you said against the stored answer offline and for nothing, so the app knows right from wrong on its own. The tutor asks for that verdict through a tool; it is never told the answer. |
 
 ---
 
@@ -407,7 +408,7 @@ Planned as eight phases; five are merged and hardware-verified.
 | 5 — symbols: browse + read | ✅ |
 | 6 — symbol diagrams | ✅ 8 new `practice-viz.js` types, 79 entries carry one |
 | 7 — symbol quiz + engineering notation | ✅ 59 level-3 entries, 15 `sym-*` skills, 4 quiz modes |
-| 8 — polish | ⬜ (cuttable) |
+| 8 — polish | ✅ slips panel, MCQ worksheets, per-skill reset, JSON+CSV export |
 
 **Skills with content: 56 / 64** — the 15 `sym-*` skills are drilled from the symbols
 screen's "Test me" tab rather than the practice pool, so they show on the progress bars but

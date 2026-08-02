@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioDeviceCallback
@@ -68,7 +69,20 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
         val micMuted: Boolean = false,
         val watchActive: Boolean = false,
         val lastError: String? = null,
+        /**
+         * The model has asked whether the student's answer is right, and a practice
+         * screen needs to mark it.
+         *
+         * This is how a tool call reaches the WebView without a binder: the service
+         * publishes here, whichever practice screen is on top sees it, runs
+         * `window.__checkAnswer` in the page and posts the verdict back with
+         * ACTION_CHECK_RESULT. The answer itself never leaves the page — only a
+         * verdict comes back — which is what keeps the model from ever knowing it.
+         */
+        val pendingCheck: PendingCheck? = null,
     )
+
+    data class PendingCheck(val callId: String, val heard: String)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var keyStore: SecureKeyStore
@@ -110,6 +124,12 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
             ACTION_TOGGLE_MUTE -> toggleMute()
 
             ACTION_TOGGLE_WATCH -> toggleWatch()
+
+            ACTION_CHECK_RESULT -> deliverCheckResult(
+                intent.getStringExtra(EXTRA_CALL_ID).orEmpty(),
+                intent.getStringExtra(EXTRA_VERDICT).orEmpty(),
+                intent.getStringExtra(EXTRA_WORKING),
+            )
 
             ACTION_START -> {
                 if (transport != null) return START_NOT_STICKY // already running
@@ -315,6 +335,7 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
                     when (item.optString("name")) {
                         "save_student_note" -> handleSaveNote(item)
                         "show_practice" -> handleShowPractice(item)
+                        "check_my_answer" -> handleCheckAnswer(item)
                     }
                 }
             }
@@ -631,17 +652,65 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
     }
 
     /** Send the standard {"shown":true} tool output and queue the spoken follow-up. */
-    private fun sendShownToolOutput(callId: String) {
+    private fun sendShownToolOutput(callId: String) = sendToolOutput(callId, "{\"shown\":true}")
+
+    private fun sendToolOutput(callId: String, outputJson: String) {
         transport?.sendEvent(
             JSONObject().put("type", "conversation.item.create").put(
                 "item",
                 JSONObject()
                     .put("type", "function_call_output")
                     .put("call_id", callId)
-                    .put("output", "{\"shown\":true}")
+                    .put("output", outputJson)
             )
         )
         pendingToolResponse = true
+    }
+
+    /**
+     * The model wants to know whether the student got it right.
+     *
+     * We cannot answer from here: the answer lives in the practice page and the
+     * comparison is JavaScript, so this publishes the question and waits for
+     * whichever practice screen is open to post a verdict back. The timeout is not
+     * optional — if no practice screen is on top, nothing will ever answer, and a
+     * tool call left outstanding stalls the whole conversation.
+     */
+    private fun handleCheckAnswer(item: JSONObject) {
+        val callId = item.optString("call_id")
+        val args = try {
+            JSONObject(item.optString("arguments").ifEmpty { "{}" })
+        } catch (_: Exception) {
+            JSONObject()
+        }
+        uiState.value = uiState.value.copy(
+            pendingCheck = PendingCheck(callId, args.optString("heard"))
+        )
+        scope.launch {
+            delay(CHECK_ANSWER_TIMEOUT_MS)
+            if (uiState.value.pendingCheck?.callId == callId) {
+                uiState.value = uiState.value.copy(pendingCheck = null)
+                sendToolOutput(
+                    callId,
+                    "{\"verdict\":\"none\",\"reason\":\"the practice screen is not open\"}"
+                )
+                startOrQueueResponse(null)
+            }
+        }
+    }
+
+    /**
+     * A practice screen has marked it. Hand over the verdict — and only the
+     * verdict, never the answer — plus the working if the answer was wrong.
+     */
+    private fun deliverCheckResult(callId: String, verdictJson: String, working: String?) {
+        if (uiState.value.pendingCheck?.callId != callId) return // already timed out
+        uiState.value = uiState.value.copy(pendingCheck = null)
+        // The image goes in before the tool output so the model has it in hand the
+        // moment it learns the answer was wrong, rather than a turn later.
+        if (!working.isNullOrEmpty()) transport?.sendEvent(imageItemEvent(working))
+        sendToolOutput(callId, verdictJson.ifBlank { "{\"verdict\":\"unsure\"}" })
+        startOrQueueResponse(null)
     }
 
     private fun handleShowPractice(item: JSONObject) {
@@ -885,8 +954,39 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
         const val ACTION_STOP = "com.tynan.mathtutor.STOP"
         const val ACTION_TOGGLE_MUTE = "com.tynan.mathtutor.TOGGLE_MUTE"
         const val ACTION_TOGGLE_WATCH = "com.tynan.mathtutor.TOGGLE_WATCH"
+        /** A practice screen returning the verdict for a pending check_my_answer. */
+        const val ACTION_CHECK_RESULT = "com.tynan.mathtutor.CHECK_RESULT"
         const val EXTRA_RESULT_CODE = "resultCode"
         const val EXTRA_RESULT_DATA = "resultData"
+        const val EXTRA_CALL_ID = "callId"
+        const val EXTRA_VERDICT = "verdict"
+        const val EXTRA_WORKING = "working"
+
+        /**
+         * How long to wait for a practice screen to mark an answer before telling
+         * the model there is nothing to mark. A tool call left outstanding stalls
+         * the conversation, so this must always fire.
+         */
+        private const val CHECK_ANSWER_TIMEOUT_MS = 2_500L
+
+        /**
+         * Post a marked verdict back to the running session, optionally with a
+         * picture of the working the tutor should look at.
+         */
+        fun deliverCheck(
+            context: Context,
+            callId: String,
+            verdictJson: String,
+            workingJpegBase64: String? = null,
+        ) {
+            context.startService(
+                Intent(context, RealtimeService::class.java)
+                    .setAction(ACTION_CHECK_RESULT)
+                    .putExtra(EXTRA_CALL_ID, callId)
+                    .putExtra(EXTRA_VERDICT, verdictJson)
+                    .putExtra(EXTRA_WORKING, workingJpegBase64)
+            )
+        }
         private const val NOTIFICATION_ID = 42
         private const val CHANNEL_ID = "tutor"
         private const val AUTO_CAPTURE_MIN_INTERVAL_MS = 10_000L

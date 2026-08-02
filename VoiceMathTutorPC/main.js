@@ -249,6 +249,40 @@ function openTool(name) {
   return win;
 }
 
+/**
+ * Ask the practice page to mark what the tutor heard.
+ *
+ * A round trip rather than a channel pair, because the answer must never leave
+ * that page: it marks the attempt itself and hands back only a verdict.
+ * executeJavaScript returns a promise, so this needs no new renderer plumbing —
+ * and deliberately does NOT open the window. If practice is not on screen there
+ * is nothing to mark, and opening it behind the student's back to answer a tool
+ * call would be worse than saying so.
+ */
+async function checkPracticeAnswer(heard) {
+  const win = toolWins.practice;
+  if (!win || win.isDestroyed() || win.webContents.isLoading()) {
+    return { verdict: 'none', reason: 'the practice window is not open' };
+  }
+  try {
+    const raw = await win.webContents.executeJavaScript(
+      `window.__checkAnswer(${JSON.stringify(String(heard || ''))})`, true);
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (err) {
+    return { verdict: 'unsure', reason: err.message };
+  }
+}
+ipcMain.handle('practice:check', (_e, payload) => checkPracticeAnswer(payload && payload.heard));
+
+/** The student's handwritten working, base64, for the tutor to actually look at. */
+ipcMain.handle('practice:working', async () => {
+  const win = toolWins.practice;
+  if (!win || win.isDestroyed() || win.webContents.isLoading()) return null;
+  try {
+    return await win.webContents.executeJavaScript('window.__working && window.__working()', true);
+  } catch { return null; }
+});
+
 /** Open the practice window and send it something once it's ready to listen. */
 function sendToPractice(channel, payload) {
   const win = openTool('practice');

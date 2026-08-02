@@ -1,13 +1,16 @@
 package com.tynan.mathtutor.ink
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.util.AttributeSet
+import android.util.Base64
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
+import java.io.ByteArrayOutputStream
 import kotlin.math.hypot
 
 /**
@@ -453,5 +456,41 @@ class InkCanvasView @JvmOverloads constructor(
         activePointerId = MotionEvent.INVALID_POINTER_ID
         activeIsEraser = false
         invalidate()
+    }
+
+    /**
+     * The working, as a base64 JPEG the tutor can look at, or null if nothing has
+     * been drawn — an image of a blank page is a wasted image, and a tutor
+     * describing one it cannot see is worse than it saying there is nothing there.
+     *
+     * The paper is drawn FIRST. This view renders transparent (its colour comes
+     * from the Compose parent's background), so without it a JPEG flattens to
+     * black and dark ink on black is invisible.
+     *
+     * Format matches ScreenCaptureManager.captureJpegBase64 — 1536px longest side,
+     * quality 80 — so the session's image-cost estimate stays honest whichever
+     * source a frame came from.
+     */
+    fun exportJpegBase64(paper: Int, maxSide: Int = 1536, quality: Int = 80): String? {
+        if (strokes.isEmpty()) return null
+        if (width <= 0 || height <= 0) return null
+        val full = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        Canvas(full).also { c ->
+            c.drawColor(paper)
+            draw(c)
+        }
+        val longest = maxOf(full.width, full.height)
+        val out = if (longest > maxSide) {
+            val scale = maxSide.toFloat() / longest
+            Bitmap.createScaledBitmap(
+                full, (full.width * scale).toInt(), (full.height * scale).toInt(), true
+            )
+        } else {
+            full
+        }
+        return ByteArrayOutputStream().use { bytes ->
+            out.compress(Bitmap.CompressFormat.JPEG, quality, bytes)
+            Base64.encodeToString(bytes.toByteArray(), Base64.NO_WRAP)
+        }
     }
 }

@@ -19,6 +19,18 @@ You speak only - you NEVER read out or dictate final answers, and you never stat
 final result of the student's problem. You guide by asking one focused question at a
 time and giving small hints, at an easy, encouraging pace.
 
+WHETHER, NOT WHAT: you may tell the student their answer is right or wrong - use the
+check_my_answer tool for that, never your own arithmetic - but you still never say what
+the answer is. "That's it" is fine. "No, it's minus three" is not, even after they have
+got it wrong twice; nudge them to the step instead.
+
+VOICE: dry, warm, quick. You like this stuff and it shows. A little wit when they get it
+right, and a lightness when they don't - the tone of a good demonstrator who has seen
+this mistake three hundred times and still finds the fix satisfying. Keep it to a phrase;
+a joke that costs them their train of thought is a bad joke. Never sarcastic about a
+wrong answer, never arch about a basic question, and drop the humour entirely if they
+sound tired or frustrated - read the room over the bit.
+
 SCOPE: The student is an engineering student on pre-calculus foundations: most of
 their working involves fractions, sign handling, factoring, and polynomials, building
 toward functions, differentiation and integration. Watch especially for sign flips,
@@ -190,6 +202,30 @@ reading the real page number off the page beats guessing.`;
           answer: { type: 'string', description: 'Final answer, LaTeX' },
         },
         required: ['question', 'steps', 'answer'],
+      },
+    });
+    // The app marks the answer, not the model. It never learns what the answer
+    // is — it asks, and gets back only a verdict — which is what lets it say
+    // "yes, that's it" while still never reading a final answer out.
+    tools.push({
+      type: 'function',
+      name: 'check_my_answer',
+      description:
+        'Check the student\'s answer against the one their practice question is ' +
+        'holding. Call this the moment they tell you an answer and want to know if ' +
+        'it is right. Pass what you heard, in words or numbers, exactly as they said ' +
+        'it. You will get back "right", "wrong", or "unsure" — never the answer ' +
+        'itself, so do not ask for it and do not guess it. On "right", say so with ' +
+        'some warmth. On "wrong", say so plainly and point at the step where it ' +
+        'probably went astray, without stating the correct answer. On "unsure", ask ' +
+        'them to say it a different way. If it comes back "none" the practice window ' +
+        'is not open, so ask them to open it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          heard: { type: 'string', description: 'What the student said their answer was' },
+        },
+        required: ['heard'],
       },
     });
     tools.push({

@@ -37,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.tynan.mathtutor.ink.InkCanvasView
@@ -134,6 +136,38 @@ private fun Studio(
     var canvas by remember { mutableStateOf<InkCanvasView?>(null) }
     var web by remember { mutableStateOf<WebView?>(null) }
     var bg by remember { mutableStateOf(Color(initialBg)) }
+
+    // The tutor asking "was that right?" arrives here, because the service has no
+    // route into a WebView and no binder. It publishes the question on uiState; the
+    // page marks it against the answer it is already holding and we post back only
+    // the verdict, so the model never learns the answer.
+    val tutor by com.tynan.mathtutor.service.RealtimeService.uiState.collectAsState()
+    val appContext = LocalContext.current.applicationContext
+    LaunchedEffect(tutor.pendingCheck) {
+        val pending = tutor.pendingCheck ?: return@LaunchedEffect
+        val view = web
+        if (view == null) return@LaunchedEffect // the service's timeout will answer
+        view.evaluateJavascript(
+            "window.__checkAnswer(${JSONObject.quote(pending.heard)})"
+        ) { result ->
+            // evaluateJavascript hands back the value as JSON text, and __checkAnswer
+            // returns an object, so this is already the JSON to forward.
+            //
+            // On a wrong answer the ink goes with it. Unlike the PC, the working here
+            // is a native view rather than a canvas in the page, so the activity is
+            // the only place that can reach it — and the moment the model learns they
+            // were wrong is the moment it needs to see where.
+            val working = try {
+                val wrong = JSONObject(result ?: "{}").optString("verdict") == "wrong"
+                if (wrong) canvas?.exportJpegBase64(bg.toArgb()) else null
+            } catch (_: Exception) {
+                null
+            }
+            com.tynan.mathtutor.service.RealtimeService.deliverCheck(
+                appContext, pending.callId, result ?: "", working
+            )
+        }
+    }
     var selected by remember { mutableStateOf(0) } // inks.size = eraser tool
     var showRgb by remember { mutableStateOf(false) }
     var viewTransformed by remember { mutableStateOf(false) }

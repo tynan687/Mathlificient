@@ -335,6 +335,67 @@ function grade(gotIt) {
   advance();
 }
 
+/**
+ * Answer the tutor's `check_my_answer` tool call.
+ *
+ * The page does the marking, not the host and not the model. That is not
+ * ceremony: `current.answer` lives here, the comparison lives in JavaScript, and
+ * — the point — the model is never told what the answer is. It asks, it gets a
+ * verdict, and it finds out whether the student was right at the same moment they
+ * do. That is what keeps "you never read out final answers" true while still
+ * letting the tutor say "yes, that's it".
+ *
+ * Called from Kotlin via evaluateJavascript on Android, and from main.js via
+ * executeJavaScript on Windows. Returns a plain OBJECT, which suits both: Android
+ * gets it as JSON text it can hand straight to the model, and Electron gets the
+ * value itself.
+ */
+window.__checkAnswer = (heard) => {
+  const reply = (o) => o;
+  if (!current) return reply({ verdict: 'none', reason: 'no question on screen' });
+  if (typeof markAnswer !== 'function') return reply({ verdict: 'unsure', reason: 'no marker' });
+
+  const { verdict, why } = markAnswer(heard, current.answer);
+  const peeked = typeof revealed === 'number' && revealed > 0;
+  // A live, unanswered option grid owns the marking. Recording here would leave
+  // four clickable options that silently no-op, so hand the model the verdict and
+  // let it nudge them to pick one instead.
+  const gridLive = !!(current.choices && typeof mcqActive === 'function' && mcqActive() && !graded);
+
+  let recorded = false;
+  if ((verdict === 'right' || verdict === 'wrong') && !graded && !gridLive) {
+    // Reading the steps first turns this into a copying exercise, so it does not
+    // get objective credit — the same rule mcqPick applies.
+    if (peeked) recordAttempt(verdict === 'right' ? 0.5 : 0, 'self', {});
+    else recordAttempt(verdict === 'right' ? 1 : 0, 'tutor', {});
+    recorded = true;
+    enableReveal();
+    // A quiz is waiting on advance() to move on; without this it stalls here.
+    if (gradeFlow !== 'practice') advance();
+  }
+  return reply({
+    verdict, why, recorded, peeked, gridLive,
+    skill: current.skill || null,
+    alreadyMarked: graded && !recorded,
+    // Only when it went wrong, and only if they actually wrote something. A
+    // correct answer needs no diagnosis, and an image of a blank page is a wasted
+    // one — so the tutor is told whether looking is worth it, and asks separately.
+    workingToSee: verdict === 'wrong'
+      && typeof window.__inkSnapshot === 'function'
+      && !!window.__inkSnapshot(),
+  });
+};
+
+/**
+ * The student's handwritten working, base64, or null.
+ *
+ * Kept separate from __checkAnswer so a verdict never drags an image along with
+ * it: the tutor is told whether there is working to look at, and fetches it only
+ * if it decides to.
+ */
+window.__working = () => (typeof window.__inkSnapshot === 'function'
+  ? window.__inkSnapshot() : null);
+
 /** Reopen the worked steps once the question has been answered. */
 function enableReveal() {
   nextBtn.disabled = revealed >= (current ? current.steps.length : 0);

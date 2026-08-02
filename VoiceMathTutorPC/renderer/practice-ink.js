@@ -191,6 +191,28 @@
       });
     }
 
+    /**
+     * The working, as a base64 image the tutor can look at.
+     *
+     * The paper is painted on FIRST because render() clears to transparent and the
+     * paper colour lives on the wrapper's CSS, not the canvas. Without this, a JPEG
+     * flattens transparent to black and dark ink on it is invisible — the tutor
+     * would confidently describe an empty page.
+     */
+    exportBase64(paper, mime = 'image/jpeg', quality = 0.8) {
+      const w = this.canvas.width;
+      const h = this.canvas.height;
+      if (!w || !h) return null;
+      const flat = document.createElement('canvas');
+      flat.width = w; flat.height = h;
+      const ctx = flat.getContext('2d');
+      ctx.fillStyle = paper || '#FFFFFF';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(this.canvas, 0, 0);
+      const url = flat.toDataURL(mime, quality);
+      return url.slice(url.indexOf(',') + 1);
+    }
+
     // ---- strokes ------------------------------------------------------------------------
 
     _beginStroke(sx, sy, pressure) {
@@ -394,6 +416,17 @@
 
   const ink = new InkCanvas(canvas);
   window.__ink = ink; // exposed for on-device/automated verification
+
+  /**
+   * The student's working, for the tutor to look at. Returns null when the page
+   * has no ink canvas or nothing has been drawn — there is no point spending an
+   * image on a blank sheet, and the tutor describing one it cannot see is worse
+   * than it admitting there is nothing there.
+   */
+  window.__inkSnapshot = () => {
+    if (!ink.strokes || !ink.strokes.length) return null;
+    return ink.exportBase64(paperColor);
+  };
 
   const ro = new ResizeObserver(() => ink.resize());
   ro.observe(wrap || canvas);
