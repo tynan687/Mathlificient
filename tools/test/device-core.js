@@ -78,8 +78,11 @@ async function reattach(match) {
   ok('it talks to the real Kotlin bridge', r.backend === 'android', r.backend);
   ok('a fresh install reads as empty', /Nothing marked yet/.test(r.summary), r.summary);
   ok('  ...and offers the placement check', r.placementShown === true);
-  ok('all 66 templates shipped in the APK', r.templates === 66, String(r.templates));
-  ok('  ...covering 39 skills', r.skills === 39, String(r.skills));
+  // Exact on purpose — a census, so shipping content is a deliberate act. `skills`
+  // counts only skills with practice templates: the 15 `sym-*` skills are drilled
+  // from the symbols screen instead, so they are correctly absent here.
+  ok('all 73 templates shipped in the APK', r.templates === 73, String(r.templates));
+  ok('  ...covering 41 skills', r.skills === 41, String(r.skills));
   ok('the new areas render', r.areas >= 8, String(r.areas));
   ok('focus-next names three skills', r.focus.length === 3, r.focus.join(', '));
   ok('domStorageEnabled took effect', r.storage === true);

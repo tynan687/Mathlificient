@@ -69,7 +69,8 @@ nothing else has a copy of those. Only the PC side follows `PC`.
 | `device-core.js` | **tablet** | Practice, grading, persistence on real hardware |
 | `device-placement.js` | **tablet** | The 12-question placement check on real hardware |
 | `device-symbols.js` | **tablet** | Symbols screen on real hardware |
-| `device-viz.js` | **tablet** | Diagrams render on the real WebView |
+| `device-viz.js` | **tablet** | Every renderer draws on the real WebView — practice templates *and* symbol diagrams, with a check that no type is left undrawn |
+| `device-phase8.js` | **tablet** | `Proficiency.resetSkill` and `Bridge.shareText` through the real bridge, the slips panel on device, and `markAnswer` in the real WebView. This is the only cover for that Kotlin — the stand-in proves the JS calls it, nothing more |
 
 `android-bridge-preload.js` is not a suite — it is the fake `Android` object the three
 `android-*` harnesses inject, backing `profAll`/`profAppend`/`profReset` with an in-memory store.

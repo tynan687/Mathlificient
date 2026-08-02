@@ -54,7 +54,8 @@ async function reattach(match) {
       bridgeSpeak: typeof Android.speak === 'function',
     });
   })()`));
-  ok('all 100 symbols shipped', r.symbols === 100 && r.cards === 100, `${r.cards}`);
+  // Exact on purpose — a census, so shipping content is a deliberate act.
+  ok('all 159 symbols shipped', r.symbols === 159 && r.cards === 159, `${r.cards}`);
   ok('  ...and the 20 readings', r.readings === 20, String(r.readings));
   ok('KaTeX is lazy on device too', r.rendered > 0 && r.rendered < 60,
     `${r.rendered} rendered, ${r.pending} pending`);

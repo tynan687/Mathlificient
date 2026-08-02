@@ -248,7 +248,7 @@ attach to the tablet, is in [tools/test/README.md](tools/test/README.md).
 | Mastery model | `tools/test/model.mjs`, `skills.mjs` | decay, recovery, area rollup, guessing correction (Monte Carlo) |
 | PC UI | `tools/test/pc-*.js`, `viz.js` | real pages, real IPC, synthetic pointer events |
 | Android UI | `tools/test/android-*.js` | **real asset copies**, stand-in bridge, touch targets, overflow |
-| Hardware | `tools/test/device-*.js` | real Kotlin bridge, real `filesDir`, force-stop persistence |
+| Hardware | `tools/test/device-*.js` | real Kotlin bridge, real `filesDir`, force-stop persistence, per-skill reset, export through the share sheet, every renderer on the real WebView — 129 assertions |
 
 The `device-*` suites are excluded from `run-all.js` — they need a tablet and a debug build.
 Run them individually after any change to `Proficiency.kt` or the `Bridge` methods.
