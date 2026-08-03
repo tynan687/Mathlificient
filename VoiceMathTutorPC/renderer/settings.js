@@ -82,6 +82,8 @@ async function init() {
     window.tutor.send('theme:changed');
   });
 
+  initAccentControls();
+
   $('retrievalModel').value = settings.retrievalModel || '';
   $('retrievalModel').addEventListener('input', () => {
     settings.retrievalModel = $('retrievalModel').value.trim();
@@ -158,6 +160,57 @@ async function renderPdfs() {
 
 const BUBBLE_COLORS = ['#4F7DF7', '#2FB65D', '#8E5CF7', '#F0A322', '#E5484D', '#111827'];
 const BUBBLE_GLYPHS = ['π', '∑', '∫', '√', 'ƒ', 'Δ'];
+
+// The accent drives buttons, tabs, links and the diagram colour, through the
+// --accent token in app.css. Deliberately not the bubble's list: #111827 is a
+// sensible bubble and an unreadable accent on a dark theme.
+const ACCENT_COLORS = ['#4F7DF7', '#2FB65D', '#8E5CF7', '#F0A322', '#E5484D', '#0E7C86'];
+
+/**
+ * Pick the accent.
+ *
+ * Goes through `save()` like every other control here — deliberately. The whole
+ * settings object is written on save and a stale copy can revert someone else's
+ * key (HANDOVER.md, "Known gaps"), so adding a FOURTH writer for one colour
+ * would be a new way to lose a setting. tools/check-settings.js pins the three
+ * that exist so this cannot happen by accident.
+ */
+function initAccentControls() {
+  const wrap = $('accentSwatches');
+  const custom = $('accentCustom');
+  if (!wrap || !custom) return; // markup not present — no-op, same as the quiz bar
+
+  const current = () => settings.accent || ACCENT_COLORS[0];
+  const dots = ACCENT_COLORS.map((c) => {
+    const dot = document.createElement('span');
+    dot.dataset.colour = c;
+    dot.title = c;
+    dot.style.cssText = `width:22px;height:22px;border-radius:50%;background:${c};`
+      + 'cursor:pointer;border:2px solid transparent';
+    dot.addEventListener('click', () => setAccent(c));
+    wrap.appendChild(dot);
+    return dot;
+  });
+
+  function paintSelection() {
+    for (const dot of dots) {
+      dot.style.borderColor = dot.dataset.colour.toLowerCase() === current().toLowerCase()
+        ? 'var(--fg)' : 'transparent';
+    }
+    custom.value = current();
+  }
+
+  function setAccent(hex) {
+    settings.accent = hex;
+    save();
+    // Repaints this window and every other open one; theme.js does the rest.
+    window.tutor.send('theme:changed');
+    paintSelection();
+  }
+
+  custom.addEventListener('input', () => setAccent(custom.value));
+  paintSelection();
+}
 
 function initBubbleControls() {
   const swatches = $('swatches');

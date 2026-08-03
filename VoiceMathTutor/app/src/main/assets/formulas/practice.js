@@ -21,7 +21,8 @@ const gotItBtn = document.getElementById('gotIt');
 const missedItBtn = document.getElementById('missedIt');
 
 let vizOpen = false;
-let paperColors = null; // set by applyPaper (Android); PC derives from page styles
+let paperColors = null; // set by applyPaper; PC derives from page styles until then
+let paperLum = 1;       // luminance of the current paper, kept for re-accenting
 
 let current = null;   // { question, steps, answer, choices, fromTutor }
 let revealed = 0;
@@ -234,11 +235,41 @@ function show(item, label) {
 
 // ---- Visual panel (collapsible; never covers the board or formulas) ----------------
 
+/**
+ * The accent to draw with, against paper of the given luminance.
+ *
+ * Starts from the student's chosen accent — read from the --accent token, since
+ * a canvas cannot resolve a custom property — and brightens it on dark paper,
+ * where a mid-tone stops reading. Android has no token and falls back to the
+ * two literals this always used.
+ */
+function accentOnPaper(lum) {
+  const chosen = typeof getComputedStyle === 'function'
+    ? getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() : '';
+  if (!/^#[0-9a-fA-F]{6}$/.test(chosen)) return lum < 0.4 ? '#7DA7FF' : '#4F7DF7';
+  if (lum >= 0.4) return chosen;
+  const mix = (i) => Math.round(parseInt(chosen.slice(1 + i * 2, 3 + i * 2), 16) * 0.6 + 255 * 0.4);
+  return `#${[0, 1, 2].map((i) => mix(i).toString(16).padStart(2, '0')).join('')}`;
+}
+
 function vizColors() {
   if (paperColors) return paperColors;
   const cs = getComputedStyle(document.body);
-  return { bg: cs.backgroundColor, fg: cs.color, accent: '#4F7DF7' };
+  // A canvas cannot read a custom property, so the accent is fetched rather than
+  // written out again — otherwise a diagram is the one thing on the page that
+  // ignores the chosen colour.
+  const accent = getComputedStyle(document.documentElement)
+    .getPropertyValue('--accent').trim() || '#4F7DF7';
+  return { bg: cs.backgroundColor, fg: cs.color, accent };
 }
+
+// theme.js has just swapped the tokens. paperColors caches the accent it worked
+// out when the paper was last set, so redrawing alone would reuse the old
+// colour — recompute it against the same paper first.
+window.addEventListener('theme-applied', () => {
+  if (paperColors) paperColors = { ...paperColors, accent: accentOnPaper(paperLum) };
+  if (typeof updateViz === 'function') updateViz();
+});
 
 function updateViz() {
   if (!vizBar) return;
@@ -468,8 +499,13 @@ function showTutorQuestion(payload) {
 }
 
 /**
- * Paint the whole page to match the Practice Studio's paper colour (Android).
- * `bg` = paper hex, `fg` = a contrasting content hex. No-op on PC (never called).
+ * Paint the whole page to match the Practice Studio's paper colour.
+ * `bg` = paper hex, `fg` = a contrasting content hex.
+ *
+ * Called on BOTH platforms — Kotlin drives it on Android, and practice-ink.js
+ * calls it on PC whenever the paper changes, which is why this page's background
+ * follows the paper setting rather than the app theme. That is deliberate: the
+ * paper is the surface you write on, not app chrome.
  */
 window.applyPaper = (bg, fg) => {
   // Diagram colours follow the paper; brighter accent on dark paper.
@@ -479,7 +515,8 @@ window.applyPaper = (bg, fg) => {
        0.587 * parseInt(hex.slice(2, 4), 16) +
        0.114 * parseInt(hex.slice(4, 6), 16)) / 255
     : 1;
-  paperColors = { bg, fg, accent: lum < 0.4 ? '#7DA7FF' : '#4F7DF7' };
+  paperLum = lum;
+  paperColors = { bg, fg, accent: accentOnPaper(lum) };
   if (vizOpen) updateViz();
 
   let s = document.getElementById('paperTheme');

@@ -73,6 +73,9 @@ const DEFAULT_SETTINGS = {
   bubbleOpacity: 1.0,
   bubbleGlyph: 'π',
   theme: 'system', // system | light | dark | sepia
+  // Drives every accent in the app — buttons, tabs, links and the diagram
+  // colour — through the --accent token in renderer/app.css.
+  accent: '#4F7DF7',
   practicePaperColor: '#FFFFFF', // Practice Studio ink canvas paper colour
 };
 

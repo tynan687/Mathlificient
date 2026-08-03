@@ -3,22 +3,23 @@
 <head>
   <meta charset="utf-8">
   <title>Unit &amp; Constant Converter</title>
+  <link rel="stylesheet" href="../app.css">
   <style>
     :root { color-scheme: light dark; }
     body { font-family: "Segoe UI", system-ui, sans-serif; margin: 0; padding: 16px;
-      background: Canvas; color: CanvasText; font-size: 14px; }
+      background: var(--bg); color: var(--fg); font-size: 14px; }
     h2 { font-size: 15px; margin: 14px 0 6px; }
     select, input { padding: 7px 8px; border-radius: 7px; font-size: 14px;
-      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-      background: Canvas; color: CanvasText; }
+      border: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+      background: var(--bg); color: var(--fg); }
     .row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
     .row input { flex: 1; min-width: 0; }
     .out { font-size: 20px; font-weight: 600; margin: 8px 0; }
     table { border-collapse: collapse; width: 100%; font-size: 13px; }
-    td { padding: 4px 6px; border-bottom: 1px solid color-mix(in srgb, CanvasText 12%, transparent); }
+    td { padding: 4px 6px; border-bottom: 1px solid color-mix(in srgb, var(--fg) 12%, transparent); }
     td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
     .k { cursor: pointer; }
-    .k:hover { background: color-mix(in srgb, CanvasText 8%, transparent); }
+    .k:hover { background: color-mix(in srgb, var(--fg) 8%, transparent); }
   </style>
 </head>
 <body>

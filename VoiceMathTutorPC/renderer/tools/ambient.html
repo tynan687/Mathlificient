@@ -3,17 +3,18 @@
 <head>
   <meta charset="utf-8">
   <title>Ambient Sound</title>
+  <link rel="stylesheet" href="../app.css">
   <style>
     :root { color-scheme: light dark; }
     body { font-family: "Segoe UI", system-ui, sans-serif; margin: 0; padding: 20px;
-      background: Canvas; color: CanvasText; font-size: 14px; }
+      background: var(--bg); color: var(--fg); font-size: 14px; }
     h1 { font-size: 18px; margin: 0 0 4px; }
     .hint { opacity: 0.65; font-size: 12.5px; margin-bottom: 14px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     button.sound { padding: 18px 10px; border-radius: 12px; font-size: 15px; cursor: pointer;
-      border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
-      background: Canvas; color: CanvasText; }
-    button.sound.on { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+      border: 1px solid color-mix(in srgb, var(--fg) 22%, transparent);
+      background: var(--bg); color: var(--fg); }
+    button.sound.on { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
     .vol { margin-top: 16px; display: flex; align-items: center; gap: 10px; }
     input[type=range] { flex: 1; }
   </style>

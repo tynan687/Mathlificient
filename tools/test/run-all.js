@@ -48,6 +48,7 @@ const SUITES = [
   { name: 'pc-symbols', file: 'pc-symbols.js', what: 'PC: symbols browse + read' },
   { name: 'pc-worksheet', file: 'pc-worksheet.js', what: 'PC: printable worksheet, both modes' },
   { name: 'pc-check-answer', file: 'pc-check-answer.js', what: 'PC: the tutor verdict, and no answer leak' },
+  { name: 'pc-theme', file: 'pc-theme.js', what: 'PC: theme + accent reach every page, readably' },
   { name: 'android-progress', file: 'android-progress.js', what: 'Android page at 360dp' },
   { name: 'android-mcq', file: 'android-mcq.js', what: 'Android: options, .mini popup, paper' },
   { name: 'android-symbols', file: 'android-symbols.js', what: 'Android: symbols at 360dp' },

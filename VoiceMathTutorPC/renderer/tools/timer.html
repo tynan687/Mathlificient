@@ -3,20 +3,21 @@
 <head>
   <meta charset="utf-8">
   <title>Focus Timer</title>
+  <link rel="stylesheet" href="../app.css">
   <style>
     :root { color-scheme: light dark; }
     body { font-family: "Segoe UI", system-ui, sans-serif; margin: 0; padding: 20px;
-      background: Canvas; color: CanvasText; text-align: center; }
+      background: var(--bg); color: var(--fg); text-align: center; }
     .clock { font-size: 64px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 10px 0; }
     .phase { font-size: 15px; opacity: 0.7; letter-spacing: 1px; text-transform: uppercase; }
     input { padding: 7px; border-radius: 7px; font-size: 14px;
-      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-      background: Canvas; color: CanvasText; box-sizing: border-box; }
+      border: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+      background: var(--bg); color: var(--fg); box-sizing: border-box; }
     #goal { width: 100%; margin: 12px 0; }
     button { padding: 9px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; margin: 3px;
-      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-      background: Canvas; color: CanvasText; }
-    button.primary { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+      border: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+      background: var(--bg); color: var(--fg); }
+    button.primary { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
     .cfg { display: flex; gap: 8px; justify-content: center; align-items: center;
       margin-top: 14px; font-size: 13px; opacity: 0.85; }
     .cfg input { width: 52px; text-align: center; }

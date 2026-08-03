@@ -74,6 +74,7 @@ const HTML_PAIRS = [
 ];
 const SCRIPT_ONLY = {
   'practice-ink.js': 'PC only — Android draws on a native InkCanvasView below the WebView',
+  'theme.js': 'PC only — Android themes its WebViews from Kotlin via applyPaper()',
 };
 
 function scriptNames(file) {

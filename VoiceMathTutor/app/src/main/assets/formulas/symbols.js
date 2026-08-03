@@ -219,11 +219,31 @@ function toggleCard(card, body) {
  * pushed one, otherwise whatever the page is actually painted.
  */
 let paperColors = null;
+let paperLum = 1; // kept so the accent can be recomputed on a theme change
+/** As practice.js: the chosen accent, brightened on dark paper. */
+function accentOnPaper(lum) {
+  const chosen = typeof getComputedStyle === 'function'
+    ? getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() : '';
+  if (!/^#[0-9a-fA-F]{6}$/.test(chosen)) return lum < 0.4 ? '#7DA7FF' : '#4F7DF7';
+  if (lum >= 0.4) return chosen;
+  const mix = (i) => Math.round(parseInt(chosen.slice(1 + i * 2, 3 + i * 2), 16) * 0.6 + 255 * 0.4);
+  return `#${[0, 1, 2].map((i) => mix(i).toString(16).padStart(2, '0')).join('')}`;
+}
+
 function vizColors() {
   if (paperColors) return paperColors;
   const cs = getComputedStyle(document.body);
-  return { bg: cs.backgroundColor, fg: cs.color, accent: '#4F7DF7' };
+  // Read, not written out again — see the same note in tools/practice.js.
+  const accent = getComputedStyle(document.documentElement)
+    .getPropertyValue('--accent').trim() || '#4F7DF7';
+  return { bg: cs.backgroundColor, fg: cs.color, accent };
 }
+
+// A theme change repaints the page but not an already-drawn canvas.
+window.addEventListener('theme-applied', () => {
+  if (paperColors) paperColors = { ...paperColors, accent: accentOnPaper(paperLum) };
+  if (openCard) drawCard(openCard);
+});
 
 /** Draw an open card's diagram, if it has one. */
 function drawCard(card) {
@@ -371,7 +391,8 @@ window.applyPaper = (bg, fg) => {
       + 0.587 * parseInt(hex.slice(2, 4), 16)
       + 0.114 * parseInt(hex.slice(4, 6), 16)) / 255
     : 1;
-  paperColors = { bg, fg, accent: lum < 0.4 ? '#7DA7FF' : '#4F7DF7' };
+  paperLum = lum;
+  paperColors = { bg, fg, accent: accentOnPaper(lum) };
   // An already-open card was drawn against the old paper and would keep a white
   // rectangle sitting in the middle of a dark page.
   if (openCard) drawCard(openCard);

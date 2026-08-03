@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Worksheet</title>
   <link rel="stylesheet" href="../../node_modules/katex/dist/katex.min.css">
+  <link rel="stylesheet" href="../app.css">
   <style>
     :root { color-scheme: light; }
     body { font-family: system-ui, sans-serif; margin: 0; padding: 24px 32px;
@@ -12,7 +13,7 @@
     .no-print { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; }
     button { padding: 9px 16px; border-radius: 9px; font-size: 14px; cursor: pointer;
       border: 1px solid #999; background: #fff; }
-    button.primary { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+    button.primary { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
     h1 { font-size: 20px; margin: 0 0 4px; }
     .sub { font-size: 13px; opacity: 0.65; margin-bottom: 18px; }
     .qitem { margin: 0 0 26px; page-break-inside: avoid; }
@@ -47,6 +48,7 @@
     <h1>Answer Key</h1>
     <div id="answers"></div>
   </div>
+  <script src="../theme.js"></script>
   <script src="../../node_modules/katex/dist/katex.min.js"></script>
   <script src="worksheet.js"></script>
 </body>

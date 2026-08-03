@@ -6,18 +6,19 @@
        option), so it must stay in step with OWN_WINDOW_TITLES in main.js —
        that's how the app keeps itself out of the capture-target picker. -->
   <title>Mathlificient</title>
+  <link rel="stylesheet" href="app.css">
   <style>
     :root { color-scheme: light dark; }
     body {
       font-family: "Segoe UI", system-ui, sans-serif;
       margin: 0; padding: 20px; font-size: 14px;
-      background: Canvas; color: CanvasText;
+      background: var(--bg); color: var(--fg);
       max-width: 520px;
     }
     h1 { font-size: 22px; margin: 0 0 12px; }
     h2 { font-size: 15px; margin: 18px 0 6px; }
     .card {
-      border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+      border: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
       border-radius: 10px; padding: 14px; margin: 10px 0;
     }
     .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
@@ -26,25 +27,25 @@
     .error { color: #E5484D; font-size: 12.5px; white-space: pre-wrap; }
     button {
       padding: 7px 14px; border-radius: 8px; cursor: pointer;
-      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-      background: Canvas; color: CanvasText;
+      border: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+      background: var(--bg); color: var(--fg);
     }
-    button.primary { background: #4F7DF7; border-color: #4F7DF7; color: #fff; }
+    button.primary { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
     button:disabled { opacity: 0.45; cursor: default; }
     input[type=text], input[type=password], select {
       padding: 6px 8px; border-radius: 7px; min-width: 150px;
-      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-      background: Canvas; color: CanvasText;
+      border: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+      background: var(--bg); color: var(--fg);
     }
     input[type=text] { width: 100%; box-sizing: border-box; }
     dialog {
-      border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+      border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
       border-radius: 10px; padding: 16px; max-width: 420px; width: 90%;
-      background: Canvas; color: CanvasText;
+      background: var(--bg); color: var(--fg);
     }
     dialog::backdrop { background: rgba(0,0,0,0.35); }
     .note { display: flex; align-items: center; gap: 8px; padding: 6px 0;
-      border-bottom: 1px solid color-mix(in srgb, CanvasText 12%, transparent); }
+      border-bottom: 1px solid color-mix(in srgb, var(--fg) 12%, transparent); }
     .note div { flex: 1; }
     .logline { padding: 3px 0; font-size: 12.5px; }
   </style>
@@ -151,6 +152,10 @@
   </div>
 
   <div class="row"><label>Theme</label><select id="theme"></select></div>
+  <div class="row"><label>Accent colour</label>
+    <span id="accentSwatches" style="display:flex; gap:4px"></span>
+    <input type="color" id="accentCustom" title="Any colour"
+      style="width:34px; height:26px; padding:0; cursor:pointer"></div>
 
   <h2>Tutor settings <span class="muted">(apply on next Start)</span></h2>
   <div class="row"><label>Model</label><select id="model"></select></div>

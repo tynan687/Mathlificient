@@ -1,0 +1,138 @@
+/*
+ * The shared look. Every page links this first, then adds only what is its own.
+ *
+ * Before this, thirteen pages each carried their own near-identical copy of the
+ * body, card, button and input rules, and the accent blue was written out in
+ * eight places across HTML and JS. Changing either meant finding all of them,
+ * which is why the theme setting had drifted into working on seven pages and
+ * doing nothing at all on the four a student actually spends time in.
+ *
+ * The colours are custom properties rather than literals so a theme is a set of
+ * VALUES, not a pile of `!important` overrides against a hardcoded list of
+ * selectors — which is what sepia used to be, and why anything added after it
+ * was written stayed unthemed.
+ *
+ * Light and dark need no values at all: `Canvas` and `CanvasText` are system
+ * colours and flip on their own once `color-scheme` is set. theme.js sets it.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: Canvas;
+  --fg: CanvasText;
+  /* Cards are outlined rather than filled on the system themes — filling them
+     against Canvas is invisible in light and muddy in dark. Sepia fills them. */
+  --surface: transparent;
+  --line: color-mix(in srgb, CanvasText 18%, transparent);
+  --line-strong: color-mix(in srgb, CanvasText 25%, transparent);
+  --hover: color-mix(in srgb, CanvasText 8%, transparent);
+
+  /* Overwritten at runtime by theme.js from the `accent` setting. Everything
+     that used to say #4F7DF7 says var(--accent) instead, including the diagram
+     colours, so a chosen accent reaches the graphs as well as the buttons. */
+  --accent: #4F7DF7;
+  /* The accent as chosen is for strokes — borders, links, focus, diagrams. A
+     FILLED surface uses --accent-fill, which theme.js nudges until a label on it
+     clears 4.5:1. Even the default blue is only 3.7:1 against white. */
+  --accent-fill: #3f6ae0;
+  --on-accent: #ffffff;
+  --danger: #E5484D;
+  --good: #2E7D32;
+
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 12px;
+  --gap: 10px;
+
+  --font: "Segoe UI", system-ui, sans-serif;
+  --font-size: 14px;
+}
+
+html[data-theme="sepia"] {
+  color-scheme: light;
+  --bg: #f4ecd8;
+  --fg: #5b4636;
+  --surface: #efe3c8;
+  --line: #d8c9a3;
+  --line-strong: #c9b990;
+  --hover: #e2d3ae;
+  --on-accent: #ffffff;
+}
+
+/* ---- base ------------------------------------------------------------------ */
+
+body {
+  font-family: var(--font);
+  font-size: var(--font-size);
+  margin: 0;
+  padding: 20px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+h1 { font-size: 22px; margin: 0 0 12px; }
+h2 { font-size: 15px; margin: 18px 0 6px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: var(--gap) 0;
+}
+
+.row { display: flex; align-items: center; gap: var(--gap); margin: 6px 0; }
+.row label { flex: 1; }
+.muted, .hint { opacity: 0.7; font-size: 12.5px; }
+.error { color: var(--danger); font-size: 12.5px; white-space: pre-wrap; }
+
+/* ---- controls ---------------------------------------------------------------- */
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--fg);
+}
+button:hover:not(:disabled) { background: var(--hover); }
+button.primary {
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--on-accent);
+}
+button.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-fill) 88%, black);
+}
+button:disabled { opacity: 0.45; cursor: default; }
+
+input[type=text], input[type=password], input[type=number], select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--fg);
+}
+input[type=text] { width: 100%; box-sizing: border-box; }
+
+/* The focus ring follows the accent, so keyboard users get the same signal the
+   buttons give. Two colours, because a single ring vanishes on a dark theme. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+dialog {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--bg);
+  color: var(--fg);
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.35); }
