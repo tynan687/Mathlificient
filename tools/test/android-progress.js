@@ -269,6 +269,84 @@ app.whenReady().then(async () => {
   ok('applyPaper themes the progress page for dark paper',
     r.bg === 'rgb(28, 28, 30)' && r.fg === 'rgb(240, 240, 240)', JSON.stringify(r));
 
+  // ---- 5. Phase 8 through the bridge, at 360dp ----------------------------------------
+  //
+  // android-bridge-preload.js has had profResetSkill and shareText since Phase 8
+  // landed and nothing has ever called them. On this platform the export must go
+  // to the share sheet, NOT to the clipboard fallback — copyText puts the whole
+  // log on the clipboard behind a Toast about pasting into Word, which is the
+  // wrong thing to do with a file a student wants to keep.
+  const now = Date.now();
+  const seeded = [];
+  for (let i = 0; i < 3; i++) {
+    seeded.push({ t: now - i * 60000, skill: 'quadratics', tmpl: 'quad-formula',
+      score: 0, mode: 'mcq', k: 4, miss: 'disc-sign', flow: 'practice' });
+  }
+  for (let i = 0; i < 2; i++) {
+    seeded.push({ t: now - i * 60000, skill: 'linear-equations', tmpl: 'linear-eq',
+      score: 1, mode: 'mcq', k: 4, flow: 'practice' });
+  }
+  fs.writeFileSync(PROF, JSON.stringify({ version: 1, attempts: seeded }, null, 2));
+
+  r = JSON.parse(await progress.webContents.executeJavaScript(`(async () => {
+    applyPaper('#FFFFFF', '#111111');
+    await render();
+    await new Promise(r => setTimeout(r, 250));
+    const card = document.querySelector('#slips .pick');
+    return JSON.stringify({
+      shown: !document.getElementById('slipsWrap').classList.contains('hidden'),
+      name: card ? card.querySelector('.pick-name').textContent : null,
+      count: card ? (card.querySelector('.slip-count') || {}).textContent : null,
+      scrollWidth: document.body.scrollWidth,
+      innerWidth: window.innerWidth,
+      forgets: document.querySelectorAll('#areas .forget').length,
+    });
+  })()`, true));
+  ok('the slips panel renders on a phone', r.shown === true && /^You keep /.test(r.name || ''), r.name);
+  ok('  ...with its count', r.count === '3×', r.count);
+  ok('  ...without widening the page', r.scrollWidth <= r.innerWidth + 1,
+    `${r.scrollWidth} vs ${r.innerWidth}`);
+  ok('  ...and Forget only where there is history', r.forgets === 2, String(r.forgets));
+
+  r = JSON.parse(await progress.webContents.executeJavaScript(`(async () => {
+    const btn = [...document.querySelectorAll('#areas .forget')].find(b =>
+      b.closest('.skill').textContent.includes('Quadratic'));
+    const box = btn.getBoundingClientRect();
+    btn.click(); await new Promise(r => setTimeout(r, 60));
+    const mid = (await Store.profAll()).attempts.length;
+    btn.click(); await new Promise(r => setTimeout(r, 250));
+    const after = await Store.profAll();
+    return JSON.stringify({ h: Math.round(box.height), mid,
+      quad: after.attempts.filter(a => a.skill === 'quadratics').length,
+      other: after.attempts.filter(a => a.skill === 'linear-equations').length });
+  })()`, true));
+  ok('Forget arms on the first tap, on the phone too', r.mid === 5, String(r.mid));
+  ok('  ...then forgets that skill through the bridge', r.quad === 0, String(r.quad));
+  ok('  ...leaving the others alone', r.other === 2, String(r.other));
+  ok('  ...and it went through Proficiency.kt semantics, not a page-side rewrite',
+    readProf().attempts.length === 2, String(readProf().attempts.length));
+
+  fs.writeFileSync(PROF, JSON.stringify({ version: 1, attempts: seeded }, null, 2));
+  r = JSON.parse(await progress.webContents.executeJavaScript(`(async () => {
+    window.__androidCalls.length = 0;
+    await render();
+    document.getElementById('export-json').click();
+    await new Promise(r => setTimeout(r, 200));
+    document.getElementById('export-csv').click();
+    await new Promise(r => setTimeout(r, 200));
+    return JSON.stringify({ calls: window.__androidCalls });
+  })()`, true));
+  const shares = r.calls.filter((c) => c[0] === 'shareText');
+  ok('export hands the file to the share sheet', shares.length === 2,
+    JSON.stringify(r.calls.map((c) => c[0])));
+  ok('  ...as JSON then CSV, named and typed',
+    shares[0] && /\.json$/.test(shares[0][1]) && shares[0][2] === 'application/json'
+    && shares[1] && /\.csv$/.test(shares[1][1]) && shares[1][2] === 'text/csv',
+    JSON.stringify(shares.map((s) => [s[1], s[2]])));
+  ok('  ...and never falls through to copyText',
+    !r.calls.some((c) => c[0] === 'copyText'),
+    JSON.stringify(r.calls.map((c) => c[0])));
+
   console.log(fail ? `\n${fail} FAILURE(S)` : '\nALL PASS');
   app.exit(fail ? 1 : 0);
 });

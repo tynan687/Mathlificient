@@ -281,6 +281,103 @@ app.whenReady().then(async () => {
   console.log('  cold focus:', r.focus.join('\n              '));
   ok('  ...and still lists the areas', r.areas >= 5, String(r.areas));
 
+  // ---- 6. Phase 8: slips, Forget, export ----------------------------------------------
+  //
+  // All three shipped covered only by device-phase8.js, so none of it was
+  // checked without a tablet. Seeded directly rather than driven through the UI:
+  // what is under test is the progress screen's reading of a log, and picking
+  // the same misconception twice by clicking options would take a lucky draw.
+  const seeded = [];
+  const now = Date.now();
+  for (let i = 0; i < 3; i++) {
+    seeded.push({ t: now - i * 60000, skill: 'quadratics', tmpl: 'quad-formula',
+      score: 0, mode: 'mcq', k: 4, miss: 'disc-sign', flow: 'practice' });
+  }
+  for (let i = 0; i < 2; i++) {
+    seeded.push({ t: now - i * 60000, skill: 'linear-equations', tmpl: 'linear-eq',
+      score: 1, mode: 'mcq', k: 4, flow: 'practice' });
+  }
+  fs.writeFileSync(PROF, JSON.stringify({ version: 1, attempts: seeded }, null, 2));
+
+  r = JSON.parse(await progress.webContents.executeJavaScript(`(async () => {
+    await render();
+    await new Promise(r => setTimeout(r, 200));
+    const cards = [...document.querySelectorAll('#slips .pick')].map(c => ({
+      name: c.querySelector('.pick-name').textContent,
+      count: (c.querySelector('.slip-count') || {}).textContent || '',
+      hint: (c.querySelector('.pick-why') || {}).textContent || '',
+    }));
+    return JSON.stringify({
+      shown: !document.getElementById('slipsWrap').classList.contains('hidden'),
+      cards,
+      hintHtml: (document.querySelector('#slips .pick-why') || {}).innerHTML || '',
+      forgets: document.querySelectorAll('#areas .forget').length,
+    });
+  })()`, true));
+  ok('three of the same slip raises the slips panel', r.shown === true);
+  ok('  ...naming the misconception, not its key',
+    r.cards.length >= 1 && /^You keep /.test(r.cards[0].name) && !/disc-sign/.test(r.cards[0].name),
+    r.cards[0] && r.cards[0].name);
+  ok('  ...with the number of times', /^3×$/.test(r.cards[0].count), r.cards[0].count);
+  ok('  ...and a hint in plain text, never LaTeX',
+    r.cards[0].hint.length > 0 && !/\\\\|katex|<span/i.test(r.hintHtml),
+    JSON.stringify(r.cards[0].hint.slice(0, 60)));
+  ok('  ...and Forget is offered only where there is history', r.forgets === 2,
+    `${r.forgets} forget buttons for 2 skills with attempts`);
+
+  // Forget one skill, keep the other. The arming step is the point: a single
+  // stray tap must not be able to delete a topic's history.
+  r = JSON.parse(await progress.webContents.executeJavaScript(`(async () => {
+    const btn = [...document.querySelectorAll('#areas .forget')].find(b =>
+      b.closest('.skill').textContent.includes('Quadratic'));
+    if (!btn) return JSON.stringify({ error: 'no Forget on quadratics' });
+    btn.click();
+    await new Promise(r => setTimeout(r, 60));
+    const armed = { text: btn.textContent, cls: btn.className };
+    const mid = await Store.profAll();
+    btn.click();
+    await new Promise(r => setTimeout(r, 250));
+    const after = await Store.profAll();
+    return JSON.stringify({ armed, midCount: mid.attempts.length,
+      afterQuad: after.attempts.filter(a => a.skill === 'quadratics').length,
+      afterOther: after.attempts.filter(a => a.skill === 'linear-equations').length });
+  })()`, true));
+  ok('one tap on Forget only arms it', r.midCount === 5 && /again/i.test(r.armed.text),
+    `${r.armed.text} · ${r.midCount} kept`);
+  ok('  ...and it is visibly armed', /armed/.test(r.armed.cls || ''), r.armed.cls);
+  ok('a second tap forgets that skill', r.afterQuad === 0, String(r.afterQuad));
+  ok('  ...and leaves every other skill alone', r.afterOther === 2, String(r.afterOther));
+
+  // Export. The JSON is the only backup a student can keep — the log is
+  // rewritten whole on every attempt — so it has to be the log, exactly.
+  fs.writeFileSync(PROF, JSON.stringify({ version: 1, attempts: seeded }, null, 2));
+  let exported = null;
+  ipcMain.handle('prof:export', (_e, payload) => { exported = payload; return true; });
+
+  await progress.webContents.executeJavaScript(`(async () => {
+    await render();
+    document.getElementById('export-json').click();
+    await new Promise(r => setTimeout(r, 250));
+  })()`, true);
+  ok('Export backup writes a .json', !!exported && /\.json$/.test(exported.file),
+    exported && exported.file);
+  ok('  ...that parses back to the same log',
+    JSON.stringify(JSON.parse(exported.body).attempts) === JSON.stringify(seeded),
+    `${JSON.parse(exported.body).attempts.length} attempts`);
+
+  exported = null;
+  await progress.webContents.executeJavaScript(`(async () => {
+    document.getElementById('export-csv').click();
+    await new Promise(r => setTimeout(r, 250));
+  })()`, true);
+  const csv = exported ? exported.body.split('\n') : [];
+  ok('Export spreadsheet writes a .csv', !!exported && /\.csv$/.test(exported.file),
+    exported && exported.file);
+  ok('  ...a header plus one row per attempt', csv.length === seeded.length + 1,
+    `${csv.length} lines for ${seeded.length} attempts`);
+  ok('  ...with skill ids resolved to names', /Quadratic/.test(csv[1] || ''), csv[1]);
+  ok('  ...and the slip recorded against it', /disc-sign/.test(csv[1] || ''), csv[1]);
+
   console.log(fail ? `\n${fail} FAILURE(S)` : '\nALL PASS');
   app.exit(fail ? 1 : 0);
 });
