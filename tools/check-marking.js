@@ -72,6 +72,19 @@ const SPOKEN = [
   ['x is two and y is three', 'x = 2, \\ y = 3', 'right'],
   ['x is three and y is two', 'x = 2, \\ y = 3', 'wrong'],   // the swap, spoken
   ['x equals one hundred', 'x = 100', 'right'],
+  // Hundreds compose in two parts — "a hundred" AND "and twenty" — and a single
+  // accumulator ran them together into 10020. That is one number, so it did not
+  // escalate as unsure; it came back WRONG against a correct answer. Only the
+  // bare "one hundred" case was covered here, which is the one that worked.
+  ['one hundred and twenty', 'x = 120', 'right'],
+  ['one hundred twenty', 'x = 120', 'right'],       // spoken without the "and"
+  ['a hundred and twenty', 'x = 120', 'right'],     // the article counts as one
+  ['two hundred and forty five', 'x = 245', 'right'],
+  ['three hundred and sixty', 'x = 360', 'right'],
+  ['one hundred and five', 'x = 105', 'right'],     // the unit case, which always worked
+  ['two hundred', 'x = 200', 'right'],
+  ['one hundred and twenty', 'x = 121', 'wrong'],   // and still wrong when it is wrong
+  ['a half', 'x = 2', 'unsure'],                    // "a" is only one before "hundred"
   ['three point five', 'x = 3.5', 'right'],
   ['x equals seven', 'x = -7', 'wrong'],
   ['erm, can I have a hint', 'x = 2', 'unsure'],

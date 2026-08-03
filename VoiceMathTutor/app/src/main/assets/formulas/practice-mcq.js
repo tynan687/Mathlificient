@@ -125,38 +125,61 @@ const NUM_WORDS = {
  * This exists because without it almost every spoken answer returns `unsure` —
  * the transcript has no digits in it at all — and every `unsure` costs an API
  * call. It handles the range a maths answer actually lands in: units, teens,
- * tens, "hundred" as a multiplier, decimals said as "point five", and a leading
- * "minus" or "negative". Anything past that is left alone for `markAnswer` to
- * escalate, which is the correct outcome for something we cannot read.
+ * tens, hundreds, decimals said as "point five", and a leading "minus" or
+ * "negative". Anything past that is left alone for `markAnswer` to escalate,
+ * which is the correct outcome for something we cannot read.
  */
 function digitiseSpokenNumbers(text) {
   const tokens = String(text).split(/\b/);
-  const out = [];
-  let acc = null;        // the number being assembled
-  let negate = false;
-  const flush = () => {
-    if (acc != null) out.push(String(negate ? -acc : acc));
-    acc = null;
-    negate = false;
+  // The next word token. Needed so "a hundred" can be told from "a half" before
+  // the article has been emitted.
+  const nextWord = (i) => {
+    for (let j = i + 1; j < tokens.length; j++) {
+      const w = tokens[j].trim().toLowerCase();
+      if (w) return w;
+    }
+    return '';
   };
-  for (const tok of tokens) {
+  const out = [];
+  // The hundreds are held apart from the rest, because composing 20 into 100 is
+  // not the same rule as composing 5 into 20, and one accumulator cannot do
+  // both. With a single `acc` this ran "one hundred and twenty" together into
+  // 10020 — which is one number, so it did not read as unsure; it read as WRONG,
+  // and telling a student their correct answer is wrong is the one verdict this
+  // file must never get wrong.
+  let hundreds = 0;      // completed hundreds, already multiplied out
+  let acc = null;        // the tens-and-units part being assembled
+  let negate = false;
+  const started = () => hundreds !== 0 || acc != null;
+  const value = () => hundreds + (acc || 0);
+  const clear = () => { hundreds = 0; acc = null; negate = false; };
+  const flush = () => {
+    if (started()) out.push(String(negate ? -value() : value()));
+    clear();
+  };
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
     const w = tok.trim().toLowerCase();
-    if (!w) { if (acc == null) out.push(tok); continue; }
+    if (!w) { if (!started()) out.push(tok); continue; }
     if (w === 'minus' || w === 'negative') { flush(); negate = true; continue; }
-    if (w === 'hundred' && acc != null) { acc *= 100; continue; }
-    if (w === 'and' && acc != null) continue;   // "a hundred and five"
+    // "a hundred" is 100, but "a half" is prose — so the article only counts as
+    // one when "hundred" is what actually follows it.
+    if ((w === 'a' || w === 'an') && !started() && nextWord(i) === 'hundred') { acc = 1; continue; }
+    if (w === 'hundred' && acc != null) { hundreds += acc * 100; acc = null; continue; }
+    if (w === 'and' && started()) continue;   // "a hundred and five"
     if (Object.prototype.hasOwnProperty.call(NUM_WORDS, w)) {
       const v = NUM_WORDS[w];
-      // 20 + 3 composes; 3 then 4 does not — flush and start again.
+      // 20 + 3 composes; 3 then 4 does not — flush and start again. A hundreds
+      // part already banked never blocks this: it is waiting for its "and twenty".
       if (acc == null) acc = v;
       else if (acc % 10 === 0 && v < 10) acc += v;
       else { flush(); acc = v; }
       continue;
     }
-    if (w === 'point' && acc != null) {
+    if (w === 'point' && started()) {
       // "three point five" — collect the digits that follow as decimals.
-      out.push(String(negate ? -acc : acc));
-      acc = null; negate = false;
+      out.push(String(negate ? -value() : value()));
+      clear();
       out.push('.');
       continue;
     }
