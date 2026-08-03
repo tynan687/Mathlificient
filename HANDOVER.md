@@ -432,6 +432,22 @@ never in placement. Still empty: `polynomials`, `inequalities`, `conics`,
 - **Speech is Android-only in practice.** Web Speech can be silently mute inside a WebView, so
   the symbols page routes through a Kotlin `TextToSpeech` bridge and only shows the speaker
   where it exists. The written "say it" line is always present.
+- **Settings writes can revert each other, and this is known and accepted.** `settings:set`
+  replaces `settings.json` wholesale, and three renderers read-modify-write the whole object:
+  `settings.js`, `engine.js` and `practice-ink.js`. Two of them hold a snapshot for the life of
+  the window — `settings.js` loads one at startup and never refreshes it, and its window cannot
+  be closed at all, since closing it quits the app. So the tutor saving `currentTopic`, or the
+  Practice Studio saving a paper colour, can be silently undone by the next toggle in the
+  settings window, which writes its launch-time copy back over the top.
+
+  This is the same clobber the proficiency log is append-only to avoid — see the comment on
+  `Store.profResetSkill` in `practice-store.js`, which says so in as many words.
+
+  The fix is small: make `settings:set` merge over what is on disk instead of replacing it,
+  and have `settings.js` re-read on `theme:changed`. It has not been done. Until it is,
+  `tools/check-settings.js` pins the three writers by name so a fourth cannot appear by
+  accident — if you need one, that is a decision, and the header of that file explains what
+  you are accepting. Prefer routing a new setting through `settings.js`'s existing save path.
 
 ---
 

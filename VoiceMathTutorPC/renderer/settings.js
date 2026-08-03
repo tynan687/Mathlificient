@@ -14,6 +14,25 @@ const SELECTS = {
 const CHECKS = ['pushToTalk', 'personalisationEnabled', 'watchMode', 'assessmentMode'];
 // Note: pushToTalk now defaults ON (mic locked; hold the bubble to talk).
 
+/**
+ * Run one piece of setup, and let the rest happen even if it fails.
+ *
+ * init() wires a dozen controls in sequence, so a single rejected invoke used to
+ * abandon every line after it — silently, since nothing was catching. Losing the
+ * spend readout because the capture list failed is a bad trade, and losing it
+ * without a word is worse.
+ */
+async function safely(what, fn) {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error(`settings: ${what} failed`, err);
+    const box = $('error');
+    if (box) box.textContent = `Could not load ${what}: ${err && err.message}`;
+    return null;
+  }
+}
+
 async function init() {
   settings = await window.tutor.invoke('settings:get');
 
@@ -90,11 +109,13 @@ async function init() {
     save();
   });
 
-  $('keyHint').textContent = (await window.tutor.invoke('apikey:exists'))
-    ? 'A key is saved (encrypted on-device). Enter a new one to replace it.'
-    : 'Paste your OpenAI API key to get started.';
+  await safely('the key status', async () => {
+    $('keyHint').textContent = (await window.tutor.invoke('apikey:exists'))
+      ? 'A key is saved (encrypted on-device). Enter a new one to replace it.'
+      : 'Paste your OpenAI API key to get started.';
+  });
 
-  await refreshCaptureList();
+  await safely('the capture list', refreshCaptureList);
   $('captureTarget').addEventListener('change', () => {
     settings.captureTargetName = $('captureTarget').value;
     save();
@@ -105,8 +126,8 @@ async function init() {
   });
   $('refreshCapture').addEventListener('click', refreshCaptureList);
 
-  refreshSpend();
-  refreshStudyLog();
+  safely('spend so far', refreshSpend);
+  safely('the study log', refreshStudyLog);
 }
 
 async function renderPdfs() {
@@ -335,4 +356,10 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-init();
+init().catch((err) => {
+  // The last resort: init() is fired and forgotten, so without this a failure
+  // before the first `safely` leaves a blank settings window and no clue why.
+  console.error('settings: init failed', err);
+  const box = document.getElementById('error');
+  if (box) box.textContent = `Settings failed to load: ${err && err.message}`;
+});
