@@ -58,6 +58,11 @@
     #missedIt { border-color: #C62828; color: #C62828; }
     .missed-item { border-top: 1px dashed color-mix(in srgb, CanvasText 15%, transparent);
       padding: 8px 0; }
+    /* Each line scrolls in its own box, the same way .q does for the question
+       above — KaTeX will not wrap, so a long missed question would otherwise
+       widen the whole page. It takes a narrow window to do it here; on the phone
+       it happened about one quiz in three. */
+    .missed-item > div { overflow-x: auto; }
 
     /* Multiple choice. The options are <div>s, not <button>s, on purpose: the
        Android studio injects `select,button{...!important}` on every paper

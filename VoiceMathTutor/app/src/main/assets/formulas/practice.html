@@ -51,6 +51,12 @@
     #missedIt { border-color: #C62828; color: #C62828; }
     .missed-item { border-top: 1px dashed color-mix(in srgb, CanvasText 15%, transparent);
       padding: 8px 0; }
+    /* Each line scrolls in its own box, the same way .q does for the question
+       above. The summary re-renders a missed question at full width, and KaTeX
+       will not wrap: at 360dp "A sector has radius 9 and angle 2 radians…" laid
+       out 623px wide and took the whole page with it, so every card on the
+       screen went off the right edge. */
+    .missed-item > div { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
     /* Multiple choice. The options are <div>s, not <button>s, on purpose: the
        studio injects `select,button{...!important}` from Kotlin on every paper
