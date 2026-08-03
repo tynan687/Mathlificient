@@ -41,27 +41,50 @@ const MEASURE = `(canvas, spec) => {
   // The corner is background by construction — renderVisual fills before drawing.
   const bg = [d[0], d[1], d[2]];
   let ink = 0; const seen = new Set();
+  // A hash of the PICTURE, so "these two diagrams are the same" can be asked of
+  // what was drawn rather than of how much of it there was.
+  let h = 2166136261;
   for (let p = 0; p < d.length; p += 4) {
     const dist = Math.abs(d[p]-bg[0]) + Math.abs(d[p+1]-bg[1]) + Math.abs(d[p+2]-bg[2]);
     if (dist > 40) { ink++; seen.add((d[p]>>4)+','+(d[p+1]>>4)+','+(d[p+2]>>4)); }
+    h ^= (d[p] + d[p+1] * 3 + d[p+2] * 7 + p);
+    h = Math.imul(h, 16777619);
   }
-  return { err, ink, colours: seen.size, total: canvas.width * canvas.height };
+  return {
+    err, ink, colours: seen.size, total: canvas.width * canvas.height,
+    hash: (h >>> 0).toString(16),
+  };
 }`;
 
 function judge(kind, rows) {
-  const inks = [];
+  const drawn = [];
   for (const r of rows) {
     if (r.err) { ok(`${kind} ${r.id} (${r.type}) draws`, false, r.err); continue; }
     const pct = ((r.ink / r.total) * 100).toFixed(1);
     ok(`${kind} ${r.id} (${r.type}) draws`,
       r.ink > 500 && r.ink < r.total * 0.6 && r.colours > 3,
       `${r.ink}px (${pct}%), ${r.colours} colours`);
-    inks.push(r.ink);
+    drawn.push(r);
   }
-  // Near-identical specs are legitimate, so allow a couple of ties — but a
-  // renderer ignoring its spec collapses this to 1 and fails loudly.
-  ok(`  ...and ${kind} diagrams differ from each other`,
-    new Set(inks).size >= inks.length - 2, `${new Set(inks).size} distinct of ${inks.length}`);
+  // Compared on the PICTURE, not on how many pixels of it there are.
+  //
+  // This used to count distinct ink totals and allow two ties, on the reasoning
+  // that a renderer ignoring its spec would collapse them all to one. But an ink
+  // total is a single number over 79 diagrams, so ties happen by coincidence:
+  // sigma-sd and expectation (both dots) landed on 2126px, and vector (vectors)
+  // and phase-angle (unitcircle) on 2975px — four completely different pictures.
+  // That tipped the suite red with nothing wrong, while still being far too
+  // coarse to notice two diagrams that genuinely WERE the same.
+  //
+  // Hashing what was drawn is both stricter and stable, so no ties are allowed.
+  const groups = {};
+  for (const r of drawn) (groups[r.hash] = groups[r.hash] || []).push(r);
+  const dupes = Object.values(groups).filter((g) => g.length > 1);
+  ok(`  ...and every ${kind} diagram draws a different picture`,
+    dupes.length === 0,
+    dupes.length
+      ? dupes.map((g) => g.map((r) => `${r.id} (${r.type})`).join(' == ')).join(' | ')
+      : `${Object.keys(groups).length} distinct of ${drawn.length}`);
   const byType = {};
   for (const r of rows) byType[r.type] = (byType[r.type] || 0) + 1;
   console.log(`     ${rows.length} ${kind} diagrams: `
