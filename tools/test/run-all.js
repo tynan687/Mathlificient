@@ -40,6 +40,8 @@ const SUITES = [
     what: 'Kotlin screens agree with the pages they host' },
   { name: 'settings', cmd: ['tools/check-settings.js'], node: true,
     what: 'no dead settings, no new whole-object writer' },
+  { name: 'ipc', cmd: ['tools/check-ipc.js'], node: true,
+    what: 'every renderer IPC channel exists in main.js' },
   { name: 'viz', file: 'viz.js', what: 'every diagram actually draws' },
   { name: 'pc-progress', file: 'pc-progress.js', what: 'PC: grading, quiz, placement, progress' },
   { name: 'pc-mcq', file: 'pc-mcq.js', what: 'PC: multiple choice end to end' },
