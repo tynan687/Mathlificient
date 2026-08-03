@@ -27,6 +27,42 @@ run-all.js android      only suites whose name contains "android"
 
 `run-all.js` deliberately **excludes** `device-*.js` — those need a tablet.
 
+### From a Linux box, or a tablet driving one
+
+The window suites need a display, not a desktop, so they run headless:
+
+```sh
+npm install --prefix VoiceMathTutorPC     # electron + katex + pdfjs-dist is enough
+Xvfb :99 -screen 0 1400x1100x24 &
+DISPLAY=:99 node tools/test/run-all.js
+```
+
+Nothing else changes — `paths.js` prefers the repo once it has a `node_modules`, and
+`electronBinary()` already looks for the Linux binary. Two of the bugs fixed on this
+branch were found this way and neither needed a device.
+
+### What still cannot be checked without the SDK
+
+The Kotlin has no offline path to a typecheck: `android.jar` comes from `dl.google.com`,
+which a proxied environment may well refuse. `kotlinc` alone (from Maven Central or the
+GitHub release) will still **parse** the sources, which catches structural mistakes:
+
+```sh
+kotlinc -nowarn -d /tmp/kout VoiceMathTutor/app/src/main/java/com/tynan/mathtutor/**/*.kt
+```
+
+Expect roughly a thousand `unresolved reference` errors — every `android.*`, `androidx.*`,
+`org.json.*` and `kotlinx.*` symbol. That is the missing classpath, not the code. What
+matters is that **no error mentions `expecting`, `unexpected token` or `unbalanced`**;
+those are the parser talking, and they are real. Filter with:
+
+```sh
+grep -iE "error:.*(expecting|unexpected|unbalanced|syntax|illegal)" kotlinc.log
+```
+
+`tools/check-activities.js` covers the other half — that the Kotlin screens still agree
+with the pages they host — and needs neither a compiler nor a device.
+
 ## Where the app under test comes from
 
 `paths.js` resolves it: `$VMT_PC` → the repo (if `VoiceMathTutorPC/node_modules/katex` exists)
