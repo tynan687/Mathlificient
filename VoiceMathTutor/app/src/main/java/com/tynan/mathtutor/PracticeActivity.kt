@@ -7,7 +7,15 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.tynan.mathtutor.security.SecureKeyStore
+import com.tynan.mathtutor.service.CheckAnswerBridge
+import com.tynan.mathtutor.service.RealtimeService
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /**
@@ -55,6 +63,40 @@ class PracticeActivity : ComponentActivity() {
             loadUrl("file:///android_asset/formulas/practice.html")
         }
         setContentView(webView, ViewGroup.LayoutParams(width, height))
+        watchForTutorChecks()
+    }
+
+    /**
+     * Answer the tutor's `check_my_answer` while this popup is the screen in front.
+     *
+     * `show_practice` opens THIS activity, so this is what a student is looking at
+     * when the tutor pushes them a question — and it is the screen most likely to
+     * be up when the tutor then asks whether they got it right. Only the studio
+     * watched for that, so the call sat unanswered until it timed out and the
+     * model told the student to open the practice screen they were already on.
+     *
+     * RESUMED, not STARTED: this activity is dialog-themed, so the studio behind
+     * it stays STARTED. Both screens hold their own question, so exactly one of
+     * them must answer, and it has to be the one in front.
+     *
+     * No ink canvas here, so there is no working to send with a wrong verdict —
+     * that is the studio's job.
+     */
+    private fun watchForTutorChecks() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                RealtimeService.uiState
+                    .map { it.pendingCheck }
+                    // uiState changes for unrelated reasons — mute, watch, errors —
+                    // and re-marking the same call on every one of them is waste.
+                    .distinctUntilChanged()
+                    .collect { pending ->
+                        if (pending != null) {
+                            CheckAnswerBridge.answer(applicationContext, webView, pending)
+                        }
+                    }
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

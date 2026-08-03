@@ -50,7 +50,9 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
 import androidx.compose.ui.viewinterop.AndroidView
 import com.tynan.mathtutor.ink.InkCanvasView
 import com.tynan.mathtutor.security.SecureKeyStore
@@ -143,29 +145,25 @@ private fun Studio(
     // the verdict, so the model never learns the answer.
     val tutor by com.tynan.mathtutor.service.RealtimeService.uiState.collectAsState()
     val appContext = LocalContext.current.applicationContext
+    val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(tutor.pendingCheck) {
         val pending = tutor.pendingCheck ?: return@LaunchedEffect
         val view = web
         if (view == null) return@LaunchedEffect // the service's timeout will answer
-        view.evaluateJavascript(
-            "window.__checkAnswer(${JSONObject.quote(pending.heard)})"
-        ) { result ->
-            // evaluateJavascript hands back the value as JSON text, and __checkAnswer
-            // returns an object, so this is already the JSON to forward.
-            //
-            // On a wrong answer the ink goes with it. Unlike the PC, the working here
-            // is a native view rather than a canvas in the page, so the activity is
-            // the only place that can reach it — and the moment the model learns they
-            // were wrong is the moment it needs to see where.
-            val working = try {
-                val wrong = JSONObject(result ?: "{}").optString("verdict") == "wrong"
-                if (wrong) canvas?.exportJpegBase64(bg.toArgb()) else null
-            } catch (_: Exception) {
-                null
-            }
-            com.tynan.mathtutor.service.RealtimeService.deliverCheck(
-                appContext, pending.callId, result ?: "", working
-            )
+        // Only the screen actually in front answers. PracticeActivity is dialog-
+        // themed, so this one stays STARTED while that popup is over it — and the
+        // two hold DIFFERENT questions. Without this both would mark their own
+        // page and whichever returned first would win, which may not be the
+        // question the student is looking at.
+        if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            return@LaunchedEffect
+        }
+        // On a wrong answer the ink goes with it. Unlike the PC, the working here
+        // is a native view rather than a canvas in the page, so the activity is
+        // the only place that can reach it — and the moment the model learns they
+        // were wrong is the moment it needs to see where.
+        com.tynan.mathtutor.service.CheckAnswerBridge.answer(appContext, view, pending) {
+            canvas?.exportJpegBase64(bg.toArgb())
         }
     }
     var selected by remember { mutableStateOf(0) } // inks.size = eraser tool

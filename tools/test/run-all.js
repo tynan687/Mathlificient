@@ -36,6 +36,8 @@ const SUITES = [
     what: 'most-common-slips fold, both namespaces' },
   { name: 'sync', cmd: ['tools/sync-shared.js', '--check'], node: true,
     what: 'PC/Android shared files match' },
+  { name: 'activities', cmd: ['tools/check-activities.js'], node: true,
+    what: 'Kotlin screens agree with the pages they host' },
   { name: 'viz', file: 'viz.js', what: 'every diagram actually draws' },
   { name: 'pc-progress', file: 'pc-progress.js', what: 'PC: grading, quiz, placement, progress' },
   { name: 'pc-mcq', file: 'pc-mcq.js', what: 'PC: multiple choice end to end' },

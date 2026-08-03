@@ -683,6 +683,19 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
         } catch (_: Exception) {
             JSONObject()
         }
+        // A check already waiting is about to be forgotten, and a forgotten one is
+        // never answered: its timeout sees a different callId in pendingCheck and
+        // bows out, and no screen will ever post a verdict for it either. That
+        // leaves a function_call_output outstanding forever, which is exactly the
+        // stall the timeout below exists to prevent. Close it out first.
+        uiState.value.pendingCheck?.let { stale ->
+            if (stale.callId != callId) {
+                sendToolOutput(
+                    stale.callId,
+                    "{\"verdict\":\"none\",\"reason\":\"superseded by a newer question\"}"
+                )
+            }
+        }
         uiState.value = uiState.value.copy(
             pendingCheck = PendingCheck(callId, args.optString("heard"))
         )
@@ -709,7 +722,10 @@ class RealtimeService : Service(), RealtimeTransport.Listener {
         // The image goes in before the tool output so the model has it in hand the
         // moment it learns the answer was wrong, rather than a turn later.
         if (!working.isNullOrEmpty()) transport?.sendEvent(imageItemEvent(working))
-        sendToolOutput(callId, verdictJson.ifBlank { "{\"verdict\":\"unsure\"}" })
+        // Normalised, not just checked for blank. A page that has not finished
+        // loading yields the string "null", which is not blank and is valid JSON —
+        // it would have gone to the model as a bare null instead of a verdict.
+        sendToolOutput(callId, CheckAnswerBridge.normalise(verdictJson))
         startOrQueueResponse(null)
     }
 
