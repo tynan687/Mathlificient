@@ -49,6 +49,7 @@ const SUITES = [
   { name: 'pc-worksheet', file: 'pc-worksheet.js', what: 'PC: printable worksheet, both modes' },
   { name: 'pc-check-answer', file: 'pc-check-answer.js', what: 'PC: the tutor verdict, and no answer leak' },
   { name: 'pc-theme', file: 'pc-theme.js', what: 'PC: theme + accent reach every page, readably' },
+  { name: 'pc-home', file: 'pc-home.js', what: 'PC: the home screen and the shared nav list' },
   { name: 'android-progress', file: 'android-progress.js', what: 'Android page at 360dp' },
   { name: 'android-mcq', file: 'android-mcq.js', what: 'Android: options, .mini popup, paper' },
   { name: 'android-symbols', file: 'android-symbols.js', what: 'Android: symbols at 360dp' },

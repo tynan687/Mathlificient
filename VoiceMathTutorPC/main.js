@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
+let homeWin = null;
 let settingsWin = null;
 let engineWin = null;
 let bubbleWin = null;
@@ -105,17 +106,22 @@ function readApiKey() {
 // ---- Windows ---------------------------------------------------------------------
 
 function createWindows() {
-  settingsWin = new BrowserWindow({
-    width: 560,
-    height: 900,
+  // The front door. This used to be the settings form, which meant the app
+  // opened on a page of controls and could not be configured without keeping
+  // that page open — closing it quit everything.
+  homeWin = new BrowserWindow({
+    width: 700,
+    height: 820,
+    minWidth: 520,
     // Keep in sync with OWN_WINDOW_TITLES below — that's how our own windows
-    // are kept out of the capture-target picker.
+    // are kept out of the capture-target picker. The page's <title> is what
+    // actually wins, so the two have to agree.
     title: 'Mathlificient',
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
   });
-  settingsWin.removeMenu();
-  settingsWin.loadFile('renderer/settings.html');
-  settingsWin.on('closed', () => app.quit());
+  homeWin.removeMenu();
+  homeWin.loadFile('renderer/home.html');
+  homeWin.on('closed', () => app.quit());
 
   // Hidden window that owns the WebRTC session; throttling off so the watch
   // loop and audio keep running while hidden.
@@ -232,6 +238,9 @@ const TOOL_MIN_SIZES = {
   progress: [420, 520],
 };
 
+/** Tools you work alongside, rather than switch to. */
+const FLOATING_TOOLS = new Set(['practice', 'formulas']);
+
 function openTool(name) {
   if (toolWins[name] && !toolWins[name].isDestroyed()) {
     toolWins[name].show();
@@ -242,7 +251,10 @@ function openTool(name) {
   const [minW, minH] = TOOL_MIN_SIZES[name] || [0, 0];
   const win = new BrowserWindow({
     width: w, height: h, minWidth: minW, minHeight: minH, title: name,
-    alwaysOnTop: true, skipTaskbar: false,
+    // Only the two that exist to sit BESIDE your work stay on top. Pinning the
+    // progress screen or the symbol reference over every other window is just
+    // a window you cannot get out of the way.
+    alwaysOnTop: FLOATING_TOOLS.has(name), skipTaskbar: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
   });
   win.removeMenu();
@@ -285,6 +297,26 @@ ipcMain.handle('practice:working', async () => {
     return await win.webContents.executeJavaScript('window.__working && window.__working()', true);
   } catch { return null; }
 });
+
+/**
+ * Settings, opened from the home screen rather than being the home screen.
+ * Closing it no longer quits the app, which is the whole point.
+ */
+function openSettings() {
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    settingsWin.show();
+    settingsWin.focus();
+    return settingsWin;
+  }
+  settingsWin = new BrowserWindow({
+    width: 560, height: 900, title: 'Mathlificient Settings',
+    webPreferences: { preload: path.join(__dirname, 'preload.js') },
+  });
+  settingsWin.removeMenu();
+  settingsWin.loadFile('renderer/settings.html');
+  settingsWin.on('closed', () => { settingsWin = null; });
+  return settingsWin;
+}
 
 /** Open the practice window and send it something once it's ready to listen. */
 function sendToPractice(channel, payload) {
@@ -502,7 +534,9 @@ async function captureFullScreenB64() {
 }
 
 // Own windows, excluded from the picker and from window matching.
-const OWN_WINDOW_TITLES = new Set(['Mathlificient', 'bubble', 'engine']);
+const OWN_WINDOW_TITLES = new Set([
+  'Mathlificient', 'Mathlificient Settings', 'bubble', 'engine',
+]);
 
 ipcMain.handle('capture:list-sources', async () => {
   const sources = await desktopCapturer.getSources({
@@ -755,6 +789,7 @@ ipcMain.on('menu:action', (_e, action) => {
     case 'symbols': openTool('symbols'); break;
     case 'ambient': openTool('ambient'); break;
     case 'chat': openChat(); break;
+    case 'settings': openSettings(); break;
     default: break;
   }
 });

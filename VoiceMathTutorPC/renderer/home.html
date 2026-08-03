@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <!-- The real window title, and the app's front door. It overrides the
+       BrowserWindow `title` option, so it must stay in step with
+       OWN_WINDOW_TITLES in main.js — that is how the app keeps itself out of the
+       capture-target picker. -->
+  <title>Mathlificient</title>
+  <link rel="stylesheet" href="app.css">
+  <style>
+    body { max-width: 640px; margin: 0 auto; padding-bottom: 28px; }
+    .hero { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+    .hero h1 { margin: 0; }
+    .hero .sub { opacity: 0.6; font-size: 13px; }
+
+    .session { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); }
+    .dot.on { background: var(--good); }
+    #status { font-weight: 600; flex: 1; min-width: 140px; }
+    .session-btns { display: flex; gap: 8px; }
+
+    /* Continue studying. One row per pick, the same shape the progress screen
+       uses, so the two never look like different features. */
+    .pick { display: flex; align-items: center; gap: 10px; padding: 9px 0;
+      border-top: 1px solid var(--line); }
+    .pick:first-of-type { border-top: 0; }
+    .pick-name { font-weight: 600; }
+    .pick-why { font-size: 12.5px; opacity: 0.75; margin-top: 2px; }
+    .pick div:first-child { flex: 1; min-width: 0; }
+
+    .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tool { display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      border: 1px solid var(--line); border-radius: var(--radius);
+      cursor: pointer; font-size: 13.5px; background: var(--surface); color: inherit;
+      text-align: left; }
+    .tool:hover:not(:disabled) { background: var(--hover); border-color: var(--line-strong); }
+    .tool:disabled { opacity: 0.4; cursor: default; }
+    .tool .ico { width: 20px; text-align: center; font-size: 15px; flex: none; }
+    .grp { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;
+      opacity: 0.55; margin: 14px 0 6px; }
+
+    .footer { display: flex; gap: 8px; align-items: center; margin-top: 18px; }
+    .footer .spacer { flex: 1; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>Mathlificient</h1>
+    <span class="sub" id="topicLine"></span>
+  </div>
+
+  <div class="card">
+    <div class="session">
+      <span class="dot" id="dot"></span>
+      <span id="status">Not running</span>
+      <span class="session-btns">
+        <button id="start" class="primary">Start tutor</button>
+        <button id="stopBtn" disabled>Stop</button>
+        <button id="muteBtn" disabled>Mute</button>
+        <button id="watchBtn" disabled>Watch</button>
+      </span>
+    </div>
+    <div id="cost" class="muted"></div>
+    <div id="flags" class="muted"></div>
+    <div id="error" class="error"></div>
+  </div>
+
+  <div class="card" id="continueWrap">
+    <div class="grp" style="margin-top:0">Continue studying</div>
+    <div id="continue"></div>
+  </div>
+
+  <div id="nav"></div>
+
+  <div class="footer">
+    <button id="practiseBtn" class="primary">Practise</button>
+    <span class="spacer"></span>
+    <span id="spend" class="muted"></span>
+    <button id="settingsBtn">Settings</button>
+  </div>
+
+  <script src="theme.js"></script>
+  <script src="nav.js"></script>
+  <script src="practice-skills.js"></script>
+  <script src="practice-data.js"></script>
+  <script src="practice-prof.js"></script>
+  <script src="practice-store.js"></script>
+  <script src="home.js"></script>
+</body>
+</html>
