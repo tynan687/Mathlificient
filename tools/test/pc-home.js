@@ -10,7 +10,7 @@ const { app, BrowserWindow, ipcMain, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-const { PC: ROOT, REPO } = require('./paths.js');
+const { PC: ROOT, REPO, MAIN } = require('./paths.js');
 
 let fail = 0;
 const ok = (label, cond, extra) => {
@@ -27,7 +27,10 @@ setTimeout(() => { console.log('FAIL — harness timed out'); app.exit(1); }, 12
 
 // ---- source: main.js holds up its end ------------------------------------------------
 {
-  const main = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
+  // MAIN, not ROOT: read the file the author edits. The build copy is kept
+  // identical by the drift guard, but reading it here once meant these
+  // assertions were failing against a main.js a day out of date.
+  const main = fs.readFileSync(MAIN, 'utf8');
   const nav = require(path.join(ROOT, 'renderer', 'nav.js'));
 
   const cases = new Set([...main.matchAll(/case\s*'([^']+)'\s*:/g)].map((m) => m[1]));
@@ -39,10 +42,32 @@ setTimeout(() => { console.log('FAIL — harness timed out'); app.exit(1); }, 12
   // The bug this replaces: settings WAS the main window, so it could not be
   // closed without quitting, and its long-lived stale copy of the settings
   // object is the clobber recorded in HANDOVER.md.
-  const quitters = [...main.matchAll(/(\w+)\.on\('closed',\s*\(\)\s*=>\s*app\.quit\(\)\)/g)]
+  //
+  // Matched by intent rather than by exact form. The first version of this
+  // assertion pinned `on('closed', () => app.quit())` literally, and went red the
+  // moment the handler grew a body — which it had to, so the session could be
+  // stopped and the study log written before the app goes away.
+  const quitters = [...main.matchAll(/(\w+)\.on\('closed?',\s*(?:\([^)]*\)|\w+)\s*=>\s*\{?([\s\S]{0,400}?)\n\s*\}?\);/g)]
+    .filter((m) => /app\.quit\(\)/.test(m[2]))
     .map((m) => m[1]);
   ok('exactly one window quits the app when closed', quitters.length === 1, quitters.join(', '));
   ok('  ...and it is the home window, not settings', quitters[0] === 'homeWin', quitters[0]);
+  // Quitting must not skip the engine, or the session's duration and cost never
+  // reach studylog:append and closing the window at the end of an hour of study
+  // loses the record of it.
+  ok('  ...and it stops the session on the way out',
+    /homeWin\.on\('close[\s\S]{0,400}engine:stop/.test(main));
+
+  // The bug this catches: ui:state went to settingsWin alone, which is null until
+  // Settings is opened — so the front door reported "Not running" through a live
+  // session and its Stop button never came alive. Any single-window send is the
+  // same bug waiting to happen.
+  const uiSend = /ipcMain\.on\('ui:state'[\s\S]{0,200}?\n/.exec(main);
+  ok('session status is broadcast, not sent to one window',
+    !!uiSend && !/settingsWin\?\.webContents\.send/.test(uiSend[0]),
+    uiSend && uiSend[0].trim().split('\n')[0]);
+  ok('  ...and the home window is one of the recipients',
+    /function broadcastUi[\s\S]{0,300}homeWin/.test(main));
 
   // Pinning the progress screen over everything is a window you cannot get out
   // of the way. Only the two you work alongside should float.

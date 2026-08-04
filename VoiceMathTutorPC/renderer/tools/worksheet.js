@@ -100,6 +100,27 @@ function render(questions, mode) {
 
 document.getElementById('printBtn').addEventListener('click', () => window.print());
 
+/**
+ * Name the printer that saves to a file, per platform.
+ *
+ * The hint used to say "choose Microsoft Print to PDF" unconditionally — which is
+ * the app's only printing instruction, and simply wrong on the Linux build, where
+ * the GTK dialog offers "Print to File" instead. Reuses the existing
+ * `platform:info` channel rather than adding one.
+ */
+(async () => {
+  const hint = document.getElementById('printHint');
+  if (!hint || typeof window.tutor === 'undefined') return;
+  let info = null;
+  try { info = await window.tutor.invoke('platform:info'); } catch { return; }
+  const named = {
+    win32: '“Microsoft Print to PDF”',
+    darwin: 'the PDF button in the print dialog',
+    linux: '“Print to File”',
+  }[info && info.platform];
+  if (named) hint.textContent = `Uses your system print dialog — choose ${named} to save a file.`;
+})();
+
 if (typeof window.tutor !== 'undefined') {
   window.tutor.on('worksheet:data', (payload) => {
     const questions = Array.isArray(payload && payload.questions) ? payload.questions : [];

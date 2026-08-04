@@ -19,6 +19,7 @@ const el = {
   reviewWrap: document.getElementById('reviewWrap'),
   slips: document.getElementById('slips'),
   slipsWrap: document.getElementById('slipsWrap'),
+  exportNote: document.getElementById('exportNote'),
   areas: document.getElementById('areas'),
   empty: document.getElementById('empty'),
 };
@@ -375,19 +376,50 @@ async function exportLog(kind) {
   const body = isJson ? JSON.stringify(log, null, 2) : toCsv(log);
   const file = `mathlificient-progress-${stamp}.${isJson ? 'json' : 'csv'}`;
   const mime = isJson ? 'application/json' : 'text/csv';
-  if (isElectron) return window.tutor.invoke('prof:export', { file, body });
+  if (isElectron) {
+    const res = await window.tutor.invoke('prof:export', { file, body });
+    if (res && res.ok) return { ok: true, note: `Saved ${file}` };
+    if (res && res.canceled) return { ok: true, note: '' };
+    return { ok: false, note: `Could not save: ${(res && res.reason) || 'unknown error'}` };
+  }
   if (hasBridge && typeof Android.shareText === 'function') {
     Android.shareText(file, mime, body);
-    return true;
+    return { ok: true, note: '' }; // the share sheet is its own confirmation
   }
   // No host: the clipboard is better than nothing, and the worksheet window
   // already sets the precedent that "save" can mean "hand it to the OS".
-  try { await navigator.clipboard.writeText(body); return true; } catch { return false; }
+  try {
+    await navigator.clipboard.writeText(body);
+    return { ok: true, note: 'Copied to the clipboard' };
+  } catch (err) {
+    return { ok: false, note: `Could not copy: ${err.message}` };
+  }
 }
 
 for (const kind of ['json', 'csv']) {
   const btn = document.getElementById(`export-${kind}`);
-  if (btn) btn.addEventListener('click', () => exportLog(kind));
+  if (!btn) continue;
+  btn.addEventListener('click', async () => {
+    const label = btn.textContent;
+    btn.disabled = true;
+    // Say what happened. Going through a Save dialog and then getting silence is
+    // indistinguishable from success, and the write can genuinely fail.
+    let res;
+    try {
+      res = await exportLog(kind);
+    } catch (err) {
+      res = { ok: false, note: `Could not export: ${err.message}` };
+    }
+    btn.disabled = false;
+    if (res.note) {
+      btn.textContent = res.ok ? '✓ Saved' : '✕ Failed';
+      if (el.exportNote) {
+        el.exportNote.textContent = res.note;
+        el.exportNote.classList.toggle('bad', !res.ok);
+      }
+      setTimeout(() => { btn.textContent = label; }, 2200);
+    }
+  });
 }
 
 document.getElementById('refresh').addEventListener('click', render);

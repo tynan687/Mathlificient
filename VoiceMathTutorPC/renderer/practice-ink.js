@@ -491,8 +491,10 @@
   async function savePaperSetting(hex) {
     if (typeof window.tutor === 'undefined') return;
     try {
-      const s = await window.tutor.invoke('settings:get');
-      await window.tutor.invoke('settings:set', { ...s, practicePaperColor: hex });
+      // One key. settings:set merges now, so there is no need to read the whole
+      // object back and rewrite it — and not doing so removes this page as a
+      // possible clobberer of anything else.
+      await window.tutor.invoke('settings:set', { practicePaperColor: hex });
     } catch { /* best-effort */ }
   }
 

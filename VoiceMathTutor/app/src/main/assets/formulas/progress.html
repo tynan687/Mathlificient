@@ -51,6 +51,9 @@
        every button and would flatten it on dark paper. */
     .slip-count { font-size: 12.5px; font-weight: 700; opacity: 0.55;
       white-space: nowrap; }
+    /* What just happened to an export. Empty most of the time. */
+    .note-line { font-size: 13px; opacity: 0.7; margin-top: 8px; min-height: 1em; }
+    .note-line.bad { color: #C62828; opacity: 1; }
     /* Forget one skill. A div, not a button: applyPaper repaints buttons with
        !important and would erase the armed state. 44px, it is a touch target. */
     .forget { font-size: 13px; min-height: 44px; padding: 4px 12px; border-radius: 8px;
@@ -136,6 +139,7 @@
     <button id="export-csv">Export spreadsheet</button>
     <button id="reset">Reset all progress</button>
   </div>
+  <div id="exportNote" class="note-line"></div>
 
   <script src="practice-skills.js"></script>
   <script src="practice-data.js"></script>

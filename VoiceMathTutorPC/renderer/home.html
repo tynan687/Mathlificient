@@ -43,6 +43,10 @@
     .footer { display: flex; gap: 8px; align-items: center; margin-top: 18px; }
     .footer .spacer { flex: 1; }
     .hidden { display: none !important; }
+    /* An inline "add it in Settings" — a button so it is reachable by keyboard,
+       styled as the link it reads as. */
+    .linky { background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+      color: var(--accent, #4F7DF7); text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -64,6 +68,11 @@
     </div>
     <div id="cost" class="muted"></div>
     <div id="flags" class="muted"></div>
+    <div id="needKey" class="muted hidden">
+      Practice, progress, symbols and the formula sheet all work offline with no
+      key. The voice tutor is the one thing that needs one —
+      <button id="needKeyBtn" class="linky">add it in Settings</button>.
+    </div>
     <div id="error" class="error"></div>
   </div>
 

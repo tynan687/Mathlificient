@@ -12,6 +12,15 @@ let bubbleWin = null;
 let menuWin = null;
 const toolWins = {};
 
+/**
+ * Set once the front door has been closed, so the deferred quit runs exactly one
+ * pass — without it, `app.quit()` fires `close` again and the handler would keep
+ * re-arming its own timer.
+ */
+let quitting = false;
+/** Long enough for the engine to close the session and write the study log. */
+const STOP_GRACE_MS = 700;
+
 // ---- Local storage ---------------------------------------------------------------
 
 const file = (name) => path.join(app.getPath('userData'), name);
@@ -113,15 +122,26 @@ function createWindows() {
     width: 700,
     height: 820,
     minWidth: 520,
-    // Keep in sync with OWN_WINDOW_TITLES below — that's how our own windows
-    // are kept out of the capture-target picker. The page's <title> is what
-    // actually wins, so the two have to agree.
+    // The page's <title> overrides this. ownWindowTitles() reads the live title
+    // off each window, so the capture picker follows automatically and there is
+    // no list to keep in sync.
     title: 'Mathlificient',
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
   });
   homeWin.removeMenu();
   homeWin.loadFile('renderer/home.html');
-  homeWin.on('closed', () => app.quit());
+  // Closing the front door quits, by design — but not instantly. `app.quit()`
+  // never routes through the engine's stop(), so the session's duration, cost and
+  // assessment report never reach studylog:append: a student who closes the window
+  // at the end of an hour loses the record of that hour. Ask the engine to stop,
+  // give it a moment to write, then go.
+  homeWin.on('close', (e) => {
+    if (quitting) return;
+    quitting = true;
+    e.preventDefault();
+    engineWin?.webContents.send('engine:stop');
+    setTimeout(() => app.quit(), STOP_GRACE_MS);
+  });
 
   // Hidden window that owns the WebRTC session; throttling off so the watch
   // loop and audio keep running while hidden.
@@ -172,16 +192,45 @@ function sendBubbleStyle() {
 
 // ---- Quick-action menu + tool windows --------------------------------------------
 
+const MENU_SIZE = { width: 220, height: 470 };
+
+/**
+ * Where the quick menu may sit.
+ *
+ * Two bugs met here. Callers without a cursor position (the home screen's search
+ * buttons send none) produced `setPosition(NaN, NaN)`, which throws in main
+ * BEFORE show() — so the button silently did nothing from the second press on.
+ * And the menu is positioned from the raw cursor with no clamp, so right-clicking
+ * a bubble parked low pushed the whole Tools group off the bottom of a frameless,
+ * unscrollable window.
+ *
+ * Defaulting and clamping here rather than at the call sites means every present
+ * and future caller is safe.
+ */
+function menuPosition(x, y, size) {
+  const pt = (Number.isFinite(x) && Number.isFinite(y))
+    ? { x: Math.round(x), y: Math.round(y) }
+    : screen.getCursorScreenPoint();
+  const { workArea } = screen.getDisplayNearestPoint(pt);
+  const w = (size && size.width) || MENU_SIZE.width;
+  const h = (size && size.height) || MENU_SIZE.height;
+  return {
+    x: Math.max(workArea.x, Math.min(pt.x, workArea.x + workArea.width - w)),
+    y: Math.max(workArea.y, Math.min(pt.y, workArea.y + workArea.height - h)),
+  };
+}
+
 function openMenu(x, y) {
+  const at = menuPosition(x, y);
   if (menuWin && !menuWin.isDestroyed()) {
-    menuWin.setPosition(Math.round(x), Math.round(y));
+    menuWin.setPosition(at.x, at.y);
     menuWin.reload(); // reset DOM to the fresh menu (not a leftover search prompt)
     menuWin.show();
     menuWin.focus();
     return;
   }
   menuWin = new BrowserWindow({
-    width: 220, height: 470, x: Math.round(x), y: Math.round(y),
+    width: MENU_SIZE.width, height: MENU_SIZE.height, x: at.x, y: at.y,
     frame: false, transparent: true, alwaysOnTop: true, skipTaskbar: true,
     resizable: false, hasShadow: true, show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
@@ -194,13 +243,33 @@ function openMenu(x, y) {
 
 let chatWin = null;
 let worksheetWin = null;
+
+/**
+ * Bring an already-open window to the front.
+ *
+ * `show()` alone is a no-op on a window that is already visible, so the second
+ * press of a button that "opens" something did nothing at all — and with fresh
+ * content just rendered into it, that reads as the button being broken.
+ */
+function surface(win) {
+  if (!win || win.isDestroyed()) return;
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.moveTop();
+  win.focus();
+}
+
 function openWorksheet() {
   if (worksheetWin && !worksheetWin.isDestroyed()) {
-    worksheetWin.show();
+    surface(worksheetWin);
     return;
   }
   worksheetWin = new BrowserWindow({
     width: 720, height: 840, title: 'Worksheet',
+    // Practice is alwaysOnTop and it is the window the Worksheet button lives in,
+    // so an ordinary window opens UNDERNEATH it and the button looks broken. A
+    // topmost window sits above a normal one no matter which has focus.
+    alwaysOnTop: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
   });
   worksheetWin.removeMenu();
@@ -209,11 +278,14 @@ function openWorksheet() {
 }
 function openChat() {
   if (chatWin && !chatWin.isDestroyed()) {
-    chatWin.show();
+    surface(chatWin);
     return;
   }
   chatWin = new BrowserWindow({
     width: 480, height: 640, title: 'Worked Examples',
+    // Same reason as the worksheet: the tutor says "look at the panel" while
+    // pushing to it, so it has to be able to come forward past pinned Practice.
+    alwaysOnTop: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
   });
   chatWin.removeMenu();
@@ -241,10 +313,23 @@ const TOOL_MIN_SIZES = {
 /** Tools you work alongside, rather than switch to. */
 const FLOATING_TOOLS = new Set(['practice', 'formulas']);
 
+/**
+ * Tools that must keep running while hidden.
+ *
+ * Chromium throttles timers in an occluded page to roughly once a minute, and the
+ * timer decrements by one per tick — so a minimised focus timer does not pause,
+ * it runs about sixty times slow and the phase change fires minutes late. Losing
+ * time while you are not looking is precisely the failure a focus timer cannot
+ * have. Ambient sound has the same problem for the same reason.
+ *
+ * Scoped rather than applied to every tool window: keeping a page fully awake
+ * costs battery, and the others have nothing to keep doing.
+ */
+const KEEP_RUNNING_TOOLS = new Set(['timer', 'ambient']);
+
 function openTool(name) {
   if (toolWins[name] && !toolWins[name].isDestroyed()) {
-    toolWins[name].show();
-    toolWins[name].focus();
+    surface(toolWins[name]);
     return toolWins[name];
   }
   const [w, h] = TOOL_SIZES[name] || [420, 560];
@@ -255,7 +340,10 @@ function openTool(name) {
     // progress screen or the symbol reference over every other window is just
     // a window you cannot get out of the way.
     alwaysOnTop: FLOATING_TOOLS.has(name), skipTaskbar: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js') },
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      backgroundThrottling: !KEEP_RUNNING_TOOLS.has(name),
+    },
   });
   win.removeMenu();
   win.loadFile(`renderer/tools/${name}.html`);
@@ -389,7 +477,19 @@ ipcMain.handle('vision:check', async (_e, { b64, model }) => {
 // ---- IPC: settings / key / files -------------------------------------------------
 
 ipcMain.handle('settings:get', () => ({ ...DEFAULT_SETTINGS, ...readJson('settings.json', {}) }));
-ipcMain.handle('settings:set', (_e, s) => { writeJson('settings.json', s); return true; });
+/**
+ * Merge, never replace.
+ *
+ * Callers send a patch of what they changed (settings.js diffs against the copy
+ * it opened with; practice-ink.js sends one key). A whole-object write here meant
+ * whichever window saved last erased every other writer's field — the documented
+ * clobber. Merging also makes a single-key write from any page safe.
+ */
+ipcMain.handle('settings:set', (_e, patch) => {
+  const current = readJson('settings.json', {});
+  writeJson('settings.json', { ...current, ...(patch || {}) });
+  return true;
+});
 
 ipcMain.handle('apikey:exists', () => fs.existsSync(file('apikey.bin')));
 
@@ -432,7 +532,13 @@ ipcMain.handle('apikey:save', (_e, key) => {
   const trimmed = String(key).trim();
   const secure = safeStorage.isEncryptionAvailable();
   const data = secure ? safeStorage.encryptString(trimmed) : Buffer.from(trimmed, 'utf8');
-  fs.writeFileSync(file('apikey.bin'), data);
+  // Report rather than throw, so the renderer can say something useful instead of
+  // surfacing Electron's "Error invoking remote method" wrapper.
+  try {
+    fs.writeFileSync(file('apikey.bin'), data);
+  } catch (err) {
+    return { saved: false, secure, error: err.message };
+  }
   // 0600 either way, but it is the only protection left when `secure` is false.
   try { fs.chmodSync(file('apikey.bin'), 0o600); } catch { /* best effort */ }
   return { saved: true, secure };
@@ -497,18 +603,28 @@ ipcMain.handle('prof:reset', () => {
  * Save an export where the student asks. The renderer builds the bytes — this
  * only picks a destination, so the two platforms produce the identical file.
  */
-ipcMain.handle('prof:export', async (_e, payload) => {
+ipcMain.handle('prof:export', async (event, payload) => {
   const { file, body } = payload || {};
-  if (!file || typeof body !== 'string') return false;
-  const res = await dialog.showSaveDialog({
+  if (!file || typeof body !== 'string') return { ok: false, reason: 'nothing to export' };
+  // Modal to the window that asked, so the dialog cannot end up behind it.
+  const parent = BrowserWindow.fromWebContents(event.sender);
+  const res = await dialog.showSaveDialog(parent || undefined, {
     defaultPath: file,
     filters: file.endsWith('.csv')
       ? [{ name: 'CSV', extensions: ['csv'] }]
       : [{ name: 'JSON', extensions: ['json'] }],
   });
-  if (res.canceled || !res.filePath) return false;
-  fs.writeFileSync(res.filePath, body, 'utf8');
-  return true;
+  if (res.canceled || !res.filePath) return { ok: false, canceled: true };
+  // The write was unguarded, so a student could pick a filename, press Save and
+  // get no file and no error — most easily by exporting the CSV twice while the
+  // first copy is open in Excel, which fails EBUSY. Having just been through a
+  // Save dialog, they have every reason to believe it worked.
+  try {
+    fs.writeFileSync(res.filePath, body, 'utf8');
+    return { ok: true, path: res.filePath };
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
 });
 
 /** Forget one skill, keep the rest. A filter, so no mastery is derived here either. */
@@ -570,18 +686,37 @@ async function captureFullScreenB64() {
   return source.thumbnail.toJPEG(80).toString('base64');
 }
 
-// Own windows, excluded from the picker and from window matching.
-const OWN_WINDOW_TITLES = new Set([
-  'Mathlificient', 'Mathlificient Settings', 'bubble', 'engine',
-]);
+/**
+ * Own windows, excluded from the picker and from window matching.
+ *
+ * Asked of the live windows rather than kept as a list. A hardcoded set listed
+ * four names while the real titles were ten different ones — `Practice`,
+ * `My Progress`, `Symbols`, `Formula Sheet`, `Worksheet`, `Focus Timer`, … — so
+ * the picker offered our own screens and a student who chose "Practice" had the
+ * tutor watching Mathlificient instead of their work.
+ *
+ * A window's real title comes from its page's `<title>`, which overrides the
+ * constructor option, so reading `getTitle()` is also the only way to get the
+ * name the OS actually publishes. This cannot go stale.
+ */
+function ownWindowTitles() {
+  const titles = new Set(['Mathlificient']);
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win.isDestroyed()) continue;
+    const t = win.getTitle();
+    if (t) titles.add(t);
+  }
+  return titles;
+}
 
 ipcMain.handle('capture:list-sources', async () => {
   const sources = await desktopCapturer.getSources({
     types: ['screen', 'window'],
     thumbnailSize: { width: 0, height: 0 },
   });
+  const own = ownWindowTitles();
   return sources
-    .filter((s) => s.name && !OWN_WINDOW_TITLES.has(s.name))
+    .filter((s) => s.name && !own.has(s.name))
     .map((s) => ({ name: s.name, type: s.id.startsWith('screen') ? 'screen' : 'window' }));
 });
 
@@ -592,8 +727,9 @@ ipcMain.handle('capture:screen', async (_e, target) => {
       thumbnailSize: { width: 1536, height: 1536 },
     });
     const wanted = String(target.name).toLowerCase();
+    const own = ownWindowTitles();
     const match = sources.find(
-      (s) => s.name && !OWN_WINDOW_TITLES.has(s.name) && s.name.toLowerCase().includes(wanted)
+      (s) => s.name && !own.has(s.name) && s.name.toLowerCase().includes(wanted)
     );
     if (match && !match.thumbnail.isEmpty()) {
       return { b64: match.thumbnail.toJPEG(80).toString('base64'), fellBack: false };
@@ -670,29 +806,40 @@ ipcMain.handle('pdf:add', async () => {
   });
   if (pick.canceled || !pick.filePaths[0]) return { canceled: true, books: pdfIndex().books };
   const filePath = pick.filePaths[0];
-  const pdfjs = await loadPdfjs();
-  const data = new Uint8Array(fs.readFileSync(filePath));
-  const doc = await pdfjs.getDocument({ data, useSystemFonts: true }).promise;
-  const pages = [];
-  for (let p = 1; p <= doc.numPages; p++) {
-    const page = await doc.getPage(p);
-    const content = await page.getTextContent();
-    const text = content.items.map((i) => i.str).join(' ').replace(/\s+/g, ' ').trim();
-    pages.push({ page: p, printedPage: detectPrintedPage(text), text });
+  // Everything below can throw on a perfectly ordinary file — an encrypted PDF is
+  // enough, and loadPdfjs() is a dynamic ESM import that may fail outright in a
+  // packaged build. Unguarded, the button went "Indexing…" and back, the list
+  // still said "No books yet", and the student believed they had added a textbook.
+  try {
+    const pdfjs = await loadPdfjs();
+    const data = new Uint8Array(fs.readFileSync(filePath));
+    const doc = await pdfjs.getDocument({ data, useSystemFonts: true }).promise;
+    const pages = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      const text = content.items.map((i) => i.str).join(' ').replace(/\s+/g, ' ').trim();
+      pages.push({ page: p, printedPage: detectPrintedPage(text), text });
+    }
+    const id = crypto.randomBytes(6).toString('hex');
+    const title = path.basename(filePath).replace(/\.pdf$/i, '');
+    const totalChars = pages.reduce((sum, p) => sum + p.text.length, 0);
+    const noText = totalChars < 40; // scanned/image-only PDF — nothing to search
+    writeJson(path.join('pdfs', `${id}.json`),
+      { id, title, addedAt: new Date().toISOString(), pageCount: doc.numPages, noText, pages });
+    const index = pdfIndex();
+    index.books.push({ id, title, pageCount: doc.numPages, noText });
+    writePdfIndex(index);
+    return { books: index.books, warning: noText
+      ? `"${title}" has no text layer (it looks scanned/image-only), so topic search `
+        + 'will not find anything in it. Use a text-based PDF or an OCR\'d copy.'
+      : null };
+  } catch (err) {
+    return {
+      books: pdfIndex().books,
+      error: `Could not read ${path.basename(filePath)}: ${err.message}`,
+    };
   }
-  const id = crypto.randomBytes(6).toString('hex');
-  const title = path.basename(filePath).replace(/\.pdf$/i, '');
-  const totalChars = pages.reduce((sum, p) => sum + p.text.length, 0);
-  const noText = totalChars < 40; // scanned/image-only PDF — nothing to search
-  writeJson(path.join('pdfs', `${id}.json`),
-    { id, title, addedAt: new Date().toISOString(), pageCount: doc.numPages, noText, pages });
-  const index = pdfIndex();
-  index.books.push({ id, title, pageCount: doc.numPages, noText });
-  writePdfIndex(index);
-  return { books: index.books, warning: noText
-    ? `"${title}" has no text layer (it looks scanned/image-only), so topic search `
-      + 'will not find anything in it. Use a text-based PDF or an OCR\'d copy.'
-    : null };
 });
 
 ipcMain.handle('pdf:remove', (_e, id) => {
@@ -801,10 +948,15 @@ ipcMain.on('bubble:hold', (_e, down) => engineWin?.webContents.send('bubble:hold
 ipcMain.on('menu:open', (_e, x, y) => openMenu(x, y));
 ipcMain.on('menu:close', () => menuWin && menuWin.hide());
 ipcMain.on('menu:resize', (_e, height) => {
-  if (menuWin && !menuWin.isDestroyed() && height > 0) {
-    const [w] = menuWin.getSize();
-    menuWin.setSize(w, Math.min(Math.round(height), 700));
-  }
+  if (!menuWin || menuWin.isDestroyed() || !(height > 0)) return;
+  const [w] = menuWin.getSize();
+  const h = Math.min(Math.round(height), 700);
+  menuWin.setSize(w, h);
+  // Growing only ever adds height downward from the click point, so the menu can
+  // leave the screen after it resizes even though it fitted when it opened.
+  const [x, y] = menuWin.getPosition();
+  const at = menuPosition(x, y, { width: w, height: h });
+  if (at.x !== x || at.y !== y) menuWin.setPosition(at.x, at.y);
 });
 ipcMain.on('menu:action', (_e, action) => {
   menuWin && menuWin.hide();
@@ -903,19 +1055,40 @@ ipcMain.on('engine:toggle-mute', () => engineWin?.webContents.send('engine:toggl
 ipcMain.on('engine:toggle-watch', () => engineWin?.webContents.send('engine:toggle-watch'));
 ipcMain.on('session:hide-bubble', () => bubbleWin?.hide());
 
-// engine → settings (live status)
-ipcMain.on('ui:state', (_e, state) => settingsWin?.webContents.send('ui:state', state));
+/**
+ * engine → every screen that shows session status.
+ *
+ * This used to go to `settingsWin` alone, which was right when Settings WAS the
+ * main window. Once home became the front door that made its whole session card
+ * dead: it reported "Not running" through a live session, left Stop, Mute and
+ * Watch disabled, and greyed out six of its tool buttons — so there was no way to
+ * stop the tutor from the window the app opens on.
+ *
+ * Send to any of our windows that are listening, so adding another screen later
+ * cannot reintroduce this.
+ */
+function broadcastUi(state) {
+  for (const win of [homeWin, settingsWin]) {
+    if (win && !win.isDestroyed()) win.webContents.send('ui:state', state);
+  }
+}
+ipcMain.on('ui:state', (_e, state) => broadcastUi(state));
 
 // ---- App lifecycle ---------------------------------------------------------------
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
+  // Bring the front door forward, not Settings — `settingsWin` is null until the
+  // user opens Settings, so relaunching from the shortcut used to do nothing at
+  // all. Fall back to any window we have, so this can never be a no-op again.
   app.on('second-instance', () => {
-    if (settingsWin) {
-      if (settingsWin.isMinimized()) settingsWin.restore();
-      settingsWin.focus();
-    }
+    const win = [homeWin, settingsWin].find((w) => w && !w.isDestroyed())
+      || BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
   });
   app.whenReady().then(createWindows);
   app.on('window-all-closed', () => app.quit());

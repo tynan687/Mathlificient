@@ -200,8 +200,12 @@ function onDisconnected(reason) {
 function scheduleReconnect() {
   if (stopping) return;
   if (reconnectAttempts >= MAX_RECONNECTS) {
-    uiUpdate({ status: 'Disconnected — press Start to resume' });
+    // `running: false` has to ride the SAME payload. Setting the local after the
+    // broadcast left `uiUpdate.current.running` true, so every screen disabled
+    // Start while printing "press Start to resume" — a dead button under an
+    // instruction to press it, and Stop could not clear it either (see stop()).
     running = false;
+    uiUpdate({ status: 'Disconnected — press Start to resume', running: false });
     return;
   }
   reconnectAttempts++;
@@ -222,6 +226,13 @@ function closeTransport() {
 }
 
 async function stop() {
+  // Pressing Stop on a session that has already given up must still put the UI
+  // straight, or the only control left on screen does nothing.
+  if (!running && !stopping) {
+    uiUpdate({ status: 'Not running', running: false });
+    setState('IDLE');
+    return;
+  }
   if (!running || stopping) return;
   stopping = true;
   running = false;

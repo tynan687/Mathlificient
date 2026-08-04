@@ -80,6 +80,7 @@ Individual checks, when you want the detail:
 
 ```powershell
 robocopy "VoiceMathTutorPC\renderer" "$env:LOCALAPPDATA\vmt-build\renderer" /MIR
+copy "VoiceMathTutorPC\main.js" "VoiceMathTutorPC\preload.js" "$env:LOCALAPPDATA\vmt-build\"
 ```
 
 ---

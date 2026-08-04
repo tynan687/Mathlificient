@@ -17,6 +17,8 @@ const $ = (id) => document.getElementById(id);
 // From nav.js, so this and the quick-action menu cannot drift apart.
 
 let running = false;
+/** Whether a tutoring key is stored. Start needs both this and an idle session. */
+let hasKey = true;
 
 function buildNav() {
   const wrap = $('nav');
@@ -57,6 +59,28 @@ function buildNav() {
 /** Session-only actions are dead weight when nothing is running. */
 function paintSessionState() {
   for (const b of document.querySelectorAll('.tool[data-session]')) b.disabled = !running;
+}
+
+/**
+ * Tutoring needs a key, and everything else does not.
+ *
+ * Without this a brand-new student meets a big primary "Start tutor" button,
+ * presses it, and gets a red floating disc, three silent retries and no message
+ * anywhere — the failure is reported into `lastError`, which says nothing about
+ * what to do. Say the one thing that helps, and point at Settings.
+ */
+async function checkKey() {
+  try { hasKey = await window.tutor.invoke('apikey:exists'); } catch { hasKey = true; }
+  const start = $('start');
+  start.disabled = !hasKey || running;
+  start.title = hasKey ? '' : 'Add your OpenAI key in Settings to use the voice tutor';
+  if (!hasKey) {
+    $('status').textContent = 'Voice tutoring needs an API key';
+    $('needKey').classList.remove('hidden');
+  } else {
+    $('needKey').classList.add('hidden');
+  }
+  return hasKey;
 }
 
 // ---- Continue studying --------------------------------------------------------------
@@ -125,6 +149,7 @@ $('muteBtn').addEventListener('click', () => window.tutor.send('engine:toggle-mu
 $('watchBtn').addEventListener('click', () => window.tutor.send('engine:toggle-watch'));
 $('practiseBtn').addEventListener('click', () => window.tutor.send('menu:action', 'practice'));
 $('settingsBtn').addEventListener('click', () => window.tutor.send('menu:action', 'settings'));
+$('needKeyBtn').addEventListener('click', () => window.tutor.send('menu:action', 'settings'));
 
 window.tutor.on('ui:state', (state) => {
   running = !!state.running;
@@ -142,7 +167,8 @@ window.tutor.on('ui:state', (state) => {
   if (state.budgetGuardTripped) flags.push('Budget guard: reasoning lowered');
   $('flags').textContent = flags.join(' · ');
   $('error').textContent = state.lastError ? `Last error: ${state.lastError}` : '';
-  $('start').disabled = running;
+  // Both conditions, or a state broadcast would re-enable Start with no key.
+  $('start').disabled = running || !hasKey;
   $('stopBtn').disabled = !running;
   $('muteBtn').disabled = !running;
   $('muteBtn').textContent = state.micMuted ? 'Unmute' : 'Mute';
@@ -204,6 +230,7 @@ async function init() {
     $('topicLine').textContent = settings.currentTopic ? `working on ${settings.currentTopic}` : '';
   } catch { /* no topic line, no harm */ }
   await checkPlatform();
+  await checkKey();
   await refreshSpend();
   await renderContinue();
 }
@@ -213,5 +240,9 @@ init().catch((err) => {
   $('error').textContent = `Home failed to load: ${err && err.message}`;
 });
 
-// Coming back from a practice run should show the new recommendations.
-window.addEventListener('focus', () => { renderContinue().catch(() => {}); });
+// Coming back from a practice run should show the new recommendations — and from
+// Settings, a key that was just added, so Start comes alive without a relaunch.
+window.addEventListener('focus', () => {
+  renderContinue().catch(() => {});
+  checkKey().catch(() => {});
+});

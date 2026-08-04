@@ -11,6 +11,20 @@ function flash(el, text) {
   setTimeout(() => note.remove(), 1200);
 }
 
+/**
+ * Copy, and only claim it worked if it did.
+ *
+ * These sites all used to be `writeText(x).catch(() => {})` followed by an
+ * unconditional flash, so a failed copy still said "copied" — and the student
+ * finds out by pasting whatever was on the clipboard before into their
+ * assignment. If it fails, say so.
+ */
+function copyAndFlash(el, text) {
+  navigator.clipboard.writeText(text)
+    .then(() => flash(el, 'copied'))
+    .catch(() => flash(el, 'copy failed'));
+}
+
 const groups = [...new Set(FORMULAS.map((f) => f.group))];
 for (const group of groups) {
   const h = document.createElement('h3');
@@ -55,8 +69,7 @@ function buildSolver(container, formula) {
   const copyLatex = document.createElement('button');
   copyLatex.textContent = 'Copy LaTeX';
   copyLatex.addEventListener('click', () => {
-    navigator.clipboard.writeText(formula.latex).catch(() => {});
-    flash(copyLatex, 'copied');
+    copyAndFlash(copyLatex, formula.latex);
   });
 
   if (!formula.solve) {
@@ -124,8 +137,7 @@ function buildSolver(container, formula) {
   copyResult.textContent = 'Copy result';
   copyResult.classList.add('hidden');
   copyResult.addEventListener('click', () => {
-    navigator.clipboard.writeText(lastResultText).catch(() => {});
-    flash(copyResult, 'copied');
+    copyAndFlash(copyResult, lastResultText);
   });
 
   container.appendChild(solveBtn);

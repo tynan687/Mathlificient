@@ -315,9 +315,15 @@ answerBtn.addEventListener('click', () => {
   tex(answerEl, current.answer);
   // Grading is offered on every question, not just inside a quiz — that's where
   // most attempts happen, and a proficiency bar built only from quizzes would be
-  // built from a small minority of the work. Hidden when there's no skill to
-  // credit, and never alongside a live option grid.
-  if (gradingEl && !graded && current.skill && !usingMcq) {
+  // built from a small minority of the work. Never alongside a live option grid.
+  //
+  // Offered even with no skill to credit. It used to be hidden in that case, which
+  // meant a tutor-pushed question whose topic did not resolve to a skill could not
+  // be marked at all: inside a quiz that stalled it permanently, because advance()
+  // is what moves to the next question and only grading calls it. recordAttempt
+  // already declines to log an attempt with no skill, so the only thing this
+  // changes is that the student can always say they are done with a question.
+  if (gradingEl && !graded && !usingMcq) {
     gradingEl.classList.remove('hidden');
   }
 });
@@ -452,8 +458,20 @@ if (missedItBtn) missedItBtn.addEventListener('click', () => grade(false));
 copyBtn.addEventListener('click', () => {
   if (!current) return;
   const text = current.question;
-  if (hasBridge) Android.copyText(text);
-  else navigator.clipboard.writeText(text).catch(() => {});
+  // Every other copy button in the app acknowledges; this one said nothing at
+  // all, so a student pressed it two or three times to find out whether it had
+  // worked — and if the write failed they would never know.
+  const say = (msg) => {
+    const label = copyBtn.textContent;
+    copyBtn.textContent = msg;
+    setTimeout(() => { copyBtn.textContent = label; }, 1400);
+  };
+  // Android shows its own Toast from the bridge, so a second confirmation there
+  // would be two indicators for one fact.
+  if (hasBridge) { Android.copyText(text); return; }
+  navigator.clipboard.writeText(text)
+    .then(() => say('✓ Copied'))
+    .catch(() => say('✕ Copy failed'));
 });
 
 document.getElementById('newQ').addEventListener('click', newQuestion);
@@ -479,8 +497,24 @@ if (modeSel) {
   });
 }
 
-// A tutor-generated question pushed from a live session.
+/**
+ * A tutor-generated question pushed from a live session.
+ *
+ * Declined while a quiz is running. Replacing the question on screen did not
+ * replace the quiz's idea of where it was, so marking the pushed question ran the
+ * quiz's hook: it advanced the counter and filed the question the student had
+ * never seen onto the "missed" list. One quiz question silently disappeared and
+ * the review afterwards was wrong about what went badly.
+ *
+ * Refusing is better than queueing here — the student is mid-quiz, and a question
+ * that arrives later out of nowhere is its own confusion. Say so on screen so the
+ * tutor's "here you go" is not left dangling.
+ */
 function showTutorQuestion(payload) {
+  if (gradeFlow !== 'practice') {
+    setModeNote('The tutor sent a question — finish the quiz and ask again.');
+    return;
+  }
   const steps = Array.isArray(payload.steps) ? payload.steps : [String(payload.steps || '')];
   // No template to read a skill off, so infer one from whatever the session is
   // about. If that resolves to nothing the question still works — it just isn't

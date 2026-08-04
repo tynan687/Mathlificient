@@ -76,6 +76,7 @@ edit to `VoiceMathTutorPC/renderer/` in the repo is *not* what they test until y
 
 ```
 robocopy "<repo>\VoiceMathTutorPC\renderer" "%LOCALAPPDATA%\vmt-build\renderer" /MIR
+copy "<repo>\VoiceMathTutorPC\main.js" "<repo>\VoiceMathTutorPC\preload.js" "%LOCALAPPDATA%\vmt-build\"
 ```
 
 You will not forget silently. `paths.js` hashes both renderer trees on every run and **exits 1

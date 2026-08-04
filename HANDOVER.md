@@ -259,6 +259,7 @@ load from it. Copy the renderer across before testing a PC-side edit:
 
 ```
 robocopy "<repo>\VoiceMathTutorPC\renderer" "%LOCALAPPDATA%\vmt-build\renderer" /MIR
+copy "<repo>\VoiceMathTutorPC\main.js" "<repo>\VoiceMathTutorPC\preload.js" "%LOCALAPPDATA%\vmt-build\"
 ```
 
 `paths.js` hashes both trees on every run and **exits 1 naming the drifted files** rather than
@@ -432,22 +433,21 @@ never in placement. Still empty: `polynomials`, `inequalities`, `conics`,
 - **Speech is Android-only in practice.** Web Speech can be silently mute inside a WebView, so
   the symbols page routes through a Kotlin `TextToSpeech` bridge and only shows the speaker
   where it exists. The written "say it" line is always present.
-- **Settings writes can revert each other, and this is known and accepted.** `settings:set`
-  replaces `settings.json` wholesale, and three renderers read-modify-write the whole object:
-  `settings.js`, `engine.js` and `practice-ink.js`. Two of them hold a snapshot for the life of
-  the window — `settings.js` loads one at startup and never refreshes it, and its window cannot
-  be closed at all, since closing it quits the app. So the tutor saving `currentTopic`, or the
-  Practice Studio saving a paper colour, can be silently undone by the next toggle in the
-  settings window, which writes its launch-time copy back over the top.
+- **Settings writes used to revert each other. Fixed, and it needed two halves.** `settings:set`
+  replaced `settings.json` wholesale, and renderers that hold a snapshot for the life of their
+  window wrote it back over anything another writer had changed — so the tutor saving
+  `currentTopic`, or the Practice Studio saving a paper colour, was silently undone by the next
+  toggle in the settings window.
 
-  This is the same clobber the proficiency log is append-only to avoid — see the comment on
-  `Store.profResetSkill` in `practice-store.js`, which says so in as many words.
+  `settings:set` now merges over what is on disk, **and** `settings.js` sends only the fields it
+  actually changed, diffed against the copy it opened with. Merging alone is not enough: a stale
+  snapshot carries the old value explicitly, so it would win the merge. `practice-ink.js` now
+  sends a single key rather than the whole object.
 
-  The fix is small: make `settings:set` merge over what is on disk instead of replacing it,
-  and have `settings.js` re-read on `theme:changed`. It has not been done. Until it is,
-  `tools/check-settings.js` pins the three writers by name so a fourth cannot appear by
-  accident — if you need one, that is a decision, and the header of that file explains what
-  you are accepting. Prefer routing a new setting through `settings.js`'s existing save path.
+  `tools/check-settings.js` still pins the whole-object writers by name. With merging in place a
+  write can no longer erase a key, but a snapshot-holding writer can still resurrect a stale one,
+  so a fourth should be a decision rather than an accident. Prefer routing a new setting through
+  `settings.js`'s existing save path.
 
 ---
 

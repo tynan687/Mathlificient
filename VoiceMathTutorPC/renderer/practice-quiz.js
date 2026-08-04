@@ -13,6 +13,7 @@
 (function () {
   const quizCountEl = document.getElementById('quizCount');
   const startQuizBtn = document.getElementById('startQuiz');
+  const cancelQuizBtn = document.getElementById('cancelQuiz');
   const printWorksheetBtn = document.getElementById('printWorksheet');
   const quizProgressEl = document.getElementById('quizProgress');
   const gradingEl = document.getElementById('grading');
@@ -57,9 +58,30 @@
     quiz = { queue, index: 0, score: 0, missed: [], placement };
     topicSel.disabled = true;
     newQBtn.disabled = true;
+    if (cancelQuizBtn) cancelQuizBtn.classList.remove('hidden');
     quizSummaryEl.classList.add('hidden');
     quizSummaryEl.innerHTML = '';
     showQuizQuestion();
+  }
+
+  /**
+   * Leave a quiz part-way through.
+   *
+   * Starting one disables the topic picker and New question, so without this there
+   * was no way out at all: the only exits were finishing every question or closing
+   * the window. Attempts already marked stay marked — they happened.
+   */
+  function cancelQuiz() {
+    if (!quiz) return;
+    quiz = null;
+    gradeFlow = 'practice';
+    clearAnswerUI();
+    quizProgressEl.classList.add('hidden');
+    quizSummaryEl.classList.add('hidden');
+    quizSummaryEl.innerHTML = '';
+    topicSel.disabled = false;
+    newQBtn.disabled = false;
+    if (cancelQuizBtn) cancelQuizBtn.classList.add('hidden');
   }
 
   /**
@@ -107,6 +129,7 @@
     quizProgressEl.classList.add('hidden');
     topicSel.disabled = false;
     newQBtn.disabled = false;
+    if (cancelQuizBtn) cancelQuizBtn.classList.add('hidden');
 
     quizSummaryEl.innerHTML = '';
     const title = document.createElement('div');
@@ -158,6 +181,7 @@
   }
 
   startQuizBtn.addEventListener('click', () => startQuiz(Number(quizCountEl.value)));
+  if (cancelQuizBtn) cancelQuizBtn.addEventListener('click', cancelQuiz);
 
   /** Called by the progress screen (PC IPC / Android intent extra). */
   window.startPlacement = () => startQuiz(12, { placement: true });

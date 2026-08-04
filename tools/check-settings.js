@@ -8,17 +8,22 @@
  *     theme setting that four pages ignored, and just as invisible;
  *   * a NEW whole-object writer of `settings:set`.
  *
- * The second needs explaining, because it does not fail today. `settings:set`
- * replaces settings.json wholesale (main.js), and three renderers already read,
- * modify and write the whole object. Two of them hold a snapshot for the life of
- * the window — settings.js loads one at startup and never refreshes it, and its
- * window cannot even be closed — so a save from one silently reverts a key
- * another changed. That race is a KNOWN, ACCEPTED issue (see HANDOVER.md); it is
- * deliberately not fixed here.
+ * The second used to guard a race that was known and accepted: `settings:set`
+ * replaced settings.json wholesale, and renderers holding a snapshot for the life
+ * of their window wrote it back over anything another writer had changed — so
+ * picking a paper colour in Practice, then touching any control in Settings, put
+ * the paper back.
  *
- * What this guard does is stop it getting worse. The three writers are pinned by
- * name. A fourth is a new way to lose a setting, and it should be a decision
- * rather than an accident.
+ * That race is now FIXED, in two halves, and it needed both. `settings:set` in
+ * main.js merges over what is on disk; and settings.js sends only the fields it
+ * actually changed, diffed against the copy it opened with — because merging
+ * alone cannot help when a stale snapshot carries the old value explicitly and so
+ * wins the merge.
+ *
+ * The pin stays anyway. A whole-object write is still the shape that caused it:
+ * with merging in place it can no longer erase a key, but a snapshot-holding
+ * writer can still resurrect a stale one. A fourth should be a decision rather
+ * than an accident.
  *
  *   node tools/check-settings.js
  */

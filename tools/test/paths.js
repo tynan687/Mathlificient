@@ -39,7 +39,8 @@ const PC = resolvePc();
  * (a few dozen hashes) and it converts a silent false pass into a hard stop.
  */
 function assertRendererMatchesRepo(pc) {
-  const repoR = path.join(REPO, 'VoiceMathTutorPC', 'renderer');
+  const repoPc = path.join(REPO, 'VoiceMathTutorPC');
+  const repoR = path.join(repoPc, 'renderer');
   const buildR = path.join(pc, 'renderer');
   if (!fs.existsSync(buildR)) return [`no renderer/ in ${pc}`];
 
@@ -56,6 +57,18 @@ function assertRendererMatchesRepo(pc) {
       drift.push(`differs: ${rel}`);
     }
   }
+  // main.js and preload.js too, and this is not hypothetical: the copy step
+  // everyone runs is renderer-only, so vmt-build's main.js sat a day behind the
+  // repo's. Three pc-home assertions were failing against a main.js that was in
+  // fact correct, which is the same class of lie as a stale renderer — a drift
+  // guard that covers only part of the app is a guard you cannot trust.
+  for (const rel of ['main.js', 'preload.js']) {
+    const a = path.join(repoPc, rel);
+    const b = path.join(pc, rel);
+    if (!fs.existsSync(a)) continue;
+    if (!fs.existsSync(b)) drift.push(`missing from the build: ${rel}`);
+    else if (!fs.readFileSync(a).equals(fs.readFileSync(b))) drift.push(`differs: ${rel}`);
+  }
   return drift;
 }
 
@@ -68,17 +81,22 @@ if (path.resolve(PC) !== path.resolve(REPO, 'VoiceMathTutorPC')) {
     for (const d of drift.slice(0, 20)) console.error(`    ${d}`);
     if (drift.length > 20) console.error(`    …and ${drift.length - 20} more`);
     console.error(`\n  robocopy "${path.join(REPO, 'VoiceMathTutorPC', 'renderer')}" \\`);
-    console.error(`           "${path.join(PC, 'renderer')}" /MIR\n`);
+    console.error(`           "${path.join(PC, 'renderer')}" /MIR`);
+    console.error(`  copy    "${path.join(REPO, 'VoiceMathTutorPC', '*.js')}" "${PC}"\n`);
     process.exit(1);
   }
-  console.log(`  ! renderer matches the repo; running against ${PC} for its node_modules.\n`);
+  console.log(`  ! app matches the repo; running against ${PC} for its node_modules.\n`);
 }
 
 module.exports = {
   REPO,
   PC,
   PRELOAD: path.join(PC, 'preload.js'),
-  MAIN: path.join(PC, 'main.js'),
+  // Source of truth for anything READ as text. The drift guard above keeps the
+  // build's copy identical, but a suite reasoning about main.js should read the
+  // file the author edits, not a copy of it — that asymmetry is what let a stale
+  // main.js sit under check-ipc.js unnoticed.
+  MAIN: path.join(REPO, 'VoiceMathTutorPC', 'main.js'),
   RENDERER: path.join(REPO, 'VoiceMathTutorPC', 'renderer'),
   ASSETS: path.join(REPO, 'VoiceMathTutor', 'app', 'src', 'main', 'assets', 'formulas'),
 };

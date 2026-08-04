@@ -2,6 +2,7 @@
 
 const $ = (id) => document.getElementById(id);
 let settings = null;
+let baseline = {};
 
 const SELECTS = {
   model: TutorConfig.MODELS,
@@ -35,6 +36,9 @@ async function safely(what, fn) {
 
 async function init() {
   settings = await window.tutor.invoke('settings:get');
+  // What the file held when this window opened. save() diffs against it so we
+  // only ever send the fields this window actually changed — see save().
+  baseline = JSON.parse(JSON.stringify(settings));
 
   for (const [id, options] of Object.entries(SELECTS)) {
     const select = $(id);
@@ -93,10 +97,20 @@ async function init() {
     $('addPdf').disabled = true;
     $('addPdf').textContent = 'Indexing…';
     let result = null;
-    try { result = await window.tutor.invoke('pdf:add'); } catch (e) { /* ignore */ }
+    let failed = null;
+    try {
+      result = await window.tutor.invoke('pdf:add');
+    } catch (e) {
+      failed = e && e.message;
+    }
     $('addPdf').disabled = false;
     $('addPdf').textContent = 'Add PDF…';
-    if (result && result.warning) alert(result.warning);
+    // Say when it did not work. Silently returning to "Add PDF…" with the list
+    // still empty reads as success, on an action with a file picker in the middle
+    // to make it feel like something definitely happened.
+    if (result && result.error) alert(result.error);
+    else if (failed) alert(`Could not add that PDF: ${failed}`);
+    else if (result && result.warning) alert(result.warning);
     renderPdfs();
   });
   renderPdfs();
@@ -280,8 +294,29 @@ function fillWindowSelect(select, windows, savedName, emptyLabel) {
   select.value = savedName || '';
 }
 
+/**
+ * Send only what this window changed.
+ *
+ * This window holds `settings` from the moment it opened and used to write the
+ * whole object back on every control change — so anything another writer had
+ * altered in the meantime was silently reverted. Picking a yellow paper in
+ * Practice and then touching any Settings control put the paper back to white,
+ * and the tutor's `currentTopic` went the same way.
+ *
+ * Merging in main.js is not enough on its own: the stale snapshot carries the old
+ * value explicitly, so it would win the merge. The fix has to be here, at the
+ * sender — diffing against the snapshot means a field this window never touched is
+ * never in the payload at all.
+ */
 function save() {
-  window.tutor.invoke('settings:set', settings);
+  const patch = {};
+  for (const key of Object.keys(settings)) {
+    if (JSON.stringify(settings[key]) !== JSON.stringify(baseline[key])) {
+      patch[key] = settings[key];
+    }
+  }
+  if (!Object.keys(patch).length) return;
+  window.tutor.invoke('settings:set', patch);
 }
 
 // ---- Buttons ---------------------------------------------------------------------
@@ -304,7 +339,22 @@ const KEY_NOTE = {
 $('saveKey').addEventListener('click', async () => {
   const key = $('apiKey').value.trim();
   if (!key) return;
-  const result = await window.tutor.invoke('apikey:save', key);
+  // The write can fail — a read-only or full userData directory is enough — and
+  // clearing the field first made that look exactly like success, leaving the
+  // student certain their key was stored when nothing had been written.
+  let result;
+  try {
+    result = await window.tutor.invoke('apikey:save', key);
+  } catch (err) {
+    $('keyHint').textContent = `Could not save the key: ${err && err.message}`;
+    $('keyHint').classList.add('error');
+    return; // leave the field alone so they do not have to paste it again
+  }
+  if (result && result.saved === false) {
+    $('keyHint').textContent = `Could not save the key: ${result.error}`;
+    $('keyHint').classList.add('error');
+    return;
+  }
   $('apiKey').value = '';
   const secure = !result || result.secure !== false; // older shape returned `true`
   $('keyHint').textContent = secure ? KEY_NOTE.secure : KEY_NOTE.plain;

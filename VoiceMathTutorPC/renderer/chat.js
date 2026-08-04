@@ -3,12 +3,19 @@
 
 const feed = document.getElementById('feed');
 
-function flash(el) {
+function flash(el, text = 'copied') {
   const note = document.createElement('span');
   note.className = 'copied';
-  note.textContent = 'copied';
+  note.textContent = text;
   el.after(note);
   setTimeout(() => note.remove(), 1200);
+}
+
+/** Copy, and only say "copied" if it actually copied. */
+function copyAndFlash(el, text) {
+  navigator.clipboard.writeText(text)
+    .then(() => flash(el))
+    .catch(() => flash(el, 'copy failed'));
 }
 
 function renderExample(example, { prepend = false } = {}) {
@@ -50,8 +57,7 @@ function renderExample(example, { prepend = false } = {}) {
   const copyLatex = document.createElement('button');
   copyLatex.textContent = 'Copy LaTeX';
   copyLatex.addEventListener('click', () => {
-    navigator.clipboard.writeText(steps.join('\n')).catch(() => {});
-    flash(copyLatex);
+    copyAndFlash(copyLatex, steps.join('\n'));
   });
   btns.appendChild(copyLatex);
   card.appendChild(btns);

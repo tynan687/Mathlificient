@@ -39,7 +39,9 @@
 <body>
   <div class="no-print">
     <button class="primary" id="printBtn">🖨 Print / Save as PDF</button>
-    <span class="hint">Uses your system print dialog — choose "Microsoft Print to PDF" to save a file.</span>
+    <!-- Filled in by worksheet.js: the printer that saves to a file is named
+         differently on each platform, and this app now ships a .deb. -->
+    <span class="hint" id="printHint">Uses your system print dialog.</span>
   </div>
   <h1>Practice Worksheet</h1>
   <div class="sub" id="sub"></div>
