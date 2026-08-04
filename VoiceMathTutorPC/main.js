@@ -392,13 +392,50 @@ ipcMain.handle('settings:get', () => ({ ...DEFAULT_SETTINGS, ...readJson('settin
 ipcMain.handle('settings:set', (_e, s) => { writeJson('settings.json', s); return true; });
 
 ipcMain.handle('apikey:exists', () => fs.existsSync(file('apikey.bin')));
+
+/**
+ * Whether the API key can be encrypted at rest.
+ *
+ * On Windows this is always true — safeStorage uses DPAPI, which is always
+ * there — so the plaintext branch below never once ran. On Linux safeStorage
+ * needs a keyring (libsecret with gnome-keyring or kwallet actually running),
+ * and without one it silently writes the key as readable bytes. The .deb
+ * depends on libsecret-1-0, but a dependency does not mean a keyring is
+ * *unlocked*, so the answer has to be reported rather than assumed.
+ */
+ipcMain.handle('apikey:secure', () => safeStorage.isEncryptionAvailable());
+
+/**
+ * How the desktop will treat our floating windows.
+ *
+ * The bubble and the quick-action menu place themselves — setPosition, an
+ * always-on-top level of 'screen-saver', a transparent frameless window and
+ * click-through via setIgnoreMouseEvents. All of that is X11. Wayland does not
+ * let a client choose where its own window goes, so on a Wayland session the
+ * bubble will not stay where it is dragged and the menu will not open under the
+ * cursor. Debian 12's default GNOME session IS Wayland.
+ *
+ * Reporting this beats leaving it looking broken. Everything else — home,
+ * practice, progress, symbols, the tools — is ordinary windows and is fine.
+ */
+ipcMain.handle('platform:info', () => ({
+  platform: process.platform,
+  // XDG_SESSION_TYPE is what a login manager sets; ozone tells us what Electron
+  // actually chose, which can differ if the user forced a backend.
+  sessionType: process.env.XDG_SESSION_TYPE || '',
+  wayland: process.platform === 'linux'
+    && (process.env.XDG_SESSION_TYPE === 'wayland' || !!process.env.WAYLAND_DISPLAY),
+  keyringOk: safeStorage.isEncryptionAvailable(),
+}));
+
 ipcMain.handle('apikey:save', (_e, key) => {
   const trimmed = String(key).trim();
-  const data = safeStorage.isEncryptionAvailable()
-    ? safeStorage.encryptString(trimmed)
-    : Buffer.from(trimmed, 'utf8');
+  const secure = safeStorage.isEncryptionAvailable();
+  const data = secure ? safeStorage.encryptString(trimmed) : Buffer.from(trimmed, 'utf8');
   fs.writeFileSync(file('apikey.bin'), data);
-  return true;
+  // 0600 either way, but it is the only protection left when `secure` is false.
+  try { fs.chmodSync(file('apikey.bin'), 0o600); } catch { /* best effort */ }
+  return { saved: true, secure };
 });
 
 ipcMain.handle('memory:get', () => readJson('tutor_memory.json', { notes: [] }));

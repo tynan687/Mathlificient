@@ -1,6 +1,6 @@
 {
-  "_comment": "Changing 'productName' moves the userData folder (%APPDATA%/<productName>), which holds the encrypted API key, settings, tutor memory, study log and PDF library — Electron derives that path from productName, not from 'name'. If it ever changes again, extend migrateLegacyUserData() in main.js to carry the data across.",
-  "name": "voice-math-tutor-pc",
+  "_comment": "Changing 'productName' moves the userData folder (%APPDATA%/<productName>), which holds the encrypted API key, settings, tutor memory, study log and PDF library \u2014 Electron derives that path from productName, not from 'name'. If it ever changes again, extend migrateLegacyUserData() in main.js to carry the data across.",
+  "name": "mathlificient",
   "productName": "Mathlificient",
   "version": "1.0.0",
   "description": "Offline maths practice and screen-aware voice tutoring for Windows",
@@ -19,7 +19,8 @@
     "test:fast": "node ../tools/test/run-all.js --fast",
     "test:practice": "node ../tools/check-practice.js",
     "sync": "node ../tools/sync-shared.js",
-    "sync:check": "node ../tools/sync-shared.js --check"
+    "sync:check": "node ../tools/sync-shared.js --check",
+    "dist:linux": "electron-builder --linux deb AppImage"
   },
   "dependencies": {
     "pdfjs-dist": "4.7.76",
@@ -33,8 +34,13 @@
   "build": {
     "appId": "com.tynan.mathlificient.pc",
     "productName": "Mathlificient",
-    "directories": { "output": "dist" },
-    "files": ["**/*", "!dist/**"],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**"
+    ],
     "win": {
       "target": "nsis",
       "icon": "icon.ico"
@@ -44,6 +50,35 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
+    },
+    "linux": {
+      "target": [
+        "deb",
+        "AppImage"
+      ],
+      "icon": "icons",
+      "category": "Education",
+      "synopsis": "Offline maths practice and voice tutoring",
+      "description": "Offline maths practice, a 185-formula interactive sheet, and optional voice tutoring, for HSC and undergraduate engineering.",
+      "desktop": {
+        "StartupWMClass": "Mathlificient"
+      },
+      "executableName": "mathlificient",
+      "artifactName": "mathlificient_${version}_${arch}.${ext}",
+      "maintainer": "Tynan Heperi <tynan687@users.noreply.github.com>"
+    },
+    "deb": {
+      "depends": [
+        "libsecret-1-0",
+        "libnotify4",
+        "libnss3",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libgbm1",
+        "libasound2"
+      ]
     }
   }
 }

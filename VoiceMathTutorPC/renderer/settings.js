@@ -286,12 +286,29 @@ function save() {
 
 // ---- Buttons ---------------------------------------------------------------------
 
+/**
+ * What to tell the student about how their key is stored.
+ *
+ * "encrypted on-device" used to be printed unconditionally. That is true on
+ * Windows, where safeStorage is DPAPI and always available — and false on a
+ * Linux box with no unlocked keyring, where the key goes to disk as readable
+ * text. Claiming encryption that is not happening is worse than the plaintext.
+ */
+const KEY_NOTE = {
+  secure: 'Key saved (encrypted on-device).',
+  plain: 'Key saved, but NOT encrypted — no system keyring is available, so it is '
+    + 'stored as plain text readable by anything running as you. Install and unlock '
+    + 'gnome-keyring (or kwallet) and save the key again to encrypt it.',
+};
+
 $('saveKey').addEventListener('click', async () => {
   const key = $('apiKey').value.trim();
   if (!key) return;
-  await window.tutor.invoke('apikey:save', key);
+  const result = await window.tutor.invoke('apikey:save', key);
   $('apiKey').value = '';
-  $('keyHint').textContent = 'Key saved (encrypted on-device).';
+  const secure = !result || result.secure !== false; // older shape returned `true`
+  $('keyHint').textContent = secure ? KEY_NOTE.secure : KEY_NOTE.plain;
+  $('keyHint').classList.toggle('error', !secure);
 });
 
 $('start').addEventListener('click', () => window.tutor.send('engine:start'));

@@ -159,12 +159,51 @@ async function refreshSpend() {
   } catch { /* the rest of the screen still works */ }
 }
 
+/**
+ * Say the two things about this machine that would otherwise look like bugs.
+ *
+ * Both are Linux-only and neither could ever happen on Windows, which is why
+ * they went unnoticed until the app was packaged for Debian.
+ */
+async function checkPlatform() {
+  let info;
+  try { info = await window.tutor.invoke('platform:info'); } catch { return; }
+  if (!info || info.platform !== 'linux') return;
+
+  const notes = [];
+  if (info.wayland) {
+    notes.push('You are on a Wayland session. The floating bubble and its right-click '
+      + 'menu place themselves on screen, which Wayland does not allow, so they will '
+      + 'not sit where you put them. Log in to "GNOME on Xorg" if you want them. '
+      + 'Everything else works normally.');
+  }
+  if (!info.keyringOk) {
+    notes.push('No system keyring is available, so your API key would be stored as '
+      + 'plain text rather than encrypted. Install and unlock gnome-keyring (or '
+      + 'kwallet) before saving a key.');
+  }
+  if (!notes.length) return;
+
+  const box = document.createElement('div');
+  box.className = 'card';
+  box.id = 'platformNote';
+  for (const text of notes) {
+    const line = document.createElement('div');
+    line.className = 'muted';
+    line.style.marginBottom = '6px';
+    line.textContent = `⚠ ${text}`;
+    box.appendChild(line);
+  }
+  document.body.insertBefore(box, document.getElementById('continueWrap'));
+}
+
 async function init() {
   buildNav();
   try {
     const settings = await window.tutor.invoke('settings:get');
     $('topicLine').textContent = settings.currentTopic ? `working on ${settings.currentTopic}` : '';
   } catch { /* no topic line, no harm */ }
+  await checkPlatform();
   await refreshSpend();
   await renderContinue();
 }
