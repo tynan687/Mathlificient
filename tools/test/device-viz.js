@@ -61,11 +61,20 @@ function forwardDevtools() {
       const bg = [d[0], d[1], d[2]];
       let ink = 0;
       const seen = new Set();
+      // A hash of the PICTURE as well as a count of it. An ink total is one number
+      // over a dozen diagrams, so two can tie by coincidence and turn the suite red
+      // with nothing wrong — and, far worse, a STALE canvas measured twice ties
+      // perfectly and reads as if it were a coincidence. Hashing tells those two
+      // apart: identical hashes mean the same pixels, not a similar amount of them.
+      let h = 2166136261;
       for (let p = 0; p < d.length; p += 4) {
         const near = Math.abs(d[p] - bg[0]) + Math.abs(d[p+1] - bg[1]) + Math.abs(d[p+2] - bg[2]);
         if (near > 40) { ink++; seen.add(d[p] + ',' + d[p+1] + ',' + d[p+2]); }
+        h ^= (d[p] + d[p+1] * 3 + d[p+2] * 7 + p);
+        h = Math.imul(h, 16777619);
       }
       results.push({ id, type: current.viz.type, ink, colours: seen.size,
+        hash: (h >>> 0).toString(16),
         total: c.width * c.height, bg: bg.join(',') });
     }
     return JSON.stringify(results);
@@ -78,10 +87,18 @@ function forwardDevtools() {
       r.ink > 500 && r.ink < r.total * 0.6 && r.colours > 3,
       `${r.ink} px (${pctInk}% of canvas), ${r.colours} distinct colours, bg ${r.bg}`);
   }
-  // If the metric were still vacuous every template would report the same total.
-  const totals = new Set(drawn.map((r) => r.ink));
-  ok('the diagrams differ from one another (metric is not vacuous)',
-    totals.size >= drawn.length - 1, `${totals.size} distinct ink counts across ${drawn.length}`);
+  // Compared on the picture, not on how many pixels of it there are — see the note
+  // beside the hash above. Two diagrams sharing a hash is either the renderer
+  // ignoring its spec or the canvas not having been redrawn between them; both are
+  // real, and an ink total cannot distinguish either from a coincidence.
+  const groups = {};
+  for (const r of drawn) (groups[r.hash] = groups[r.hash] || []).push(r);
+  const dupes = Object.values(groups).filter((g) => g.length > 1);
+  ok('every diagram draws a different picture (metric is not vacuous)',
+    dupes.length === 0,
+    dupes.length
+      ? dupes.map((g) => g.map((r) => `${r.id} (${r.type})`).join(' == ')).join(' | ')
+      : `${Object.keys(groups).length} distinct pictures across ${drawn.length}`);
 
   page.close();
 
