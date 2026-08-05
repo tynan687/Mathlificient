@@ -1,0 +1,25 @@
+// Pass this to Gradle with -I when building from the OneDrive working copy:
+//
+//   gradle -I out-of-onedrive.gradle assembleRelease
+//
+// OneDrive holds files open while it syncs them. Gradle then fails mid-build with
+// "Failed to delete some children" on whatever task happens to be clearing an
+// intermediates directory — it has hit packageRelease, mergeReleaseResources and
+// compileDebugKotlin so far, and the failing task changes run to run, which makes
+// it read like a flaky build rather than a locked file.
+//
+// Moving build output outside the synced tree removes the contention entirely and
+// puts it beside the Electron/KaTeX tooling that already lives there.
+//
+// This is an init script rather than a line in build.gradle.kts on purpose: a
+// clone anywhere other than a synced folder should build in the normal place, and
+// the path below is specific to this machine. It lived in a temp directory for one
+// release, which meant the recipe in HANDOVER §6 referred to a file that no longer
+// existed by the next session.
+//
+// Output lands in %LOCALAPPDATA%\vmt-android\_app — NOT vmt-build, which is the
+// tree tools/test/paths.js hashes against the repo.
+def outside = new File(System.getenv('LOCALAPPDATA'), 'vmt-android')
+allprojects {
+    layout.buildDirectory = new File(outside, project.path.replace(':', '_'))
+}

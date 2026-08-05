@@ -9,6 +9,12 @@ const PR = {
   r: (x, dp = 4) => parseFloat(Number(x).toFixed(dp)),
   s: (n) => (n < 0 ? `- ${Math.abs(n)}` : `+ ${n}`), // signed term
   par: (n) => (n < 0 ? `(${n})` : `${n}`),
+  // ALWAYS brackets, for the second operand of a product where the bracket is
+  // what says "multiply". PR.par brackets only negatives, which is right for an
+  // exponent base and was wrong here: `${a}${PR.par(d)}` fused "1" and "4" into
+  // "14" in six templates, so the worked steps read as false arithmetic while the
+  // stated answers stayed correct.
+  brk: (n) => `(${n})`,
   // A signed variable term for a polynomial chain: "0x" vanishes, "1x" loses the 1.
   // Leading space included so `x^2${PR.xt(b)} ${PR.s(c)}` spaces correctly.
   xt(n, v = 'x') {
@@ -558,7 +564,10 @@ const PRACTICE = [
         question: `\\text{Solve using the quadratic formula: } ${a === 1 ? '' : a}x^2${PR.xt(b)}${PR.ct(c)} = 0`,
         steps: [
           `a = ${a}, \\ b = ${b}, \\ c = ${c}`,
-          `\\Delta = b^2 - 4ac = ${PR.par(b)}^2 - 4${PR.par(a)}${PR.par(c)} = ${disc}`,
+          // PR.par on the base (an exponent needs brackets only when negative),
+          // PR.brk on both factors: a >= 2 always, so "4${PR.par(a)}" fused every
+          // single generation — "4^2 - 426" for 4^2 - 4(2)(6).
+          `\\Delta = b^2 - 4ac = ${PR.par(b)}^2 - 4${PR.brk(a)}${PR.brk(c)} = ${disc}`,
           `x = \\frac{-b \\pm \\sqrt{\\Delta}}{2a} = \\frac{${-b} \\pm \\sqrt{${disc}}}{${2 * a}}`,
           `x \\approx ${r1} \\ \\text{or} \\ x \\approx ${r2}`,
         ],
@@ -1203,7 +1212,10 @@ const PRACTICE = [
       return {
         question: `\\text{Find } \\vec a \\cdot \\vec b \\text{ and the angle between } \\vec a = (${a}) \\text{ and } \\vec b = (${b})`,
         steps: [
-          `\\vec a \\cdot \\vec b = ${a[0]}${PR.par(b[0])} + ${a[1]}${PR.par(b[1])} + ${a[2]}${PR.par(b[2])} = ${dot}`,
+          // PR.s carries the sign of each later component, so a negative one reads
+          // "- 5(-3)" rather than "+ -5(-3)"; PR.brk keeps the product visible.
+          `\\vec a \\cdot \\vec b = ${a[0]}${PR.brk(b[0])} ${PR.s(a[1])}${PR.brk(b[1])}`
+            + ` ${PR.s(a[2])}${PR.brk(b[2])} = ${dot}`,
           `|\\vec a| = ${PR.r(ma, 3)}, \\quad |\\vec b| = ${PR.r(mb, 3)}`,
           `\\cos\\theta = \\frac{${dot}}{${PR.r(ma * mb, 3)}} \\Rightarrow \\theta \\approx ${ang}^\\circ`,
         ],
@@ -1241,7 +1253,7 @@ const PRACTICE = [
       return {
         question: `\\text{Find } \\det A \\text{ and } A^{-1} \\text{ for } A = \\begin{pmatrix} ${a} & ${b} \\\\ ${c} & ${d} \\end{pmatrix}`,
         steps: [
-          `\\det A = ad - bc = ${a}${PR.par(d)} - ${PR.par(b)}${PR.par(c)} = ${det}`,
+          `\\det A = ad - bc = ${a}${PR.brk(d)} - ${PR.par(b)}${PR.brk(c)} = ${det}`,
           `A^{-1} = \\frac{1}{${det}}\\begin{pmatrix} ${d} & ${-b} \\\\ ${-c} & ${a} \\end{pmatrix}`,
           `A^{-1} = \\begin{pmatrix} ${PR.r(d / det, 3)} & ${PR.r(-b / det, 3)} \\\\ ${PR.r(-c / det, 3)} & ${PR.r(a / det, 3)} \\end{pmatrix}`,
         ],
@@ -1348,7 +1360,7 @@ const PRACTICE = [
           + '\\end{cases} \\end{gathered}',
         steps: [
           `\\det A = \\begin{vmatrix} ${a} & ${b} \\\\ ${c} & ${d} \\end{vmatrix}`
-            + ` = ${a}${PR.par(d)} - ${PR.par(b)}${PR.par(c)} = ${det}`,
+            + ` = ${a}${PR.brk(d)} - ${PR.par(b)}${PR.brk(c)} = ${det}`,
           // The explanation gets its own line: at 360dp a sentence beside a
           // determinant overflows the phone, and KaTeX will not wrap.
           '\\text{Swap the constants into the } x \\text{ column:}',
@@ -1405,11 +1417,11 @@ const PRACTICE = [
           + `A = \\begin{pmatrix} ${a} & ${b} \\\\ ${c} & ${d} \\end{pmatrix},`
           + `\\ \\mathbf{b} = \\begin{pmatrix} ${e} \\\\ ${f} \\end{pmatrix} \\end{gathered}`,
         steps: [
-          `\\det A = ${a}${PR.par(d)} - ${PR.par(b)}${PR.par(c)} = ${det}`,
+          `\\det A = ${a}${PR.brk(d)} - ${PR.par(b)}${PR.brk(c)} = ${det}`,
           `A^{-1} = \\frac{1}{${det}}\\begin{pmatrix} ${d} & ${-b} \\\\ ${-c} & ${a} \\end{pmatrix}`,
           '\\mathbf{x} = A^{-1}\\mathbf{b} \\quad \\text{(inverse on the LEFT)}',
-          `\\mathbf{x} = \\frac{1}{${det}}\\begin{pmatrix} ${d}${PR.par(e)} ${PR.s(-b * f)} \\\\`
-            + ` ${-c}${PR.par(e)} ${PR.s(a * f)} \\end{pmatrix}`
+          `\\mathbf{x} = \\frac{1}{${det}}\\begin{pmatrix} ${d}${PR.brk(e)} ${PR.s(-b * f)} \\\\`
+            + ` ${-c}${PR.brk(e)} ${PR.s(a * f)} \\end{pmatrix}`
             + ` = \\begin{pmatrix} ${x0} \\\\ ${y0} \\end{pmatrix}`,
         ],
         answer: `x = ${x0}, \\ y = ${y0}`,
@@ -1462,7 +1474,7 @@ const PRACTICE = [
         steps: [
           '\\text{No unique solution when } \\det A = 0.',
           `\\det \\begin{vmatrix} k & ${b} \\\\ ${c} & ${d} \\end{vmatrix}`
-            + ` = ${d}k - ${PR.par(b)}${PR.par(c)} = 0`,
+            + ` = ${d}k - ${PR.par(b)}${PR.brk(c)} = 0`,
           `${d}k = ${b * c}`,
           `k = \\frac{${b * c}}{${d}} = ${k0}`,
         ],
@@ -3022,9 +3034,13 @@ const PRACTICE = [
       return {
         question: `\\text{Simplify } \\dfrac{\\frac{1}{x} + \\frac{1}{${p}}}{\\frac{1}{x} - \\frac{1}{${q}}}`,
         steps: [
-          `\\text{Multiply top and bottom by the overall LCD } ${p}${q}x`,
-          `\\text{Numerator: } ${p}${q}x\\left(\\frac{1}{x} + \\frac{1}{${p}}\\right) = ${p * q} + ${q}x`,
-          `\\text{Denominator: } ${p}${q}x\\left(\\frac{1}{x} - \\frac{1}{${q}}\\right) = ${p * q} - ${p}x`,
+          // The LCD is the PRODUCT pqx, so it has to be multiplied out here rather
+          // than written `${p}${q}x` — that printed p and q side by side, so p=2,
+          // q=3 claimed the LCD was 23x and then correctly used 6x on both lines.
+          // badArithmetic cannot reach these: every side carries \frac and x.
+          `\\text{Multiply top and bottom by the overall LCD } ${p * q}x`,
+          `\\text{Numerator: } ${p * q}x\\left(\\frac{1}{x} + \\frac{1}{${p}}\\right) = ${p * q} + ${q}x`,
+          `\\text{Denominator: } ${p * q}x\\left(\\frac{1}{x} - \\frac{1}{${q}}\\right) = ${p * q} - ${p}x`,
           `= \\frac{${q}(${p} + x)}{${p}(${q} - x)}, \\quad x \\ne 0,\\; ${q}`,
         ],
         answer: `\\frac{${q}(${p} + x)}{${p}(${q} - x)}`,

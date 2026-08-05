@@ -181,11 +181,39 @@ This is the most common task. The shape:
    - `PR.lead(n, v)` — leading coefficient: `1` → `x`, `-1` → `-x`
    - `PR.xt(n, v)` — signed mid-chain term: vanishes at 0, drops the 1
    - `PR.ct(n)` — signed constant, vanishes at 0
-   - `PR.par(n)` — parenthesise negatives
+   - `PR.par(n)` — parenthesise negatives **only**; for an exponent base
+   - `PR.brk(n)` — parenthesise **always**; for the second operand of a product
 
    Getting this wrong produces `0x`, `1x`, `(x + 0)` and — found on a tablet screen after four
    harnesses missed it — `\sqrt{-16^2 + 12^2}`, which reads as *minus sixteen squared*.
    **`PR.par` on any negative being raised to a power.**
+
+   And **never `PR.par` for a product** — that is what `PR.brk` is for. `${a}${PR.par(d)}`
+   meaning "a times d" silently fuses the digits whenever `d ≥ 0`: with `a = 1, d = 4` it
+   emits `14`. Six templates shipped that, so `det A = 14 - 2(-3) = 10` reached students who
+   then computed 20. The answers stayed correct and only the *working* lied, which is why it
+   survived a full suite and 130k generations — nothing evaluated whether a step's arithmetic
+   was true. `check-practice.js` now does (`badArithmetic`), but it can only judge chains with
+   two numeric sides, so a step like `3k - 4(3) = 0` is still on the author to get right.
+
+   Two more variants turned up **after** those six were fixed and the suite was green, so treat
+   "adjacency means multiply" as a class to hunt, not a bug to patch:
+
+   - **`quad-formula`** wrote the discriminant as `4${PR.par(a)}${PR.par(c)}`. Because that
+     template forces `a ≥ 2` (see the range comment), it fused on **every single generation**
+     for the life of the template — `4^2 - 426 = 64` where `4^2 - 4(2)(6) = 16 - 48` was meant,
+     and 426 is three numbers fused, not two. It is the most recognisable template in the app.
+     `badArithmetic` had been blind to it: `^` was missing from its numeric whitelist, so any
+     side carrying a power was written off as symbolic and skipped. The whitelist now converts
+     `^` and `^{…}` first, with self-tests for both.
+   - **`rational-complex`** wrote the LCD as `${p}${q}x`, so `p = 2, q = 3` announced the LCD
+     as `23x` and then correctly used `6x` on the next two lines. No evaluator will ever catch
+     this one — every side carries `\frac` and `x`. Multiply it out: `${p * q}x`.
+
+   The reliable grep is a **literal digit immediately followed by an interpolation**
+   (`grep -n '[0-9]\${' practice-data.js`) and **two adjacent interpolations** where the second
+   is not `PR.s`/`PR.xt`/`PR.ct`/`PR.brk`. Everything the first pattern legitimately matches is
+   an exponent — `x^2${PR.xt(b)}` — because `PR.xt` supplies its own sign.
 
 3. **Distractors are misconceptions, not perturbed numbers.** Every `why` must exist in
    `MISCONCEPTIONS`, whose entries are `{ label, hint }` in **plain text, never LaTeX** —
@@ -306,7 +334,8 @@ Both of these happened here and both are worth watching for:
 # Android — no gradlew in this repo, and no java on PATH
 $env:JAVA_HOME = "C:\Program Files\Android\Android Studio1\jbr"   # note the "1"
 cd VoiceMathTutor
-& "$env:LOCALAPPDATA\vmt-tools\gradle-8.9\bin\gradle.bat" assembleRelease
+& "$env:LOCALAPPDATA\vmt-tools\gradle-8.9\bin\gradle.bat" `
+    -I out-of-onedrive.gradle assembleRelease     # the -I is not optional here
 
 # Windows — NOT in the repo, and NOT in vmt-build. See below.
 cd VoiceMathTutorPC && npm install && npm run dist
