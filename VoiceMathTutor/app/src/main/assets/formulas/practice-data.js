@@ -564,7 +564,10 @@ const PRACTICE = [
         question: `\\text{Solve using the quadratic formula: } ${a === 1 ? '' : a}x^2${PR.xt(b)}${PR.ct(c)} = 0`,
         steps: [
           `a = ${a}, \\ b = ${b}, \\ c = ${c}`,
-          `\\Delta = b^2 - 4ac = ${PR.par(b)}^2 - 4${PR.par(a)}${PR.par(c)} = ${disc}`,
+          // PR.par on the base (an exponent needs brackets only when negative),
+          // PR.brk on both factors: a >= 2 always, so "4${PR.par(a)}" fused every
+          // single generation — "4^2 - 426" for 4^2 - 4(2)(6).
+          `\\Delta = b^2 - 4ac = ${PR.par(b)}^2 - 4${PR.brk(a)}${PR.brk(c)} = ${disc}`,
           `x = \\frac{-b \\pm \\sqrt{\\Delta}}{2a} = \\frac{${-b} \\pm \\sqrt{${disc}}}{${2 * a}}`,
           `x \\approx ${r1} \\ \\text{or} \\ x \\approx ${r2}`,
         ],
@@ -3031,9 +3034,13 @@ const PRACTICE = [
       return {
         question: `\\text{Simplify } \\dfrac{\\frac{1}{x} + \\frac{1}{${p}}}{\\frac{1}{x} - \\frac{1}{${q}}}`,
         steps: [
-          `\\text{Multiply top and bottom by the overall LCD } ${p}${q}x`,
-          `\\text{Numerator: } ${p}${q}x\\left(\\frac{1}{x} + \\frac{1}{${p}}\\right) = ${p * q} + ${q}x`,
-          `\\text{Denominator: } ${p}${q}x\\left(\\frac{1}{x} - \\frac{1}{${q}}\\right) = ${p * q} - ${p}x`,
+          // The LCD is the PRODUCT pqx, so it has to be multiplied out here rather
+          // than written `${p}${q}x` — that printed p and q side by side, so p=2,
+          // q=3 claimed the LCD was 23x and then correctly used 6x on both lines.
+          // badArithmetic cannot reach these: every side carries \frac and x.
+          `\\text{Multiply top and bottom by the overall LCD } ${p * q}x`,
+          `\\text{Numerator: } ${p * q}x\\left(\\frac{1}{x} + \\frac{1}{${p}}\\right) = ${p * q} + ${q}x`,
+          `\\text{Denominator: } ${p * q}x\\left(\\frac{1}{x} - \\frac{1}{${q}}\\right) = ${p * q} - ${p}x`,
           `= \\frac{${q}(${p} + x)}{${p}(${q} - x)}, \\quad x \\ne 0,\\; ${q}`,
         ],
         answer: `\\frac{${q}(${p} + x)}{${p}(${q} - x)}`,

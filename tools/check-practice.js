@@ -184,8 +184,15 @@ function falseChain(claim) {
 
   const numeric = [];
   for (const side of sides) {
-    // Implicit multiplication, both ways round: "3(4)", "(4)3", "(2)(3)".
     const expr = side
+      // Exponents, braced or bare. This has to happen here rather than be left to
+      // the whitelist below: with `^` absent from it, every side carrying a power
+      // was written off as symbolic, and that hid the worst instance of the very
+      // bug this function was added for — quad-formula's discriminant line, false
+      // in 100% of generations, skipped in 100% of runs.
+      .replace(/\^\s*\{([^{}]*)\}/g, '**($1)')
+      .replace(/\^/g, '**')
+      // Implicit multiplication, both ways round: "3(4)", "(4)3", "(2)(3)".
       .replace(/(\d)\s*\(/g, '$1*(')
       .replace(/\)\s*(\d)/g, ')*$1')
       .replace(/\)\s*\(/g, ')*(');
@@ -265,6 +272,16 @@ function falseChain(claim) {
   arith('\\Delta x = 24 - 12 = 99, \\quad \\Delta y = -20 - (-4) = -16', true,
     '...and a false one among them is still caught');
   arith('M = (-4, 8)', false, 'a comma inside brackets is not a claim separator');
+  // Powers. Absent from the numeric whitelist, `^` made every side carrying one
+  // look symbolic, so the chain was skipped — which is how quad-formula's
+  // discriminant stayed hidden while being false in 100% of generations.
+  arith('\\Delta = b^2 - 4ac = 7^2 - 426 = 1', true, 'fused product beside a power');
+  arith('\\Delta = b^2 - 4ac = 7^2 - 4(2)(6) = 1', false, '...and the bracketed form is right');
+  arith('\\Delta = 5^{2} - 4(1)(6) = 1', false, 'braced exponent');
+  arith('16 = 4^2', false, 'a power alone, agreeing');
+  arith('15 = 4^2', true, 'a power alone, disagreeing');
+  arith('2^{-1} = 0.5', false, 'negative braced exponent');
+  arith('\\theta = 30^\\circ', false, 'degrees are not an exponent to evaluate');
 }
 
 const seenWhy = new Set();

@@ -59,7 +59,7 @@
       "icon": "icons",
       "category": "Education",
       "synopsis": "Offline maths practice and voice tutoring",
-      "description": "Offline maths practice, a 185-formula interactive sheet, and optional voice tutoring, for HSC and undergraduate engineering.",
+      "description": "Offline maths practice, a 189-formula interactive sheet, and optional voice tutoring, for HSC and undergraduate engineering.",
       "desktop": {
         "StartupWMClass": "Mathlificient"
       },
