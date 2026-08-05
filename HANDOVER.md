@@ -308,9 +308,43 @@ $env:JAVA_HOME = "C:\Program Files\Android\Android Studio1\jbr"   # note the "1"
 cd VoiceMathTutor
 & "$env:LOCALAPPDATA\vmt-tools\gradle-8.9\bin\gradle.bat" assembleRelease
 
-# Windows
+# Windows — NOT in the repo, and NOT in vmt-build. See below.
 cd VoiceMathTutorPC && npm install && npm run dist
 ```
+
+### Building the desktop installers: where, and where not
+
+That last line is the upstream instruction and it works on a normal machine. On **this** one it needs
+two things spelled out, and getting either wrong wastes an afternoon:
+
+1. **It needs a real Node.** Electron doubles as the JS runtime for the test suites, but
+   electron-builder's CLI mis-parses its own script path when launched that way, and it spawns
+   helpers that expect `node` on PATH. Node 24 LTS is installed now (`winget install
+   OpenJS.NodeJS.LTS`).
+2. **Copy `main.js`, `preload.js`, `package.json`, `icon.ico`, `renderer/` and `icons/` into a tree
+   outside OneDrive, and `npm install` there.** `%LOCALAPPDATA%\vmt-dist\app` is what the 1.1.0
+   installer was built from.
+
+Two places that look right and are not:
+
+- **The repo.** `npm install` inside `VoiceMathTutorPC` is the thing this project has always avoided,
+  because OneDrive holds files open while it syncs them. That is not theoretical — it killed three
+  Gradle tasks in one session (`compileDebugKotlin`, `mergeReleaseResources`, `packageRelease`), and
+  electron-builder writes far more intermediates than Gradle does. Android has the same problem; its
+  Gradle output now goes to `%LOCALAPPDATA%\vmt-android`.
+- **`%LOCALAPPDATA%\vmt-build`.** Tempting, because it is already a runnable copy with
+  `node_modules`. But its `node_modules` holds **Electron and electron-builder themselves**, so
+  `files: ["**/*"]` tries to pack Electron inside Electron and the build dies with
+  `Invalid package …app.asar` — no asar written, the executable never renamed. It is also the tree
+  `tools/test/paths.js` hashes against the repo, so building there risks tripping the drift guard.
+
+`electron-builder` 24.13.3 against Electron 35.7.5 builds fine, despite 24.x predating Electron 30's
+asar-integrity work — that was a red herring chased for a while. The environment was always the
+problem.
+
+**The installer is unsigned.** There is no code-signing certificate for this project, so Windows
+SmartScreen shows "Windows protected your PC" on first run and hides the Run button behind
+**More info**. Say so wherever it is offered for download.
 
 ### What lives on the dev machine, not in the repo
 
