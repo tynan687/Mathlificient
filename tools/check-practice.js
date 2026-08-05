@@ -284,6 +284,45 @@ function falseChain(claim) {
   arith('\\theta = 30^\\circ', false, 'degrees are not an exponent to evaluate');
 }
 
+// --- source-level: PR.par where a product was meant -------------------------
+// badArithmetic judges rendered output, which means it can only ever see a step
+// whose sides are numeric. Two of the three fused-product variants found so far
+// were invisible to it — quad-formula's hid behind a `^` for the life of the
+// template, and rational-complex's sides carry \frac and x, so nothing numeric
+// will ever reach it.
+//
+// These two patterns are the ones that can be judged from the source with no
+// ambiguity at all. PR.par emits bare digits for anything non-negative, so:
+//
+//   `4${PR.par(a)}`              4 and a fuse whenever a >= 0
+//   `${PR.par(b)}${PR.par(c)}`   b and c fuse whenever c >= 0
+//
+// Neither has a legitimate reading. PR.par's two real jobs both leave a
+// character behind it: an exponent base is followed by `^`, and a bracketed
+// first operand is followed by `\cdot`, a literal `(`, or a sign-carrying
+// helper. Every one of the 22 uses in the file satisfies that.
+//
+// Deliberately not checked here: `${p}${q}x`, rational-complex's shape. Whether
+// two adjacent interpolations are a product or a coefficient-and-variable needs
+// to know what the values mean, and a rule that guesses would fire on
+// `x^2${nBx}` and the pluralising ternaries. HANDOVER §4 carries the grep.
+{
+  const src = require('fs').readFileSync(path.join(R, 'practice-data.js'), 'utf8');
+  const RULES = [
+    [/[0-9]\$\{PR\.par\(/g, 'a digit immediately followed by PR.par — the two numbers fuse'],
+    [/\}\$\{PR\.par\(/g, 'PR.par immediately after another interpolation — the two numbers fuse'],
+  ];
+  for (const [re, why] of RULES) {
+    for (const m of src.matchAll(re)) {
+      const line = src.slice(0, m.index).split('\n').length;
+      // The explanatory comments beside PR.brk quote both shapes on purpose.
+      if (/^\s*\/\//.test(src.split('\n')[line - 1])) continue;
+      fail('practice-data', `${why} (use PR.brk for a product)`,
+        `practice-data.js:${line}  ${src.split('\n')[line - 1].trim().slice(0, 120)}`);
+    }
+  }
+}
+
 const seenWhy = new Set();
 const stats = [];
 
