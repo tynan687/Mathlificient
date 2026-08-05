@@ -181,11 +181,20 @@ This is the most common task. The shape:
    - `PR.lead(n, v)` — leading coefficient: `1` → `x`, `-1` → `-x`
    - `PR.xt(n, v)` — signed mid-chain term: vanishes at 0, drops the 1
    - `PR.ct(n)` — signed constant, vanishes at 0
-   - `PR.par(n)` — parenthesise negatives
+   - `PR.par(n)` — parenthesise negatives **only**; for an exponent base
+   - `PR.brk(n)` — parenthesise **always**; for the second operand of a product
 
    Getting this wrong produces `0x`, `1x`, `(x + 0)` and — found on a tablet screen after four
    harnesses missed it — `\sqrt{-16^2 + 12^2}`, which reads as *minus sixteen squared*.
    **`PR.par` on any negative being raised to a power.**
+
+   And **never `PR.par` for a product** — that is what `PR.brk` is for. `${a}${PR.par(d)}`
+   meaning "a times d" silently fuses the digits whenever `d ≥ 0`: with `a = 1, d = 4` it
+   emits `14`. Six templates shipped that, so `det A = 14 - 2(-3) = 10` reached students who
+   then computed 20. The answers stayed correct and only the *working* lied, which is why it
+   survived a full suite and 130k generations — nothing evaluated whether a step's arithmetic
+   was true. `check-practice.js` now does (`badArithmetic`), but it can only judge chains with
+   two numeric sides, so a step like `3k - 4(3) = 0` is still on the author to get right.
 
 3. **Distractors are misconceptions, not perturbed numbers.** Every `why` must exist in
    `MISCONCEPTIONS`, whose entries are `{ label, hint }` in **plain text, never LaTeX** —

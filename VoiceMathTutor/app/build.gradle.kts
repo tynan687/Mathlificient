@@ -29,8 +29,8 @@ android {
         targetSdk = 35
         // Bump versionCode on EVERY released build — Android refuses to install
         // an update whose versionCode isn't higher than the installed one.
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.1.1"
     }
 
     signingConfigs {

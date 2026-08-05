@@ -124,6 +124,85 @@ const UNBRACKETED_POWER = /-\d+(?:\.\d+)?\^(?!\\circ)/;
  */
 const STEP_ARTIFACT = /(^|[^0-9a-zA-Z\\])(0x|1x(?![0-9]))/;
 
+/**
+ * Does a step's arithmetic actually hold?
+ *
+ * Nothing here evaluated a step before, only pattern-matched it — so
+ * "53 - 3 = 12" was invisible, and six templates shipped worked steps that were
+ * arithmetically false. `PR.par` brackets only negatives, so `${a}${PR.par(d)}`
+ * fused "1" and "4" into "14" whenever d was positive, and the student following
+ * the method got a different number from the answer the app stated.
+ *
+ * Deliberately narrow. It judges only the sides of a chain that are purely
+ * numeric, and ignores the rest — most real steps are labelled ("\det A = …"),
+ * so demanding that every side be readable threw away the very cases this exists
+ * to catch. Two or more numeric sides that disagree is a false claim; fewer than
+ * two is nothing to compare and gets skipped. A check that guessed at the
+ * symbolic parts would be worse than one that admits what it cannot parse.
+ *
+ * The load-bearing part is inserting the implicit `*`: it is what turns "1(4)"
+ * into a claim worth checking, and what leaves "14 - 2(-3) = 10" failing.
+ *
+ * Returns a description of the disagreement, or null.
+ */
+function badArithmetic(step) {
+  const cleaned = String(step)
+    .replace(/\\(?:cdot|times)/g, '*')
+    .replace(/\\(?:left|right|,|;|!|quad|qquad)/g, ' ')
+    .replace(/\s+/g, ' ');
+  // Anything asserting a relation other than equality is not a claim about equal
+  // numbers, so there is nothing here to contradict.
+  if (/[<>≤≥≠]|\\(?:approx|neq|leq|geq|Rightarrow|to)/.test(cleaned)) return null;
+
+  // A step often carries several independent claims on one line — coord-distance
+  // shows Δx and Δy together — so split on commas BEFORE splitting on `=`, or
+  // Δx's result gets compared against Δy's expression and every one of them
+  // "fails". Only commas at bracket depth 0 separate claims: the one inside a
+  // coordinate pair like "(-4, 8)" does not.
+  const claims = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (ch === '(' || ch === '{' || ch === '[') depth++;
+    else if (ch === ')' || ch === '}' || ch === ']') depth--;
+    else if (ch === ',' && depth === 0) { claims.push(cleaned.slice(start, i)); start = i + 1; }
+  }
+  claims.push(cleaned.slice(start));
+
+  for (const claim of claims) {
+    const found = falseChain(claim);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** One claim: are the numeric sides of this equality chain in agreement? */
+function falseChain(claim) {
+  const sides = claim.split('=').map((s) => s.trim()).filter(Boolean);
+  if (sides.length < 2) return null;
+
+  const numeric = [];
+  for (const side of sides) {
+    // Implicit multiplication, both ways round: "3(4)", "(4)3", "(2)(3)".
+    const expr = side
+      .replace(/(\d)\s*\(/g, '$1*(')
+      .replace(/\)\s*(\d)/g, ')*$1')
+      .replace(/\)\s*\(/g, ')*(');
+    if (!/^[-+*/(). 0-9]+$/.test(expr) || !/\d/.test(expr)) continue; // symbolic — ignore
+    let v;
+    try {
+      // eslint-disable-next-line no-new-func
+      v = Function(`"use strict"; return (${expr});`)();
+    } catch { continue; }
+    if (typeof v === 'number' && isFinite(v)) numeric.push({ side, v });
+  }
+  if (numeric.length < 2) return null;
+  const off = numeric.find((n) => Math.abs(n.v - numeric[0].v) > 1e-9);
+  if (!off) return null;
+  return `"${numeric[0].side}" is ${numeric[0].v}, but "${off.side}" is ${off.v}`;
+}
+
 // --- self-test ----------------------------------------------------------------
 // Every check below leans on these three helpers. If they are wrong, the whole
 // run is a green light that means nothing — so prove them first.
@@ -151,6 +230,41 @@ const STEP_ARTIFACT = /(^|[^0-9a-zA-Z\\])(0x|1x(?![0-9]))/;
   if (shapeOf('2x^2 + 3') === shapeOf('2x^2 + 4x + 3')) {
     fail('practice-mcq', 'a vanished term should change the shape');
   }
+
+  // badArithmetic is the newest and least obvious of these, and it is the one
+  // that has to catch a class nothing caught before. Prove it both ways: that it
+  // fires on the real bug, and that it stays quiet on every legitimate step shape
+  // in the file — a false positive here would block authoring for no reason.
+  const arith = (step, shouldFail, label) => {
+    const got = badArithmetic(step);
+    if (!!got !== shouldFail) {
+      fail('check-practice', `badArithmetic ${shouldFail ? 'missed' : 'false-flagged'}: ${label}`,
+        `${step}${got ? `\n        -> ${got}` : ''}`);
+    }
+  };
+  // The actual bug, in the shape each of the six sites produced it.
+  arith('\\det A = 14 - 2(-3) = 10', true, 'fused product in a determinant');
+  arith('\\det A = 53 - (-3)(-1) = 12', true, 'fused product, both operands');
+  arith('3k - 43 = 0', false, 'symbolic, cannot be judged');   // has k — skipped, not flagged
+  arith('2 + 2 = 5', true, 'plain false arithmetic');
+  // Correct working, in every shape the file legitimately uses.
+  arith('\\det A = 1(4) - 2(-3) = 10', false, 'bracketed product is right');
+  arith('24 - 0 = 24', false, 'a zero term in a definite integral');
+  arith('5(5) + 0(-2) = 25', false, 'dot product with a zero component');
+  arith('-6(2) + 3(4) = 0', false, 'signs and brackets together');
+  arith('x = 6', false, 'has a variable');
+  arith('y = \\frac{-9}{-3} = 3', false, 'contains a frac — skipped');
+  arith('|\\vec a| = 5.831', false, 'single value, no chain');
+  arith('\\theta \\approx 47.73^\\circ', false, 'approximate, not an equality claim');
+  arith('3x + 2y = 12', false, 'an equation about unknowns, not a computation');
+  arith('2 \\cdot 3 = 6', false, 'explicit cdot');
+  // Several claims on one line: each is its own chain, and comparing across them
+  // flagged all 500 coord-distance generations as false when none were.
+  arith('\\Delta x = 24 - 12 = 12, \\quad \\Delta y = -20 - (-4) = -16', false,
+    'two independent claims in one step');
+  arith('\\Delta x = 24 - 12 = 99, \\quad \\Delta y = -20 - (-4) = -16', true,
+    '...and a false one among them is still caught');
+  arith('M = (-4, 8)', false, 'a comma inside brackets is not a claim separator');
 }
 
 const seenWhy = new Set();
@@ -183,6 +297,8 @@ for (const t of PRACTICE) {
         fail(t.id, `step ${i + 1} raises a negative to a power without brackets`, text);
       }
       if (STEP_ARTIFACT.test(text)) fail(t.id, `step ${i + 1} has a coefficient artifact`, text);
+      const wrong = badArithmetic(text);
+      if (wrong) fail(t.id, `step ${i + 1} states arithmetic that is false`, `${text}\n        ${wrong}`);
     }
     for (const [field, text] of [['question', q.question], ['answer', q.answer]]) {
       if (UNBRACKETED_POWER.test(text)) {
