@@ -1791,7 +1791,11 @@ const PRACTICE = [
         steps: [
           `\\text{Complete the square in } x: \\ x^2${PR.xt(D)} = (x ${PR.s(-a)})^2 - ${a * a}`,
           `\\text{And in } y: \\ y^2${PR.xt(E, 'y')} = (y ${PR.s(-b)})^2 - ${b * b}`,
-          `(x ${PR.s(-a)})^2 + (y ${PR.s(-b)})^2 = ${a * a + b * b - F} = ${r * r}`,
+          // Only one value here: F is DEFINED as a^2 + b^2 - r^2, so the old
+          // `= ${a*a + b*b - F} = ${r*r}` was the same number printed twice and
+          // read as "= 4 = 4" in every generation, as though a substitution had
+          // failed halfway.
+          `(x ${PR.s(-a)})^2 + (y ${PR.s(-b)})^2 = ${r * r}`,
           `\\text{Centre } (${a}, ${b}), \\text{ radius } ${r}`,
         ],
         answer: `\\text{centre } (${a}, ${b}), \\ r = ${r}`,
@@ -3077,7 +3081,13 @@ const PRACTICE = [
         b = PR.nz(-5, 5); if (b === a) b = a + 2;
         p = A + B;                // numerator: A(x-b) + B(x-a)
         q = -(A * b + B * a);
-      } while (p === 0 || q === 0 || b === 0 || b === a);
+        // b === -a would make the two denominators mirror images, and then
+        // form(B, a, A, b) below renders as exactly the answer with its two terms
+        // swapped — a second correct option, in 10.9% of questions. mcqOrdered
+        // turns the reordering guard off (it has to; see equivalentAnswers), so
+        // nothing downstream catches it and the student is marked wrong for being
+        // right, and charged a pf-swapped misconception they did not make.
+      } while (p === 0 || q === 0 || b === 0 || b === a || b === -a);
       const px = p === 1 ? 'x' : p === -1 ? '-x' : `${p}x`;
       return {
         question: `\\text{Express in partial fractions: } \\frac{${px} ${PR.s(q)}}{(x ${PR.s(-a)})(x ${PR.s(-b)})}`,
