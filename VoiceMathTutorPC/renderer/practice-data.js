@@ -879,10 +879,24 @@ const PRACTICE = [
     // numbers without being the same answer - see mcqOrdered in practice-mcq.js.
     mcqOrdered: true,
     generate() {
-      const r = PR.choice([1, 2]);
-      const th = PR.choice([30, 45, 60]);
-      const n = PR.choice([2, 3]);
-      const rn = Math.pow(r, n); const nth = th * n;
+      let r, th, n, nth;
+      do {
+        r = PR.choice([1, 2]);
+        th = PR.choice([30, 45, 60]);
+        n = PR.choice([2, 3]);
+        nth = th * n;
+        // Two draws print an artifact rather than a complex number, and both are
+        // on the line the student copies down:
+        //   n0 = 180  ->  sin is 0, so the answer reads "-1 + 0i"
+        //   n0 = 90 with r = 1  ->  sin is exactly 1, so it reads "0 + 1i", and
+        //     the demoivre-multiply-r distractor form(r, th*n) reuses r as its
+        //     modulus, so it prints the same thing.
+        // Excluded here rather than spelled with PR.xt, because the distractors
+        // must share the answer's format and their moduli and angles are derived
+        // (r*n, r^n, th+n) — there is no single format that is safe for all of
+        // them. This costs 4 of the 12 parameter combinations.
+      } while (nth === 180 || (nth === 90 && r === 1));
+      const rn = Math.pow(r, n);
       const rad = nth * Math.PI / 180;
       const re = PR.r(rn * Math.cos(rad), 3);
       const im = PR.r(rn * Math.sin(rad), 3);
@@ -1165,7 +1179,10 @@ const PRACTICE = [
         question: `\\text{For the arithmetic sequence } a = ${a}, \\ d = ${d}: \\text{ find } a_{${n}} \\text{ and } S_{${n}}`,
         steps: [
           `a_{${n}} = a + (n-1)d = ${a} + ${n - 1} \\times ${PR.par(d)} = ${an}`,
-          `S_{${n}} = \\tfrac{n}{2}(2a + (n-1)d) = \\tfrac{${n}}{2}(${2 * a} + ${(n - 1) * d})`,
+          // PR.s carries the sign, so a negative common difference reads
+          // "(10 - 14)" rather than "(10 + -14)" — about 40% of draws. Step 1 of
+          // this same template already brackets d, so the two now agree.
+          `S_{${n}} = \\tfrac{n}{2}(2a + (n-1)d) = \\tfrac{${n}}{2}(${2 * a} ${PR.s((n - 1) * d)})`,
           `S_{${n}} = ${Sn}`,
         ],
         answer: `a_{${n}} = ${an}, \\quad S_{${n}} = ${Sn}`,
@@ -3112,8 +3129,10 @@ const PRACTICE = [
         steps: [
           `\\text{Write } \\frac{${px} ${PR.s(q)}}{(x ${PR.s(-a)})(x ${PR.s(-b)})} = \\frac{A}{x ${PR.s(-a)}} + \\frac{B}{x ${PR.s(-b)}}`,
           `\\text{Multiply through: } ${px} ${PR.s(q)} = A(x ${PR.s(-b)}) + B(x ${PR.s(-a)})`,
-          `\\text{Cover-up, } x = ${a}: \\; ${p}(${a}) ${PR.s(q)} = A(${a} - ${b}) \\Rightarrow A = ${A}`,
-          `\\text{Cover-up, } x = ${b}: \\; ${p}(${b}) ${PR.s(q)} = B(${b} - ${a}) \\Rightarrow B = ${B}`,
+          // PR.par on the subtracted root. Either root can be negative, and about
+          // three questions in four printed "A(3 - -4)" without it.
+          `\\text{Cover-up, } x = ${a}: \\; ${p}(${a}) ${PR.s(q)} = A(${a} - ${PR.par(b)}) \\Rightarrow A = ${A}`,
+          `\\text{Cover-up, } x = ${b}: \\; ${p}(${b}) ${PR.s(q)} = B(${b} - ${PR.par(a)}) \\Rightarrow B = ${B}`,
           `= \\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}}{x ${PR.s(-b)}}`,
         ],
         answer: `\\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}}{x ${PR.s(-b)}}`,
@@ -3205,7 +3224,11 @@ const PRACTICE = [
           `${px} ${qx} ${PR.s(r)} = A(x^2 + ${c}) + (Bx + C)(x ${PR.s(-a)})`,
           `\\text{Let } x = ${a}: \\; A(${a * a} + ${c}) = ${A * (a * a + c)} \\Rightarrow A = ${A}`,
           `\\text{Compare } x^2: \\; A + B = ${p} \\Rightarrow B = ${B}`,
-          `\\text{Compare constants: } ${c}A - ${a}C = ${r} \\Rightarrow C = ${C}`,
+          // Emit the sign once instead of subtracting a possibly-negative root:
+          // "4A - -3C" invites reading it as 4A - 3C, which yields the wrong C,
+          // and PR.xt also drops the coefficient in the a = 1 case that printed
+          // "4A - 1C".
+          `\\text{Compare constants: } ${c}A ${PR.xt(-a, 'C')} = ${r} \\Rightarrow C = ${C}`,
           `= \\frac{${A}}{x ${PR.s(-a)}} + \\frac{${PR.lead(B)} ${PR.s(C)}}{x^2 + ${c}}`,
         ],
         answer: `\\frac{${A}}{x ${PR.s(-a)}} + \\frac{${PR.lead(B)} ${PR.s(C)}}{x^2 + ${c}}`,

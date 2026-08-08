@@ -125,6 +125,20 @@ const UNBRACKETED_POWER = /-\d+(?:\.\d+)?\^(?!\\circ)/;
 const STEP_ARTIFACT = /(^|[^0-9a-zA-Z\\])(0x|1x(?![0-9]))/;
 
 /**
+ * Two operators in a row: "10 + -14", "A(3 - -4)", "4A - -3C", "16 + 8i + -4i".
+ *
+ * Nothing these lines assert is false, so `badArithmetic` passes them and so does
+ * every artifact rule — "+ -14" is a legitimate way to write "- 14". It is simply
+ * not how anyone writes maths, and it lands on the line the student copies down.
+ * Six templates had it and each was found separately, by eye, which is the wrong
+ * way to find the sixth instance of anything.
+ *
+ * The fix is always the same: let a helper carry the sign (`PR.s`, `PR.xt`) or
+ * bracket the operand (`PR.par`).
+ */
+const DOUBLED_SIGN = /[+\-]\s+[+\-]\s*\d/;
+
+/**
  * Does a step's arithmetic actually hold?
  *
  * Nothing here evaluated a step before, only pattern-matched it — so
@@ -282,6 +296,28 @@ function falseChain(claim) {
   arith('15 = 4^2', true, 'a power alone, disagreeing');
   arith('2^{-1} = 0.5', false, 'negative braced exponent');
   arith('\\theta = 30^\\circ', false, 'degrees are not an exponent to evaluate');
+
+  // Two signs in a row. Six templates shipped this and every one was found by
+  // eye, separately — so the rule has to be proven on the shapes they produced.
+  const dbl = (s, expect, label) => {
+    if (DOUBLED_SIGN.test(s) !== expect) {
+      fail('check-practice', `DOUBLED_SIGN ${expect ? 'missed' : 'false-flagged'}: ${label}`, s);
+    }
+  };
+  dbl('\\tfrac{8}{2}(10 + -14)', true, 'seq-arith, negative common difference');
+  dbl('A(3 - -4) \\Rightarrow A = 5', true, 'partial-distinct cover-up, negative root');
+  dbl('4A - -3C = 6', true, 'partial-quadratic constants');
+  dbl('= 16 + 8i + -4i + -2i^2', true, 'complex-product expansion');
+  dbl('\\frac{dy}{dx} = -2(-3x - 2) + -3(-2x - 6)', true, 'product rule');
+  // ...and quiet on every legitimate shape, or it blocks authoring for no reason.
+  dbl('\\tfrac{8}{2}(10 - 14)', false, 'the same line, fixed');
+  dbl('A(3 - (-4))', false, 'bracketed negative is the fix, not the bug');
+  dbl('x^2 - 6x + 9', false, 'ordinary signed polynomial');
+  dbl('\\frac{-9}{-3} = 3', false, 'negatives in a fraction');
+  dbl('2^{-1} = 0.5', false, 'negative exponent');
+  dbl('\\Delta = 5^2 - 4(2)(-7) = 81', false, 'a bracketed negative operand');
+  dbl('(-4, 8) \\text{ and } (-2, -6)', false, 'coordinate pairs');
+  dbl('y = -2x + -0', true, 'a doubled sign before 0 is still one');
 }
 
 // --- source-level: PR.par where a product was meant -------------------------
@@ -353,6 +389,7 @@ for (const t of PRACTICE) {
         fail(t.id, `step ${i + 1} raises a negative to a power without brackets`, text);
       }
       if (STEP_ARTIFACT.test(text)) fail(t.id, `step ${i + 1} has a coefficient artifact`, text);
+      if (DOUBLED_SIGN.test(text)) fail(t.id, `step ${i + 1} prints two signs in a row`, text);
       const wrong = badArithmetic(text);
       if (wrong) fail(t.id, `step ${i + 1} states arithmetic that is false`, `${text}\n        ${wrong}`);
     }
@@ -360,6 +397,7 @@ for (const t of PRACTICE) {
       if (UNBRACKETED_POWER.test(text)) {
         fail(t.id, `${field} raises a negative to a power without brackets`, text);
       }
+      if (DOUBLED_SIGN.test(text)) fail(t.id, `${field} prints two signs in a row`, text);
     }
     if (q.viz && !VIZ_TYPES.includes(q.viz.type)) {
       fail(t.id, `viz type "${q.viz.type}" has no renderer`);
