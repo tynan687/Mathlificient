@@ -2,7 +2,7 @@
   "_comment": "Changing 'productName' moves the userData folder (%APPDATA%/<productName>), which holds the encrypted API key, settings, tutor memory, study log and PDF library \u2014 Electron derives that path from productName, not from 'name'. If it ever changes again, extend migrateLegacyUserData() in main.js to carry the data across.",
   "name": "mathlificient",
   "productName": "Mathlificient",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Offline maths practice and screen-aware voice tutoring for Windows",
   "author": "Tynan Heperi",
   "license": "MIT",
