@@ -1847,7 +1847,10 @@ const PRACTICE = [
         steps: [
           `\\text{Product rule: } \\frac{dy}{dx} = u'v + uv'`,
           `u = ${PR.lead(a)}${PR.ct(b)}, \\ u' = ${a}; \\quad v = ${PR.lead(c)}${PR.ct(d)}, \\ v' = ${c}`,
-          `\\frac{dy}{dx} = ${a}(${PR.lead(c)}${PR.ct(d)}) + ${c}(${PR.lead(a)}${PR.ct(b)})`,
+          // PR.par on the SECOND coefficient only. The first opens the expression
+          // straight after the "=", so a bare negative reads fine there; the second
+          // follows a "+", and c < 0 in 43% of draws, which printed "+ -3(-2x - 6)".
+          `\\frac{dy}{dx} = ${a}(${PR.lead(c)}${PR.ct(d)}) + ${PR.par(c)}(${PR.lead(a)}${PR.ct(b)})`,
           `= ${PR.lead(2 * a * c)}${PR.ct(B)}`,
         ],
         answer: `\\frac{dy}{dx} = ${PR.lead(2 * a * c)}${PR.ct(B)}`,
