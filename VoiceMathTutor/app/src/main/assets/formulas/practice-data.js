@@ -833,28 +833,43 @@ const PRACTICE = [
   {
     id: 'complex-product', skill: 'complex-numbers', topic: 'Complex numbers', keywords: ['complex', 'multiply', 'product'],
     generate() {
-      const a = PR.nz(-4, 4); const b = PR.nz(-4, 4);
-      const c = PR.nz(-4, 4); const d = PR.nz(-4, 4);
-      const re = a * c - b * d; const im = a * d + b * c;
+      let a, b, c, d, re, im;
+      do {
+        a = PR.nz(-4, 4); b = PR.nz(-4, 4);
+        c = PR.nz(-4, 4); d = PR.nz(-4, 4);
+        re = a * c - b * d; im = a * d + b * c;
+        // Both imaginary parts used below must be non-zero. PR.xt vanishes at 0,
+        // so an im of 0 would render the answer as a bare real number while every
+        // distractor still carried an i — the answer identifiable by its form
+        // alone, which is the thing check-practice's shape rule exists to stop.
+        // (The old PR.s spelling hid this by printing "+ 0i" instead.)
+        // re is here for the same reason: the complex-swap distractor puts it in
+        // the imaginary slot, so a zero re would collapse that option to a bare
+        // integer.
+      } while (im === 0 || re === 0 || a * d - b * c === 0);
       return {
-        question: `\\text{Expand } (${a} ${PR.s(b)}i)(${c} ${PR.s(d)}i)`,
+        // PR.xt, not PR.s, for every imaginary term: it drops a coefficient of 1,
+        // so this reads "(4 - i)" rather than "(4 - 1i)", and it carries its own
+        // sign, so the chains below no longer print "+ -6i".
+        question: `\\text{Expand } (${a}${PR.xt(b, 'i')})(${c}${PR.xt(d, 'i')})`,
         steps: [
-          `${a} \\cdot ${PR.par(c)} + ${a} \\cdot ${PR.par(d)}i + ${PR.par(b)}i \\cdot ${PR.par(c)} + ${PR.par(b)}i \\cdot ${PR.par(d)}i`,
-          `= ${a * c} + ${a * d}i + ${b * c}i + ${b * d}i^2`,
-          `i^2 = -1: \\quad ${a * c} - ${PR.par(b * d)} + (${a * d} + ${b * c})i`,
-          `= ${re} ${PR.s(im)}i`,
+          `${PR.par(a)} \\cdot ${PR.par(c)} + ${PR.par(a)} \\cdot ${PR.par(d)}i`
+            + ` + ${PR.par(b)}i \\cdot ${PR.par(c)} + ${PR.par(b)}i \\cdot ${PR.par(d)}i`,
+          `= ${a * c}${PR.xt(a * d, 'i')}${PR.xt(b * c, 'i')}${PR.xt(b * d, 'i^2')}`,
+          `i^2 = -1: \\quad ${a * c} - ${PR.par(b * d)} + (${a * d} ${PR.s(b * c)})i`,
+          `= ${re}${PR.xt(im, 'i')}`,
         ],
-        answer: `${re} ${PR.s(im)}i`,
+        answer: `${re}${PR.xt(im, 'i')}`,
         w: { a, b, c, d, re, im },
       };
     },
     distractors({ a, b, c, d, re, im }) {
       return [
-        { latex: `${a * c + b * d} ${PR.s(im)}i`, why: 'complex-real-sign' },
-        { latex: `${im} ${PR.s(re)}i`, why: 'complex-swap' },
-        { latex: `${re} ${PR.s(a * d - b * c)}i`, why: 'complex-real-sign' },
-        { latex: `${a * c} ${PR.s(b * d)}i`, why: 'cross-term' },
-        { latex: `${a * c + b * d} ${PR.s(a * d - b * c)}i`, why: 'complex-real-sign' },
+        { latex: `${a * c + b * d}${PR.xt(im, 'i')}`, why: 'complex-real-sign' },
+        { latex: `${im}${PR.xt(re, 'i')}`, why: 'complex-swap' },
+        { latex: `${re}${PR.xt(a * d - b * c, 'i')}`, why: 'complex-real-sign' },
+        { latex: `${a * c}${PR.xt(b * d, 'i')}`, why: 'cross-term' },
+        { latex: `${a * c + b * d}${PR.xt(a * d - b * c, 'i')}`, why: 'complex-real-sign' },
       ];
     },
   },
@@ -864,10 +879,24 @@ const PRACTICE = [
     // numbers without being the same answer - see mcqOrdered in practice-mcq.js.
     mcqOrdered: true,
     generate() {
-      const r = PR.choice([1, 2]);
-      const th = PR.choice([30, 45, 60]);
-      const n = PR.choice([2, 3]);
-      const rn = Math.pow(r, n); const nth = th * n;
+      let r, th, n, nth;
+      do {
+        r = PR.choice([1, 2]);
+        th = PR.choice([30, 45, 60]);
+        n = PR.choice([2, 3]);
+        nth = th * n;
+        // Two draws print an artifact rather than a complex number, and both are
+        // on the line the student copies down:
+        //   n0 = 180  ->  sin is 0, so the answer reads "-1 + 0i"
+        //   n0 = 90 with r = 1  ->  sin is exactly 1, so it reads "0 + 1i", and
+        //     the demoivre-multiply-r distractor form(r, th*n) reuses r as its
+        //     modulus, so it prints the same thing.
+        // Excluded here rather than spelled with PR.xt, because the distractors
+        // must share the answer's format and their moduli and angles are derived
+        // (r*n, r^n, th+n) — there is no single format that is safe for all of
+        // them. This costs 4 of the 12 parameter combinations.
+      } while (nth === 180 || (nth === 90 && r === 1));
+      const rn = Math.pow(r, n);
       const rad = nth * Math.PI / 180;
       const re = PR.r(rn * Math.cos(rad), 3);
       const im = PR.r(rn * Math.sin(rad), 3);
@@ -1150,7 +1179,10 @@ const PRACTICE = [
         question: `\\text{For the arithmetic sequence } a = ${a}, \\ d = ${d}: \\text{ find } a_{${n}} \\text{ and } S_{${n}}`,
         steps: [
           `a_{${n}} = a + (n-1)d = ${a} + ${n - 1} \\times ${PR.par(d)} = ${an}`,
-          `S_{${n}} = \\tfrac{n}{2}(2a + (n-1)d) = \\tfrac{${n}}{2}(${2 * a} + ${(n - 1) * d})`,
+          // PR.s carries the sign, so a negative common difference reads
+          // "(10 - 14)" rather than "(10 + -14)" — about 40% of draws. Step 1 of
+          // this same template already brackets d, so the two now agree.
+          `S_{${n}} = \\tfrac{n}{2}(2a + (n-1)d) = \\tfrac{${n}}{2}(${2 * a} ${PR.s((n - 1) * d)})`,
           `S_{${n}} = ${Sn}`,
         ],
         answer: `a_{${n}} = ${an}, \\quad S_{${n}} = ${Sn}`,
@@ -1791,7 +1823,11 @@ const PRACTICE = [
         steps: [
           `\\text{Complete the square in } x: \\ x^2${PR.xt(D)} = (x ${PR.s(-a)})^2 - ${a * a}`,
           `\\text{And in } y: \\ y^2${PR.xt(E, 'y')} = (y ${PR.s(-b)})^2 - ${b * b}`,
-          `(x ${PR.s(-a)})^2 + (y ${PR.s(-b)})^2 = ${a * a + b * b - F} = ${r * r}`,
+          // Only one value here: F is DEFINED as a^2 + b^2 - r^2, so the old
+          // `= ${a*a + b*b - F} = ${r*r}` was the same number printed twice and
+          // read as "= 4 = 4" in every generation, as though a substitution had
+          // failed halfway.
+          `(x ${PR.s(-a)})^2 + (y ${PR.s(-b)})^2 = ${r * r}`,
           `\\text{Centre } (${a}, ${b}), \\text{ radius } ${r}`,
         ],
         answer: `\\text{centre } (${a}, ${b}), \\ r = ${r}`,
@@ -1828,7 +1864,10 @@ const PRACTICE = [
         steps: [
           `\\text{Product rule: } \\frac{dy}{dx} = u'v + uv'`,
           `u = ${PR.lead(a)}${PR.ct(b)}, \\ u' = ${a}; \\quad v = ${PR.lead(c)}${PR.ct(d)}, \\ v' = ${c}`,
-          `\\frac{dy}{dx} = ${a}(${PR.lead(c)}${PR.ct(d)}) + ${c}(${PR.lead(a)}${PR.ct(b)})`,
+          // PR.par on the SECOND coefficient only. The first opens the expression
+          // straight after the "=", so a bare negative reads fine there; the second
+          // follows a "+", and c < 0 in 43% of draws, which printed "+ -3(-2x - 6)".
+          `\\frac{dy}{dx} = ${a}(${PR.lead(c)}${PR.ct(d)}) + ${PR.par(c)}(${PR.lead(a)}${PR.ct(b)})`,
           `= ${PR.lead(2 * a * c)}${PR.ct(B)}`,
         ],
         answer: `\\frac{dy}{dx} = ${PR.lead(2 * a * c)}${PR.ct(B)}`,
@@ -3077,15 +3116,23 @@ const PRACTICE = [
         b = PR.nz(-5, 5); if (b === a) b = a + 2;
         p = A + B;                // numerator: A(x-b) + B(x-a)
         q = -(A * b + B * a);
-      } while (p === 0 || q === 0 || b === 0 || b === a);
+        // b === -a would make the two denominators mirror images, and then
+        // form(B, a, A, b) below renders as exactly the answer with its two terms
+        // swapped — a second correct option, in 10.9% of questions. mcqOrdered
+        // turns the reordering guard off (it has to; see equivalentAnswers), so
+        // nothing downstream catches it and the student is marked wrong for being
+        // right, and charged a pf-swapped misconception they did not make.
+      } while (p === 0 || q === 0 || b === 0 || b === a || b === -a);
       const px = p === 1 ? 'x' : p === -1 ? '-x' : `${p}x`;
       return {
         question: `\\text{Express in partial fractions: } \\frac{${px} ${PR.s(q)}}{(x ${PR.s(-a)})(x ${PR.s(-b)})}`,
         steps: [
           `\\text{Write } \\frac{${px} ${PR.s(q)}}{(x ${PR.s(-a)})(x ${PR.s(-b)})} = \\frac{A}{x ${PR.s(-a)}} + \\frac{B}{x ${PR.s(-b)}}`,
           `\\text{Multiply through: } ${px} ${PR.s(q)} = A(x ${PR.s(-b)}) + B(x ${PR.s(-a)})`,
-          `\\text{Cover-up, } x = ${a}: \\; ${p}(${a}) ${PR.s(q)} = A(${a} - ${b}) \\Rightarrow A = ${A}`,
-          `\\text{Cover-up, } x = ${b}: \\; ${p}(${b}) ${PR.s(q)} = B(${b} - ${a}) \\Rightarrow B = ${B}`,
+          // PR.par on the subtracted root. Either root can be negative, and about
+          // three questions in four printed "A(3 - -4)" without it.
+          `\\text{Cover-up, } x = ${a}: \\; ${p}(${a}) ${PR.s(q)} = A(${a} - ${PR.par(b)}) \\Rightarrow A = ${A}`,
+          `\\text{Cover-up, } x = ${b}: \\; ${p}(${b}) ${PR.s(q)} = B(${b} - ${PR.par(a)}) \\Rightarrow B = ${B}`,
           `= \\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}}{x ${PR.s(-b)}}`,
         ],
         answer: `\\frac{${A}}{x ${PR.s(-a)}} + \\frac{${B}}{x ${PR.s(-b)}}`,
@@ -3177,7 +3224,11 @@ const PRACTICE = [
           `${px} ${qx} ${PR.s(r)} = A(x^2 + ${c}) + (Bx + C)(x ${PR.s(-a)})`,
           `\\text{Let } x = ${a}: \\; A(${a * a} + ${c}) = ${A * (a * a + c)} \\Rightarrow A = ${A}`,
           `\\text{Compare } x^2: \\; A + B = ${p} \\Rightarrow B = ${B}`,
-          `\\text{Compare constants: } ${c}A - ${a}C = ${r} \\Rightarrow C = ${C}`,
+          // Emit the sign once instead of subtracting a possibly-negative root:
+          // "4A - -3C" invites reading it as 4A - 3C, which yields the wrong C,
+          // and PR.xt also drops the coefficient in the a = 1 case that printed
+          // "4A - 1C".
+          `\\text{Compare constants: } ${c}A ${PR.xt(-a, 'C')} = ${r} \\Rightarrow C = ${C}`,
           `= \\frac{${A}}{x ${PR.s(-a)}} + \\frac{${PR.lead(B)} ${PR.s(C)}}{x^2 + ${c}}`,
         ],
         answer: `\\frac{${A}}{x ${PR.s(-a)}} + \\frac{${PR.lead(B)} ${PR.s(C)}}{x^2 + ${c}}`,

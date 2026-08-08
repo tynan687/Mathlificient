@@ -237,6 +237,21 @@ This is the most common task. The shape:
    sit over particular denominators. When you opt out, you take on the duty of never writing a
    reordering as a distractor.
 
+   That duty is harder than it looks, and `partial-distinct` shipped a breach of it for 11% of
+   its questions. The author *did* discharge it — there is a comment saying `form(A, -b, B, -a)`
+   is deliberately absent because it is the answer with its terms swapped. What was missed is
+   that a **different** distractor becomes that same reordering for one family of parameters:
+   when `b === -a` the two denominators are mirror images, `PR.s(a)` and `PR.s(-b)` render
+   identically, and `form(B, a, A, b)` collapses onto the answer. The student picking it was
+   marked wrong *and* charged a misconception they had not made, which then steered what the
+   app asked them next.
+
+   So the duty is not "no distractor is a reordering" — it is **"no distractor becomes a
+   reordering for any parameter draw"**. Check it by value, not by reading: sum each option and
+   evaluate it at several points. String comparison is what missed this, so string comparison
+   cannot be what confirms the fix. The guard is a narrowed range in the redraw loop, with a
+   comment naming the collision, exactly as in rule 5.
+
 Then, always:
 
 ```bash
