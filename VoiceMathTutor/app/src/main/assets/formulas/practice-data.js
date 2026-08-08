@@ -833,28 +833,43 @@ const PRACTICE = [
   {
     id: 'complex-product', skill: 'complex-numbers', topic: 'Complex numbers', keywords: ['complex', 'multiply', 'product'],
     generate() {
-      const a = PR.nz(-4, 4); const b = PR.nz(-4, 4);
-      const c = PR.nz(-4, 4); const d = PR.nz(-4, 4);
-      const re = a * c - b * d; const im = a * d + b * c;
+      let a, b, c, d, re, im;
+      do {
+        a = PR.nz(-4, 4); b = PR.nz(-4, 4);
+        c = PR.nz(-4, 4); d = PR.nz(-4, 4);
+        re = a * c - b * d; im = a * d + b * c;
+        // Both imaginary parts used below must be non-zero. PR.xt vanishes at 0,
+        // so an im of 0 would render the answer as a bare real number while every
+        // distractor still carried an i — the answer identifiable by its form
+        // alone, which is the thing check-practice's shape rule exists to stop.
+        // (The old PR.s spelling hid this by printing "+ 0i" instead.)
+        // re is here for the same reason: the complex-swap distractor puts it in
+        // the imaginary slot, so a zero re would collapse that option to a bare
+        // integer.
+      } while (im === 0 || re === 0 || a * d - b * c === 0);
       return {
-        question: `\\text{Expand } (${a} ${PR.s(b)}i)(${c} ${PR.s(d)}i)`,
+        // PR.xt, not PR.s, for every imaginary term: it drops a coefficient of 1,
+        // so this reads "(4 - i)" rather than "(4 - 1i)", and it carries its own
+        // sign, so the chains below no longer print "+ -6i".
+        question: `\\text{Expand } (${a}${PR.xt(b, 'i')})(${c}${PR.xt(d, 'i')})`,
         steps: [
-          `${a} \\cdot ${PR.par(c)} + ${a} \\cdot ${PR.par(d)}i + ${PR.par(b)}i \\cdot ${PR.par(c)} + ${PR.par(b)}i \\cdot ${PR.par(d)}i`,
-          `= ${a * c} + ${a * d}i + ${b * c}i + ${b * d}i^2`,
-          `i^2 = -1: \\quad ${a * c} - ${PR.par(b * d)} + (${a * d} + ${b * c})i`,
-          `= ${re} ${PR.s(im)}i`,
+          `${PR.par(a)} \\cdot ${PR.par(c)} + ${PR.par(a)} \\cdot ${PR.par(d)}i`
+            + ` + ${PR.par(b)}i \\cdot ${PR.par(c)} + ${PR.par(b)}i \\cdot ${PR.par(d)}i`,
+          `= ${a * c}${PR.xt(a * d, 'i')}${PR.xt(b * c, 'i')}${PR.xt(b * d, 'i^2')}`,
+          `i^2 = -1: \\quad ${a * c} - ${PR.par(b * d)} + (${a * d} ${PR.s(b * c)})i`,
+          `= ${re}${PR.xt(im, 'i')}`,
         ],
-        answer: `${re} ${PR.s(im)}i`,
+        answer: `${re}${PR.xt(im, 'i')}`,
         w: { a, b, c, d, re, im },
       };
     },
     distractors({ a, b, c, d, re, im }) {
       return [
-        { latex: `${a * c + b * d} ${PR.s(im)}i`, why: 'complex-real-sign' },
-        { latex: `${im} ${PR.s(re)}i`, why: 'complex-swap' },
-        { latex: `${re} ${PR.s(a * d - b * c)}i`, why: 'complex-real-sign' },
-        { latex: `${a * c} ${PR.s(b * d)}i`, why: 'cross-term' },
-        { latex: `${a * c + b * d} ${PR.s(a * d - b * c)}i`, why: 'complex-real-sign' },
+        { latex: `${a * c + b * d}${PR.xt(im, 'i')}`, why: 'complex-real-sign' },
+        { latex: `${im}${PR.xt(re, 'i')}`, why: 'complex-swap' },
+        { latex: `${re}${PR.xt(a * d - b * c, 'i')}`, why: 'complex-real-sign' },
+        { latex: `${a * c}${PR.xt(b * d, 'i')}`, why: 'cross-term' },
+        { latex: `${a * c + b * d}${PR.xt(a * d - b * c, 'i')}`, why: 'complex-real-sign' },
       ];
     },
   },
